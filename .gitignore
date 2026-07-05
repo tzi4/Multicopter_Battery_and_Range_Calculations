@@ -1,0 +1,13 @@
+# Track only Python source for now.
+*
+!*/
+!*.py
+!.gitignore
+
+# Keep local/tool/cache folders out even if they contain Python files.
+.agents/
+.codex/
+__pycache__/
+.pytest_cache/
+.venv/
+venv/
