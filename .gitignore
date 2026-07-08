@@ -1,11 +1,32 @@
-# Track only Python source for now.
+# Keep the repository focused on the runnable menzil package.
 *
 !*/
-!*.py
 !.gitignore
+!*.py
+!requirements.txt
 
-# Keep local/tool/cache folders out even if they contain Python files.
+# Runtime data used by menzil2.py DataLink analysis.
+!flight_attitude_00000075.csv
+!flight_attitude_00000075_armed.csv
+!ham_ucus_verileri.md
+!3 Temmuz Tüm Test Logları/
+!3 Temmuz Tüm Test Logları/**
+
+# Local scratch scripts from the cleanup/refactor work.
+add_option5.py
+refactor.py
+refactor2.py
+remove_dead.py
+remove_dead2.py
+remove_dead3.py
+remove_dead4.py
+remove_plots.py
+remove_stadium_str.py
+update_menu.py
+
+# Local/tool/cache folders.
 .agents/
+.claude/
 .codex/
 __pycache__/
 .pytest_cache/

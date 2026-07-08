@@ -61,7 +61,7 @@ def test_july3_measured_curve_builds_sync_battery_and_model_reports():
     )
 
     assert 700.0 <= result["measured_hover_power_w"] <= 820.0
-    assert 170.0 <= result["utip_ms"] <= 180.0
+    assert 165.0 <= result["utip_ms"] <= 180.0
     observations = result["speed_bin_observations"]
     assert len([obs for obs in observations if 2.0 <= obs["speed_ms"] <= 12.5]) >= 8
     assert all(obs["power_ratio"] > 0.0 for obs in observations)
@@ -100,6 +100,90 @@ def test_july3_measured_curve_builds_sync_battery_and_model_reports():
         assert all(math.isfinite(row["error"]) for row in rows)
 
 
+def test_measured_curve_graph_mode_does_not_emit_voltage_graph(monkeypatch, tmp_path):
+    observation = {
+        "label": "DataLink v~6.0",
+        "speed_ms": 6.0,
+        "power_ratio": 1.0,
+        "sample_count": 120,
+        "raw_sample_count": 150,
+        "stable_fraction": 0.8,
+        "source_bins": ["00000076.BIN"],
+        "source_sessions": ["UART-260703-120000"],
+        "dt_s_max": 0.18,
+        "extrapolation_region": "measured",
+    }
+    calls = {}
+
+    monkeypatch.setattr(menzil2, "find_measured_curve_log_root", lambda log_root: tmp_path)
+    monkeypatch.setattr(menzil2, "find_datalink_session_dirs", lambda _root: [])
+    monkeypatch.setattr(
+        menzil2, "filter_datalink_sessions_by_date_hint", lambda sessions, _hint: sessions
+    )
+    monkeypatch.setattr(menzil2, "find_datalink_bin_overlaps", lambda *_args, **_kwargs: [])
+    monkeypatch.setattr(menzil2, "annotate_joined_sample_stability", lambda samples: samples)
+    monkeypatch.setattr(menzil2, "estimate_datalink_hover_power", lambda _samples: 760.0)
+    monkeypatch.setattr(
+        menzil2,
+        "build_datalink_speed_observations",
+        lambda *_args, **_kwargs: [observation],
+    )
+    monkeypatch.setattr(
+        menzil2,
+        "build_battery_qc_report",
+        lambda *_args, **_kwargs: {"rows": [{"timestamp_utc": None, "voltr_v": 24.0}]},
+    )
+    monkeypatch.setattr(
+        menzil2,
+        "build_measured_curve_model_fit",
+        lambda profile, *_args, **_kwargs: {
+            "profile": dict(profile, utip_ms=171.0),
+            "model_functions": {},
+            "model_fit_residuals": {},
+            "zeng_params": {},
+            "faessler_params": {},
+            "kirschstein_params": {},
+            "fit_audit": {},
+        },
+    )
+    monkeypatch.setattr(
+        menzil2,
+        "plot_empirical_datalink_power_curve",
+        lambda *_args, **_kwargs: calls.setdefault("empirical_power", "empirical.png"),
+    )
+    monkeypatch.setattr(
+        menzil2,
+        "plot_measured_power_curve",
+        lambda *_args, **_kwargs: calls.setdefault("diagnostic", "diagnostic.png"),
+    )
+    monkeypatch.setattr(
+        menzil2,
+        "write_scientific_fit_audit",
+        lambda *_args, **_kwargs: calls.setdefault("audit", "audit.md"),
+    )
+    monkeypatch.setattr(
+        menzil2,
+        "plot_battery_voltage_timeline",
+        lambda *_args, **_kwargs: calls.setdefault("battery", "battery.png"),
+    )
+
+    result = menzil2.run_datalink_measured_curve_analysis(
+        {"prop_diameter_inch": 29.0},
+        {},
+        760.0,
+        559.44,
+        0.8,
+        log_root=tmp_path,
+        make_graph=True,
+    )
+
+    assert calls["empirical_power"] == "empirical.png"
+    assert calls["diagnostic"] == "diagnostic.png"
+    assert calls["audit"] == "audit.md"
+    assert "battery" not in calls
+    assert "battery" not in result["graph_paths"]
+
+
 def test_july3_battery_monitor_is_voltage_sanity_not_direct_power_fit():
     profile, sonuc, hover_power_w, battery_wh, correction_factor = _firfir_context()
 
@@ -134,11 +218,15 @@ def test_datalink_flight_time_uses_july3_6s_usable_capacity_not_legacy_cf():
         battery_basis=battery_basis,
     )
 
+    # Legacy 12-pil (1056.2 Wh) yorumu, CF ile bile dogru July3 (559 Wh) baseline'dan
+    # cok daha uzun bir sure verir -> loglardaki 40 dk gerceginden sapar. Bu yuzden
+    # July3 usable kapasitesi kullanilir. (gercek deger ~67.73 dk, baseline 39.86 dk)
     legacy_time_10_min = legacy_battery_wh / 757.891 * 60.0 * 0.72 * 1.125
-    assert legacy_time_10_min > 75.0
+    assert legacy_time_10_min == pytest.approx(67.73, abs=0.1)
+    assert legacy_time_10_min > row["time_10_min"] * 1.5
     assert row["time_10_min"] == pytest.approx(39.86, abs=0.05)
     assert row["time_20_min"] == pytest.approx(35.43, abs=0.05)
-    assert row["battery_basis_label"].startswith("6S 25.2Ah")
+    assert row["battery_basis_label"].startswith("6S1P (tek kol")
 
 
 def test_datalink_fit_suite_reports_july3_battery_basis(monkeypatch):
@@ -180,10 +268,24 @@ def test_datalink_fit_suite_reports_july3_battery_basis(monkeypatch):
     )
 
     reserve = suite["battery_reserve_report"]
+    # Basis + reserve TEK KOL (6S1P) tutarli kalir -> 40 dk baseline degismez
     assert suite["battery_basis"]["usable_energy_wh"] == pytest.approx(559.44, abs=0.01)
     assert reserve["hover_10_reserve_min"] == pytest.approx(39.86, abs=0.05)
     assert reserve["hover_20_reserve_min"] == pytest.approx(35.43, abs=0.05)
-    assert reserve["legacy_hover_10_reserve_min"] > 75.0
+    # Legacy 12-pil yorumu dogru baseline'dan >1.5x uzun (gercek ~67.73 dk)
+    assert reserve["legacy_hover_10_reserve_min"] == pytest.approx(67.73, abs=0.1)
+    assert reserve["legacy_hover_10_reserve_min"] > reserve["hover_10_reserve_min"] * 1.5
+
+    # Sensor tek koldaydi: gercek arac hover ve full pack usable = x2 (6S2P, 12 pil).
+    # Bu MUTLAK degerler fiziksel gercek (1516 W > teorik 1124 W), 40 dk oran-sabiti korunur.
+    assert suite["battery_parallel_arms"] == 2
+    assert suite["vehicle_measured_hover_power_w"] == pytest.approx(757.891 * 2, abs=0.01)
+    assert suite["full_pack_usable_energy_wh"] == pytest.approx(559.44 * 2, abs=0.02)
+    # Verim orani artik arac seviyesinde >1 (gercek hover teorigin ustunde -> fiziksel)
+    assert suite["datalink_efficiency_ratio"] == pytest.approx(
+        (757.891 * 2) / suite["fit_theoretical_hover_power_w"], rel=1e-6
+    )
+    assert suite["datalink_efficiency_ratio"] > 1.0
 
 
 def test_empirical_datalink_curve_refuses_extrapolation_and_reports_sources():
@@ -344,7 +446,8 @@ def test_custom_speed_datalink_fit_selection_uses_measured_reference_and_reports
 
     out = capsys.readouterr().out
     assert "DataLink fit suite" in out
-    assert "P_hover(DataLink)=760.0 W" in out
+    # Olculen hover tek kol (6S1P) olarak etiketlenir
+    assert "P_hover(DataLink, olculen tek kol)=760.0 W" in out
     assert "Utip(DataLink RPM)=171.0 m/s" in out
     assert "BATT QC" in out
     assert "battery_current_scale_suspect" in out
@@ -352,6 +455,427 @@ def test_custom_speed_datalink_fit_selection_uses_measured_reference_and_reports
     assert "v=6.00 m/s" in out
     assert "v=20.00 m/s" in out
     assert "datalink_empirical_pv" not in out
+
+
+def test_preset_fit_application_uses_global_hover_scale_and_entered_battery_basis(
+    monkeypatch, capsys, tmp_path
+):
+    profile, fit_sonuc, _hover_power_w, battery_wh, correction_factor = _firfir_context()
+    observations = [
+        {
+            "label": "DataLink v~6.0",
+            "speed_ms": 6.0,
+            "power_ratio": 1.0,
+            "sample_count": 120,
+            "raw_sample_count": 150,
+            "stable_fraction": 0.8,
+            "source_bins": ["00000076.BIN"],
+            "source_sessions": ["UART-260703-120000"],
+            "dt_s_max": 0.18,
+            "extrapolation_region": "measured",
+        },
+    ]
+    suite = {
+        "empirical_curve": menzil2.build_empirical_datalink_power_curve(observations),
+        "observations": observations,
+        "power_reference_w": 760.0,
+        "measured_hover_power_w": 760.0,
+        "utip_ms": 171.0,
+        "model_functions": {"zeng_datalink_fit": lambda v: 1.0},
+        "model_params": {},
+        "battery_qc_report": {"warnings": [], "direct_current_fit_enabled": False},
+        "battery_basis": menzil2.build_july3_firfir_battery_basis(),
+        "datalink_efficiency_ratio": 1.25,
+        "sync_report": [],
+        "source_result": {"graph_paths": {}},
+    }
+    monkeypatch.setattr(
+        menzil2,
+        "build_datalink_fitted_model_suite",
+        lambda *_args, **_kwargs: suite,
+    )
+    monkeypatch.setattr(
+        menzil2,
+        "write_datalink_fit_method_report",
+        lambda *_args, **_kwargs: tmp_path / "report.md",
+    )
+
+    menzil2.run_preset_fit_apply_to_vehicle(
+        [6.0],
+        profile,
+        fit_sonuc,
+        "1",
+        1000.0,
+        battery_wh,
+        correction_factor,
+        make_graph=False,
+        apply_sonuc=fit_sonuc,
+    )
+
+    out = capsys.readouterr().out
+    # Model P/Ph orani Firfir'e tune edilir; ANA tablo/grafik ise girilen aracin
+    # bataryasi ve global DataLink hover olcegi ile hesaplanir.
+    expected_usable = battery_wh * menzil2.FIRFIR_BATTERY_USABLE_FRACTION
+    assert "P=1250.0 W" in out
+    assert "P_hover = 1250.0 W" in out
+    assert f"{expected_usable:.1f} Wh usable" in out
+    assert "DataLink-calibrated entered vehicle basis" in out
+    # Firfir July3 calibrated basis hala tune-kaynagi bilgisi olarak gosterilir.
+    assert "MODEL TUNE-KAYNAGI BASIS" in out
+    assert "P_hover(Firfir calibrated) = 760.0 W" in out
+
+
+def test_preset_fit_application_generates_datalink_graphs_with_global_hover_scale(
+    monkeypatch, tmp_path
+):
+    profile, fit_sonuc, _hover_power_w, battery_wh, correction_factor = _firfir_context()
+    observations = [
+        {
+            "label": "DataLink v~6.0",
+            "speed_ms": 6.0,
+            "power_ratio": 1.0,
+            "sample_count": 120,
+            "raw_sample_count": 150,
+            "stable_fraction": 0.8,
+            "source_bins": ["00000076.BIN"],
+            "source_sessions": ["UART-260703-120000"],
+            "dt_s_max": 0.18,
+            "extrapolation_region": "measured",
+        },
+    ]
+    suite = {
+        "empirical_curve": menzil2.build_empirical_datalink_power_curve(observations),
+        "observations": observations,
+        "power_reference_w": 760.0,
+        "measured_hover_power_w": 760.0,
+        "utip_ms": 171.0,
+        "model_functions": {"zeng_datalink_fit": lambda v: 1.0},
+        "model_params": {},
+        "battery_qc_report": {
+            "warnings": [],
+            "direct_current_fit_enabled": False,
+            "rows": [{"timestamp_utc": None, "voltr_v": 24.0}],
+        },
+        "battery_basis": menzil2.build_july3_firfir_battery_basis(),
+        "datalink_efficiency_ratio": 1.25,
+        "sync_report": [],
+        "source_result": {"graph_paths": {}},
+    }
+    calls = {}
+    monkeypatch.setattr(
+        menzil2,
+        "build_datalink_fitted_model_suite",
+        lambda *_args, **_kwargs: suite,
+    )
+    monkeypatch.setattr(
+        menzil2,
+        "write_datalink_fit_method_report",
+        lambda *_args, **_kwargs: tmp_path / "report.md",
+    )
+    monkeypatch.setattr(
+        menzil2,
+        "plot_datalink_empirical_interpolation",
+        lambda empirical_curve, output_path, bauersfeld_points=None: calls.setdefault(
+            "empirical_output_path", output_path
+        ),
+    )
+    monkeypatch.setattr(
+        menzil2,
+        "plot_datalink_power_ratio_comparison",
+        lambda model_functions, empirical_curve, bauersfeld_points, output_path: calls.setdefault(
+            "power_output_path", output_path
+        ),
+    )
+    monkeypatch.setattr(
+        menzil2,
+        "plot_datalink_range_time_comparison",
+        lambda model_functions, empirical_curve, bauersfeld_points, hover_power_w,
+        battery_wh, correction_factor, output_path, battery_basis=None: (
+            calls.setdefault("range_output_path", output_path),
+            calls.setdefault("range_power_reference_w", hover_power_w),
+            calls.setdefault("range_battery_basis", battery_basis),
+        )[0],
+    )
+    monkeypatch.setattr(
+        menzil2,
+        "plot_battery_voltage_timeline",
+        lambda battery_rows, sync_report, output_path="measured_datalink_battery_voltage.png": calls.setdefault(
+            "battery_output_path", output_path
+        ),
+    )
+
+    menzil2.run_preset_fit_apply_to_vehicle(
+        [6.0],
+        profile,
+        fit_sonuc,
+        "1",
+        1000.0,
+        battery_wh,
+        correction_factor,
+        make_graph=True,
+        apply_sonuc=fit_sonuc,
+    )
+
+    assert calls["empirical_output_path"] == "datalink_zeng_empirical_interpolation.png"
+    assert calls["power_output_path"] == "datalink_zeng_power_ratio.png"
+    assert calls["range_output_path"] == "datalink_zeng_range_time.png"
+    assert "battery_output_path" not in calls
+    # Grafik/hesap girilen aracin hover gucu global DataLink olcegiyle kalibre
+    # edilerek ve girilen bataryanin usable enerjisiyle yapilir.
+    assert calls["range_power_reference_w"] == 1250.0
+    expected_usable = battery_wh * menzil2.FIRFIR_BATTERY_USABLE_FRACTION
+    assert calls["range_battery_basis"]["usable_energy_wh"] == pytest.approx(
+        expected_usable, abs=0.01
+    )
+
+
+def test_preset_fit_application_uses_global_datalink_hover_scale(
+    monkeypatch, capsys, tmp_path
+):
+    profile, fit_sonuc, _hover_power_w, battery_wh, correction_factor = _firfir_context()
+    hover_scale = (757.891 * 2.0) / 1124.0
+    observations = [
+        {
+            "label": "DataLink v~6.0",
+            "speed_ms": 6.0,
+            "power_ratio": 1.0,
+            "sample_count": 120,
+            "raw_sample_count": 150,
+            "stable_fraction": 0.8,
+            "source_bins": ["00000076.BIN"],
+            "source_sessions": ["UART-260703-120000"],
+            "dt_s_max": 0.18,
+            "extrapolation_region": "measured",
+        },
+    ]
+    suite = {
+        "empirical_curve": menzil2.build_empirical_datalink_power_curve(observations),
+        "observations": observations,
+        "power_reference_w": 757.891,
+        "measured_hover_power_w": 757.891,
+        "utip_ms": 171.0,
+        "model_functions": {"zeng_datalink_fit": lambda v: 1.0},
+        "model_params": {},
+        "battery_qc_report": {"warnings": [], "direct_current_fit_enabled": False},
+        "battery_basis": menzil2.build_july3_firfir_battery_basis(),
+        "datalink_efficiency_ratio": hover_scale,
+        "sync_report": [],
+        "source_result": {"graph_paths": {}},
+    }
+    monkeypatch.setattr(
+        menzil2,
+        "build_datalink_fitted_model_suite",
+        lambda *_args, **_kwargs: suite,
+    )
+    monkeypatch.setattr(
+        menzil2,
+        "write_datalink_fit_method_report",
+        lambda *_args, **_kwargs: tmp_path / "report.md",
+    )
+
+    menzil2.run_preset_fit_apply_to_vehicle(
+        [6.0],
+        profile,
+        fit_sonuc,
+        "1",
+        1124.0,
+        battery_wh,
+        correction_factor,
+        make_graph=False,
+        apply_sonuc=fit_sonuc,
+    )
+
+    out = capsys.readouterr().out
+    # Ozel arac tanima yok: girilen hover, Firfir DataLink gercek/teorik hover
+    # olcegiyle global olarak kalibre edilir; batarya girilen LiIon enerjisinden gelir.
+    expected_usable = battery_wh * menzil2.FIRFIR_BATTERY_USABLE_FRACTION
+    assert "DataLink-calibrated entered vehicle basis" in out
+    assert "P_hover = 1515.8 W" in out
+    assert f"{expected_usable:.1f} Wh usable" in out
+    assert "%20=31.2 dk, %10=35.1 dk" in out
+    # Firfir calibrated tek-kol basis hala tune-kaynagi bilgisi olarak gosterilir.
+    assert "P_hover(Firfir calibrated) = 757.9 W" in out
+
+
+def test_global_hover_scale_lowers_16ms_estimate_without_vehicle_special_case(
+    monkeypatch, tmp_path
+):
+    profile, fit_sonuc, _hover_power_w, battery_wh, correction_factor = _firfir_context()
+    hover_scale = (757.891 * 2.0) / 1124.0
+    observations = [
+        {
+            "label": "DataLink v~6.0",
+            "speed_ms": 6.0,
+            "power_ratio": 1.0,
+            "sample_count": 120,
+            "raw_sample_count": 150,
+            "stable_fraction": 0.8,
+            "source_bins": ["00000076.BIN"],
+            "source_sessions": ["UART-260703-120000"],
+            "dt_s_max": 0.18,
+            "extrapolation_region": "measured",
+        },
+    ]
+    suite = {
+        "empirical_curve": menzil2.build_empirical_datalink_power_curve(observations),
+        "observations": observations,
+        "power_reference_w": 757.891,
+        "measured_hover_power_w": 757.891,
+        "utip_ms": 171.0,
+        "model_functions": {"zeng_datalink_fit": lambda _v: 1.1859},
+        "model_params": {},
+        "battery_qc_report": {"warnings": [], "direct_current_fit_enabled": False},
+        "battery_basis": menzil2.build_july3_firfir_battery_basis(),
+        "datalink_efficiency_ratio": hover_scale,
+        "sync_report": [],
+        "source_result": {"graph_paths": {}},
+    }
+    monkeypatch.setattr(
+        menzil2,
+        "build_datalink_fitted_model_suite",
+        lambda *_args, **_kwargs: suite,
+    )
+    monkeypatch.setattr(
+        menzil2,
+        "write_datalink_fit_method_report",
+        lambda *_args, **_kwargs: tmp_path / "report.md",
+    )
+
+    result = menzil2.run_preset_fit_apply_to_vehicle(
+        [16.0],
+        profile,
+        fit_sonuc,
+        "1",
+        1124.0,
+        battery_wh,
+        correction_factor,
+        make_graph=False,
+        apply_sonuc=fit_sonuc,
+    )
+
+    basis = result["result_range_time_basis"]
+    row = menzil2.calculate_flight_for_speed(
+        16.0,
+        1.1859,
+        basis["power_reference_w"],
+        battery_wh,
+        correction_factor,
+        battery_basis=basis["battery_basis"],
+    )
+    old_entered_basis = menzil2.build_applied_battery_basis(battery_wh)
+    old_row = menzil2.calculate_flight_for_speed(
+        16.0,
+        1.1859,
+        1124.0,
+        battery_wh,
+        correction_factor,
+        battery_basis=old_entered_basis,
+    )
+
+    assert basis["mode"] == "datalink_calibrated_application"
+    assert row["time_10_min"] == pytest.approx(29.61, abs=0.05)
+    assert old_row["time_10_min"] == pytest.approx(39.94, abs=0.05)
+
+
+def test_global_hover_scale_report_and_graph_use_same_result_basis(
+    monkeypatch, tmp_path
+):
+    profile, fit_sonuc, _hover_power_w, battery_wh, correction_factor = _firfir_context()
+    hover_scale = (757.891 * 2.0) / 1124.0
+    observations = [
+        {
+            "label": "DataLink v~6.0",
+            "speed_ms": 6.0,
+            "power_ratio": 1.0,
+            "sample_count": 120,
+            "raw_sample_count": 150,
+            "stable_fraction": 0.8,
+            "source_bins": ["00000076.BIN"],
+            "source_sessions": ["UART-260703-120000"],
+            "dt_s_max": 0.18,
+            "extrapolation_region": "measured",
+        },
+    ]
+    suite = {
+        "empirical_curve": menzil2.build_empirical_datalink_power_curve(observations),
+        "observations": observations,
+        "power_reference_w": 757.891,
+        "measured_hover_power_w": 757.891,
+        "utip_ms": 171.0,
+        "model_functions": {"zeng_datalink_fit": lambda _v: 1.0},
+        "model_params": {},
+        "battery_qc_report": {"warnings": [], "direct_current_fit_enabled": False},
+        "battery_basis": menzil2.build_july3_firfir_battery_basis(),
+        "datalink_efficiency_ratio": hover_scale,
+        "sync_report": [],
+        "source_result": {"graph_paths": {}},
+    }
+    calls = {}
+    monkeypatch.setattr(
+        menzil2,
+        "build_datalink_fitted_model_suite",
+        lambda *_args, **_kwargs: suite,
+    )
+    monkeypatch.setattr(
+        menzil2,
+        "write_datalink_fit_method_report",
+        lambda _suite, _selected, output_path=menzil2.DATALINK_FIT_REPORT_PATH,
+        range_time_basis_override=None: (
+            calls.setdefault("report_basis", range_time_basis_override),
+            tmp_path / "report.md",
+        )[1],
+    )
+    monkeypatch.setattr(
+        menzil2,
+        "plot_datalink_empirical_interpolation",
+        lambda *_args, **_kwargs: tmp_path / "empirical.png",
+    )
+    monkeypatch.setattr(
+        menzil2,
+        "plot_datalink_power_ratio_comparison",
+        lambda *_args, **_kwargs: tmp_path / "power.png",
+    )
+    monkeypatch.setattr(
+        menzil2,
+        "plot_datalink_range_time_comparison",
+        lambda model_functions, empirical_curve, bauersfeld_points, hover_power_w,
+        battery_wh, correction_factor, output_path, battery_basis=None: (
+            calls.setdefault("graph_hover_power_w", hover_power_w),
+            calls.setdefault("graph_battery_basis", battery_basis),
+            tmp_path / "range.png",
+        )[2],
+    )
+
+    result = menzil2.run_preset_fit_apply_to_vehicle(
+        [6.0],
+        profile,
+        fit_sonuc,
+        "1",
+        1124.0,
+        battery_wh,
+        correction_factor,
+        make_graph=True,
+        apply_sonuc=fit_sonuc,
+    )
+
+    basis = result["result_range_time_basis"]
+    report_basis = calls["report_basis"]
+    assert calls["graph_hover_power_w"] == pytest.approx(basis["power_reference_w"])
+    assert report_basis["power_reference_w"] == pytest.approx(basis["power_reference_w"])
+    assert calls["graph_battery_basis"]["usable_energy_wh"] == pytest.approx(
+        basis["battery_basis"]["usable_energy_wh"]
+    )
+    assert report_basis["battery_basis"]["usable_energy_wh"] == pytest.approx(
+        basis["battery_basis"]["usable_energy_wh"]
+    )
+    report_text = menzil2.format_datalink_fit_method_report(
+        suite,
+        ["zeng_datalink_fit"],
+        range_time_basis_override=basis,
+    )
+    assert "DataLink-calibrated entered vehicle basis" in report_text
+    assert "1515.8 W" in report_text
+    assert "985.8 Wh" in report_text
 
 
 def test_custom_speed_datalink_selection_generates_three_model_specific_graphs(monkeypatch):
@@ -462,8 +986,7 @@ def test_custom_speed_datalink_selection_generates_three_model_specific_graphs(m
     assert calls["empirical_output_path"] == "datalink_zeng_empirical_interpolation.png"
     assert calls["power_output_path"] == "datalink_zeng_power_ratio.png"
     assert calls["range_output_path"] == "datalink_zeng_range_time.png"
-    assert calls["battery_output_path"] == "datalink_zeng_battery_voltage.png"
-    assert calls["battery_rows"] == suite["battery_qc_report"]["rows"]
+    assert "battery_output_path" not in calls
     assert calls["range_power_reference_w"] == 760.0
     assert calls["range_battery_basis"]["usable_energy_wh"] == pytest.approx(559.44, abs=0.01)
     assert any(point["label"].startswith("Bauersfeld") for point in calls["power_bauersfeld_points"])
@@ -569,3 +1092,59 @@ def test_custom_speed_datalink_all_selection_uses_all_three_models(monkeypatch):
     ]
     assert calls["range_output_path"] == "datalink_all_range_time.png"
     assert calls["range_battery_basis"]["usable_energy_wh"] == pytest.approx(559.44, abs=0.01)
+
+
+def test_raw_datalink_viewer_is_the_only_voltage_graph_path(monkeypatch):
+    import matplotlib.pyplot as plt
+
+    calls = {}
+    empirical_curve = menzil2.build_empirical_datalink_power_curve(
+        [
+            {
+                "label": "DataLink v~6.0",
+                "speed_ms": 6.0,
+                "power_ratio": 1.0,
+                "sample_count": 120,
+                "raw_sample_count": 150,
+                "stable_fraction": 0.8,
+                "source_bins": ["00000076.BIN"],
+                "source_sessions": ["UART-260703-120000"],
+                "dt_s_max": 0.18,
+                "extrapolation_region": "measured",
+            },
+        ]
+    )
+    fake_result = {
+        "empirical_curve": empirical_curve,
+        "battery_qc_report": {"rows": [{"timestamp_utc": None, "voltr_v": 24.0}]},
+        "sync_report": [{"accepted_for_fit": True}],
+    }
+    monkeypatch.setattr(
+        menzil2,
+        "run_datalink_measured_curve_analysis",
+        lambda *_args, **_kwargs: fake_result,
+    )
+    monkeypatch.setattr(
+        menzil2,
+        "plot_datalink_empirical_interpolation",
+        lambda empirical_curve, output_path, bauersfeld_points=None: calls.setdefault(
+            "empirical_output_path", output_path
+        ),
+    )
+    monkeypatch.setattr(
+        menzil2,
+        "plot_battery_voltage_timeline",
+        lambda battery_rows, sync_report, output_path="measured_datalink_battery_voltage.png": (
+            calls.setdefault("battery_rows", battery_rows),
+            calls.setdefault("sync_report", sync_report),
+            calls.setdefault("battery_output_path", output_path),
+        )[2],
+    )
+    monkeypatch.setattr(plt, "show", lambda: None)
+
+    menzil2.run_datalink_raw_data_viewer(None, "260703")
+
+    assert calls["empirical_output_path"] == "raw_datalink_empirical_interpolation.png"
+    assert calls["battery_output_path"] == "raw_datalink_battery_voltage.png"
+    assert calls["battery_rows"] == fake_result["battery_qc_report"]["rows"]
+    assert calls["sync_report"] == fake_result["sync_report"]

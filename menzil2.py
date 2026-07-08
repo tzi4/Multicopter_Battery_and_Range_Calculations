@@ -2,7 +2,6 @@
 
 import csv
 import math
-import os
 import re
 import sys
 from datetime import datetime, timedelta, timezone
@@ -37,9 +36,7 @@ class BauersfeldMenzilHesaplayici:
         self.g = 9.81
         self.rho = 1.225
 
-        # Pervane Alanı (Tek pervane değil, toplam disk)
         self.r_prop = (prop_diameter_inch * 0.0254) / 2.0
-        self.A_prop = math.pi * (self.r_prop**2)
 
         # Hover İndüklenen Hız (vi,h)
         # Eq 4: vi,h = sqrt(mg / 2*rho*pi*r^2*Nr)
@@ -798,23 +795,6 @@ def get_power_from_thrust_quadratic(thrust, data_list):
     return max(0, power)  # Negatif güç fiziksel olarak anlamsız
 
 
-def calculate_poly_coeffs(v_e, v_r):
-    # Solves y = ax^2 + bx + 1 for (0,1), (ve, 0.914), (vr, 1.092)
-    d_Pe = 0.914 - 1.0
-    d_Pr = 1.092 - 1.0
-
-    numerator = d_Pe * v_r - d_Pr * v_e
-    denominator = v_e * v_r * (v_e - v_r)
-
-    if denominator == 0:
-        return 0, 0, 1
-
-    a = numerator / denominator
-    b = (d_Pe / v_e) - a * v_e
-
-    return a, b
-
-
 FIRFIR_SPEED_PRESET = {
     "vehicle_name": "Firfir",
     "mass_kg": 12.4,
@@ -837,6 +817,11 @@ FIRFIR_SPEED_PRESET = {
     "pitch_measurement_deg": 4.0,
     "p_endurance_ratio": 0.914,
     "p_range_ratio": 1.092,
+    # Firfir'in thrust-tablosu teorik hover gucu (U8 Lite KV190 + G28x9.2, 12.4 kg / 4 motor).
+    # DataLink olculen hover / bu teorik = gerceklik/verim orani; tune edilmis model yeni
+    # araca uygulanirken bu oran yeni aracin teorik P_hover'ina da carpilir.
+    "theoretical_hover_power_w": get_power_from_thrust(12400.0 / 4.0, u8lite_kv190_data)
+    * 4.0,
 }
 
 FIRFIR_ATTITUDE_LOG_CANDIDATES = [
@@ -846,9 +831,6 @@ FIRFIR_ATTITUDE_LOG_CANDIDATES = [
 FIRFIR_DATALINK_ROOT_CANDIDATES = [
     "Datalink Data From my Retarded Friend/datalink",
 ]
-FIRFIR_ARDUPILOT_BIN_GLOBS = [
-    "D:/Tak*/it* ikinci sene/Loglar/Drone 0.0/*.BIN",
-]
 DATALINK_EXPECTED_MOTOR_COUNT = 4
 DATALINK_RECORD_HEADER_BYTES = 32
 DATALINK_RECORD_BYTES = 160
@@ -857,17 +839,10 @@ DATALINK_DEFAULT_SAMPLE_HZ = 20.0
 DATALINK_CURRENT_SCALE = 100.0
 DATALINK_SPEED_BIN_WIDTH_MS = 1.0
 DATALINK_MIN_BIN_SAMPLES = 80
-DATALINK_DATE_HINT_ENV = "MENZIL_DATALINK_DATE_HINT"
 DATALINK_MEASURED_CURVE_DATE_HINT = "260703"
 DATALINK_MEASURED_EXTRAPOLATION_START_MS = 18.0
 DATALINK_MEASURED_OUTPUT_PREFIX = "measured_datalink_power_curve"
 DATALINK_EMPIRICAL_OUTPUT_PATH = "empirical_datalink_power_curve.png"
-DATALINK_EMPIRICAL_COMPARISON_RANGE_OUTPUT_PATH = (
-    "datalink_empirical_model_comparison_range_time.png"
-)
-DATALINK_EMPIRICAL_COMPARISON_POWER_OUTPUT_PATH = (
-    "datalink_empirical_model_comparison_power_ratio.png"
-)
 DATALINK_DIAGNOSTIC_SURROGATE_OUTPUT_PATH = "diagnostic_datalink_surrogate_fits.png"
 DATALINK_SCIENTIFIC_AUDIT_PATH = "scientific_model_fit_audit.md"
 DATALINK_FIT_REPORT_PATH = "datalink_fit_method_report.md"
@@ -886,52 +861,32 @@ DATALINK_FIT_MODEL_SLUGS = {
     "faessler_datalink_fit": "faessler",
     "kirschstein_datalink_fit": "kirschstein",
 }
-DATALINK_FIT_MODEL_LABELS = {
-    "zeng_datalink_fit": "Zeng DataLink fit",
-    "faessler_datalink_fit": "Faessler drag-constrained DataLink fit",
-    "kirschstein_datalink_fit": "Kirschstein component DataLink fit",
-}
-DATALINK_EMPIRICAL_COMPANION_MODELS = (
-    "hybrid_calibrated_zeng_fit",
-    "faessler_drag_constrained_zeng",
-    "kirschstein_component_benchmark",
-)
 DATALINK_DATASHEET_UTIP_RANGE_MS = (120.0, 230.0)
 DATALINK_FIRFIR_LAMBDA_ACCEPTANCE_N_PER_MS = (0.3, 3.5)
 DATALINK_BODY_CD_MAX = 5.0
 
-FIRFIR_STADIUM_LAP_VOLTAGES_V = [
-    23.00,
-    22.9,
-    22.8,
-    22.8,
-    22.7,
-    22.6,
-    22.6,
-    22.5,
-    22.4,
-    22.4,
-]
-FIRFIR_STADIUM_LAP_DISTANCE_M = 280.0
-FIRFIR_STADIUM_SPEED_MS = 6.0
-FIRFIR_STADIUM_CELLS = 6
-FIRFIR_STADIUM_SAG_OPTIONS_PER_CELL = [0.03, 0.10, 0.20]
-FIRFIR_STADIUM_DEFAULT_SAG_PER_CELL = 0.10
-FIRFIR_DATALINK_QC_EXPECTED_6MS_PPH_BAND = (0.89, 0.92)
-FIRFIR_DATALINK_QC_DEFAULT_6MS_PPH = 0.914
+
 FIRFIR_BATTERY_CELLS = 6
 FIRFIR_BATTERY_MEASURED_USABLE_AH = 25.2
 FIRFIR_BATTERY_DATASHEET_NOMINAL_AH = 27.0
 FIRFIR_BATTERY_NOMINAL_V_PER_CELL = 3.7
+# July3 Firfir bataryasinda datasheet 27 Ah'in yalnizca 25.2 Ah'i kullanilabilir
+# olculdu. Bu usable oranini (eski CF yerine) girilen tum bataryalara uygularak
+# benzer, model-tabanli bir davranis elde ediyoruz.
+FIRFIR_BATTERY_USABLE_FRACTION = (
+    FIRFIR_BATTERY_MEASURED_USABLE_AH / FIRFIR_BATTERY_DATASHEET_NOMINAL_AH
+)
+# Firfir gercek pili 6S2P (12 hucre = "12 pil"). Akim/enerji sensoru YALNIZCA TEK
+# paralel kola (6S1P) takiliydi; bu yuzden DataLink loglarindan OLCULEN hover gucu
+# (~758 W) ve entegre enerji (~490 Wh / usable ~559 Wh) gercek aracin YARISIDIR.
+# Gercek arac degerleri = olculen x FIRFIR_BATTERY_PARALLEL_ARMS:
+#   hover ~1516 W (teorik 1124 W'in ustunde -> fiziksel olarak dogru),
+#   full pack usable ~1119 Wh, hover suresi 40 dk (oran degismez, kol-bagimsiz).
+# NOT: P/Ph tune matematigi bir ORAN oldugundan kol carpani orada sadelesir; bu sabit
+# yalnizca fit-kaynagi (Firfir) MUTLAK degerlerini fiziksel gercege tasimak icindir.
+FIRFIR_BATTERY_PARALLEL_ARMS = 2
 
 # Rest-voltage anchors from ham_ucus_verileri.md for the 6S Li-ion solid-state pack.
-FIRFIR_REST_VOLTAGE_SOC_ANCHORS = [
-    (4.178, 100.0),
-    (3.815, 100.0 * (1.0 - 11.6 / 25.2)),
-    (3.718, 100.0 * (1.0 - 14.9 / 25.2)),
-    (3.643, 100.0 * (1.0 - 17.7 / 25.2)),
-    (3.360, 0.0),
-]
 
 
 def tip_speed_from_rpm(prop_diameter_inch, rpm):
@@ -951,38 +906,6 @@ def zeng_profile_ratio(speed_ms, utip_ms):
     if utip_ms <= 0:
         raise ValueError("Utip must be positive.")
     return 1.0 + 3.0 * (speed_ms**2) / (utip_ms**2)
-
-
-def fit_bauersfeld_anchored_zeng(
-    v_endurance, v_range, v0_ms, utip_ms, p_endurance_ratio=0.914, p_range_ratio=1.092
-):
-    be = zeng_profile_ratio(v_endurance, utip_ms)
-    br = zeng_profile_ratio(v_range, utip_ms)
-    ie = zeng_induced_ratio(v_endurance, v0_ms)
-    ir = zeng_induced_ratio(v_range, v0_ms)
-
-    # p(V)=f0*profile_ratio(V)+(1-f0)*induced_ratio(V)+k_par*V^3
-    a11 = be - ie
-    a12 = v_endurance**3
-    a21 = br - ir
-    a22 = v_range**3
-    y1 = p_endurance_ratio - ie
-    y2 = p_range_ratio - ir
-    det = a11 * a22 - a12 * a21
-    if abs(det) < 1e-12:
-        raise ValueError("Bauersfeld-anchored Zeng fit is singular.")
-
-    f0 = (y1 * a22 - a12 * y2) / det
-    k_par = (a11 * y2 - y1 * a21) / det
-    return {
-        "v0_ms": v0_ms,
-        "utip_ms": utip_ms,
-        "f0": f0,
-        "induced_fraction": 1.0 - f0,
-        "k_par": k_par,
-        "p_endurance_ratio": p_endurance_ratio,
-        "p_range_ratio": p_range_ratio,
-    }
 
 
 def power_ratio_bauersfeld_anchored_zeng(speed_ms, params):
@@ -1041,15 +964,6 @@ def build_theoretical_zeng_params(model_profile, hover_power_reference_w):
     }
 
 
-def power_theoretical_zeng(speed_ms, params):
-    v = max(0.0, speed_ms)
-    profile = params["p0_mech"] * zeng_profile_ratio(v, params["utip_ms"])
-    induced = params["pi_mech"] * zeng_induced_ratio(v, params["v0_ms"])
-    parasite = 0.5 * params["rho"] * params["cda_body_m2"] * v**3
-    total_mech = profile + induced + parasite
-    return total_mech / params["eta_propulsion"] + params["p_hotel_w"]
-
-
 def _percentile(sorted_values, fraction):
     if not sorted_values:
         return None
@@ -1072,19 +986,6 @@ def _median(values):
 
 def _sorted_unique_strings(values):
     return sorted({str(value) for value in values if value not in (None, "")})
-
-
-def soc_from_rest_cell_voltage(v_cell):
-    pairs = sorted(FIRFIR_REST_VOLTAGE_SOC_ANCHORS)
-    if v_cell <= pairs[0][0]:
-        return pairs[0][1]
-    if v_cell >= pairs[-1][0]:
-        return pairs[-1][1]
-    for (v0, soc0), (v1, soc1) in zip(pairs, pairs[1:]):
-        if v0 <= v_cell <= v1:
-            t = (v_cell - v0) / (v1 - v0)
-            return soc0 + t * (soc1 - soc0)
-    return pairs[-1][1]
 
 
 def find_attitude_log_path(profile):
@@ -1134,173 +1035,6 @@ def load_attitude_rows(csv_path):
                 )
     rows.sort(key=lambda row: row["time_s"])
     return rows
-
-
-def estimate_cda_from_attitude_log(
-    profile, min_speed_ms=3.0, max_speed_ms=7.2, max_accel_ms2=0.8, max_tilt_deg=25.0
-):
-    path = find_attitude_log_path(profile)
-    if not path:
-        return None
-
-    rows = load_attitude_rows(path)
-    if len(rows) < 5:
-        return None
-
-    rho = profile.get("rho", 1.225)
-    mass_kg = profile["mass_kg"]
-    weight_n = mass_kg * 9.81
-    cda_values = []
-    used_speeds = []
-    used_accels = []
-    bin_samples = {}
-    bin_width_ms = 0.5
-
-    for idx, row in enumerate(rows):
-        if idx == 0 or idx == len(rows) - 1:
-            accel_xy = float("inf")
-        else:
-            prev_row = rows[idx - 1]
-            next_row = rows[idx + 1]
-            dt = next_row["time_s"] - prev_row["time_s"]
-            if dt <= 0 or dt > 1.0:
-                accel_xy = float("inf")
-            else:
-                ax = (next_row["vx_ms"] - prev_row["vx_ms"]) / dt
-                ay = (next_row["vy_ms"] - prev_row["vy_ms"]) / dt
-                accel_xy = math.hypot(ax, ay)
-
-        speed_ms = math.hypot(row["vx_ms"], row["vy_ms"])
-        pitch_rad = math.radians(row["pitch_deg"])
-        roll_rad = math.radians(row["roll_deg"])
-        cos_tilt = math.cos(pitch_rad) * math.cos(roll_rad)
-        tilt_rad = math.acos(max(-1.0, min(1.0, cos_tilt)))
-        tilt_deg = math.degrees(tilt_rad)
-
-        if not (min_speed_ms <= speed_ms <= max_speed_ms):
-            continue
-        if accel_xy > max_accel_ms2:
-            continue
-        if tilt_deg > max_tilt_deg:
-            continue
-
-        cda = 2.0 * weight_n * math.tan(tilt_rad) / (rho * speed_ms**2)
-        if math.isfinite(cda) and 0.02 <= cda <= 5.0:
-            cda_values.append(cda)
-            used_speeds.append(speed_ms)
-            used_accels.append(accel_xy)
-            bin_center = round(
-                (math.floor(speed_ms / bin_width_ms) + 0.5) * bin_width_ms, 2
-            )
-            bin_samples.setdefault(bin_center, []).append(cda)
-
-    if len(cda_values) < 20:
-        return {
-            "path": path,
-            "raw_count": len(rows),
-            "sample_count": len(cda_values),
-            "error": "not_enough_filtered_samples",
-        }
-
-    cda_sorted = sorted(cda_values)
-    speed_sorted = sorted(used_speeds)
-    accel_sorted = sorted(used_accels)
-    p10 = _percentile(cda_sorted, 0.10)
-    p90 = _percentile(cda_sorted, 0.90)
-    trimmed = [value for value in cda_values if p10 <= value <= p90]
-    cda_m2 = _median(trimmed)
-    speed_bins = []
-    for bin_center, values in sorted(bin_samples.items()):
-        if len(values) < 30:
-            continue
-        sorted_values = sorted(values)
-        b10 = _percentile(sorted_values, 0.10)
-        b90 = _percentile(sorted_values, 0.90)
-        btrim = [value for value in sorted_values if b10 <= value <= b90]
-        speed_bins.append(
-            {
-                "speed_ms": bin_center,
-                "sample_count": len(values),
-                "cda_m2": _median(btrim),
-                "cda_p25_m2": _percentile(sorted_values, 0.25),
-                "cda_p75_m2": _percentile(sorted_values, 0.75),
-            }
-        )
-
-    return {
-        "path": path,
-        "raw_count": len(rows),
-        "sample_count": len(cda_values),
-        "rho": rho,
-        "cda_m2": cda_m2,
-        "cda_p25_m2": _percentile(cda_sorted, 0.25),
-        "cda_p75_m2": _percentile(cda_sorted, 0.75),
-        "speed_median_ms": _median(used_speeds),
-        "speed_p95_ms": _percentile(speed_sorted, 0.95),
-        "accel_p95_ms2": _percentile(accel_sorted, 0.95),
-        "min_speed_ms": min_speed_ms,
-        "max_accel_ms2": max_accel_ms2,
-        "speed_bins": speed_bins,
-    }
-
-
-def estimate_stadium_voltage_anchor(hover_power_w, battery_wh, correction_factor):
-    voltages = FIRFIR_STADIUM_LAP_VOLTAGES_V
-    speed_ms = FIRFIR_STADIUM_SPEED_MS
-    hover_20_min = battery_wh / hover_power_w * 60.0 * correction_factor
-    hover_range_if_ratio_1 = speed_ms * 3.6 * hover_20_min / 60.0
-    candidates = []
-
-    span_options = [
-        (
-            "nine_intervals",
-            (len(voltages) - 1) * FIRFIR_STADIUM_LAP_DISTANCE_M / 1000.0,
-        ),
-        ("full_10_laps", len(voltages) * FIRFIR_STADIUM_LAP_DISTANCE_M / 1000.0),
-    ]
-    for sag_per_cell in FIRFIR_STADIUM_SAG_OPTIONS_PER_CELL:
-        rest_soc = [
-            soc_from_rest_cell_voltage(v / FIRFIR_STADIUM_CELLS + sag_per_cell)
-            for v in voltages
-        ]
-        delta_soc = rest_soc[0] - rest_soc[-1]
-        if delta_soc <= 0:
-            continue
-        for label, distance_km in span_options:
-            range_20_km = distance_km * 80.0 / delta_soc
-            ratio = hover_range_if_ratio_1 / range_20_km
-            candidates.append(
-                {
-                    "speed_ms": speed_ms,
-                    "power_ratio": ratio,
-                    "sag_per_cell": sag_per_cell,
-                    "span_label": label,
-                    "distance_km": distance_km,
-                    "soc_start": rest_soc[0],
-                    "soc_end": rest_soc[-1],
-                    "delta_soc": delta_soc,
-                    "range_20_km": range_20_km,
-                }
-            )
-
-    preferred = None
-    for candidate in candidates:
-        if (
-            candidate["span_label"] == "nine_intervals"
-            and abs(candidate["sag_per_cell"] - FIRFIR_STADIUM_DEFAULT_SAG_PER_CELL)
-            < 1e-9
-        ):
-            preferred = candidate
-            break
-    if preferred is None and candidates:
-        preferred = candidates[0]
-
-    return {
-        "preferred": preferred,
-        "candidates": candidates,
-        "hover_20_min": hover_20_min,
-        "hover_range_if_ratio_1": hover_range_if_ratio_1,
-    }
 
 
 def _parse_datalink_filename_times(path):
@@ -1551,24 +1285,6 @@ def _gps_week_ms_to_utc(gps_week, gps_ms):
     return datetime(1980, 1, 6, tzinfo=timezone.utc) + timedelta(
         weeks=int(gps_week), milliseconds=float(gps_ms)
     )
-
-
-def find_ardupilot_bin_log_paths(log_dir=None, name_filter=None):
-    paths = []
-    if log_dir:
-        paths.extend(sorted(Path(log_dir).glob("*.BIN")))
-    else:
-        for pattern in FIRFIR_ARDUPILOT_BIN_GLOBS:
-            paths.extend(
-                sorted(
-                    Path().glob(pattern)
-                    if not re.match(r"^[A-Za-z]:", pattern)
-                    else Path(pattern[0:3]).glob(pattern[3:])
-                )
-            )
-    if name_filter:
-        paths = [path for path in paths if path.name == name_filter]
-    return sorted(paths)
 
 
 def read_ardupilot_bin_time_span(bin_path):
@@ -2053,204 +1769,6 @@ def audit_scientific_fit_parameters(model_name, params, profile=None):
         "reasons": reasons,
         "warnings": warnings,
         "params": params,
-    }
-
-
-def build_datalink_pph_consistency_anchor(profile, voltage_anchor=None):
-    band_min, band_max = FIRFIR_DATALINK_QC_EXPECTED_6MS_PPH_BAND
-    target_speed = (
-        voltage_anchor["speed_ms"]
-        if voltage_anchor and voltage_anchor.get("speed_ms")
-        else FIRFIR_STADIUM_SPEED_MS
-    )
-    if voltage_anchor:
-        ratio = voltage_anchor.get("power_ratio")
-        if ratio is not None and band_min <= ratio <= band_max:
-            anchor = dict(voltage_anchor)
-            anchor["source"] = "stadium_voltage_anchor"
-            return anchor
-
-    target_ratio = profile.get(
-        "p_endurance_ratio",
-        FIRFIR_DATALINK_QC_DEFAULT_6MS_PPH,
-    )
-    anchor = {
-        "speed_ms": target_speed,
-        "power_ratio": target_ratio,
-        "source": "bauersfeld_log_6ms_sanity",
-        "expected_band": FIRFIR_DATALINK_QC_EXPECTED_6MS_PPH_BAND,
-    }
-    if voltage_anchor:
-        anchor["raw_voltage_anchor"] = voltage_anchor
-    return anchor
-
-
-def evaluate_datalink_pph_consistency(
-    observations, voltage_anchor=None, tolerance_ratio=0.15
-):
-    warnings = []
-    if not observations:
-        return {
-            "fit_allowed": False,
-            "warnings": ["no_datalink_observations"],
-            "nearest_6ms": None,
-        }
-    target_speed = voltage_anchor["speed_ms"] if voltage_anchor else 6.0
-    target_ratio = voltage_anchor["power_ratio"] if voltage_anchor else 0.905
-    near_6 = [
-        obs for obs in observations if abs(obs["speed_ms"] - target_speed) <= 0.75
-    ]
-    nearest = None
-    fit_allowed = True
-    if near_6:
-        nearest = min(near_6, key=lambda obs: abs(obs["speed_ms"] - target_speed))
-        error = nearest["power_ratio"] - target_ratio
-        if abs(error) > tolerance_ratio:
-            fit_allowed = False
-            warnings.append(
-                f"datalink_6ms_inconsistent: target={target_ratio:.3f}, "
-                f"datalink={nearest['power_ratio']:.3f}, err={error:+.3f}"
-            )
-    else:
-        warnings.append("no_6ms_datalink_consistency_point")
-
-    return {
-        "fit_allowed": fit_allowed,
-        "warnings": warnings,
-        "nearest_6ms": nearest,
-        "target_speed_ms": target_speed,
-        "target_power_ratio": target_ratio,
-        "tolerance_ratio": tolerance_ratio,
-    }
-
-
-def build_datalink_power_observations(
-    profile,
-    hover_power_w,
-    voltage_anchor=None,
-    datalink_root=None,
-    bin_paths=None,
-    session_date_hint=None,
-):
-    session_date_hint = (
-        session_date_hint
-        or profile.get("datalink_session_date_hint")
-        or os.environ.get(DATALINK_DATE_HINT_ENV)
-    )
-    normalized_date_hint = normalize_datalink_date_hint(session_date_hint)
-    sessions = find_datalink_session_dirs(datalink_root)
-    if normalized_date_hint:
-        sessions = filter_datalink_sessions_by_date_hint(sessions, normalized_date_hint)
-    if not sessions:
-        warning = "no_datalink_sessions"
-        if normalized_date_hint:
-            warning = f"no_datalink_sessions_for_date:{normalized_date_hint}"
-        return {
-            "fit_allowed": False,
-            "observations": [],
-            "raw_observations": [],
-            "qc": {"fit_allowed": False, "warnings": [warning]},
-            "overlaps": [],
-            "utip_ms": None,
-            "session_date_hint": normalized_date_hint,
-            "datalink_hover_power_w": None,
-        }
-
-    if bin_paths is None:
-        bin_paths = find_ardupilot_bin_log_paths()
-    bin_spans = [read_ardupilot_bin_time_span(path) for path in bin_paths]
-    overlaps = find_datalink_bin_overlaps(sessions, bin_spans)
-    if not overlaps:
-        warning = "no_datalink_bin_overlap"
-        if normalized_date_hint:
-            warning = f"no_datalink_bin_overlap_for_date:{normalized_date_hint}"
-        return {
-            "fit_allowed": False,
-            "observations": [],
-            "raw_observations": [],
-            "qc": {"fit_allowed": False, "warnings": [warning]},
-            "overlaps": [],
-            "utip_ms": None,
-            "session_date_hint": normalized_date_hint,
-            "datalink_hover_power_w": None,
-        }
-
-    joined_all = []
-    overlap_reports = []
-    prop_diameter_inch = profile["prop_diameter_inch"]
-    for overlap in overlaps[:3]:
-        datalink_samples = _parse_datalink_session_samples(
-            overlap["session"],
-            overlap["timestamp_mode"],
-            prop_diameter_inch,
-        )
-        datalink_samples = [
-            sample
-            for sample in datalink_samples
-            if overlap["start_utc"] <= sample["timestamp_utc"] <= overlap["end_utc"]
-        ]
-        flight_samples = read_ardupilot_flight_samples(
-            overlap["bin_span"]["path"],
-            overlap["start_utc"],
-            overlap["end_utc"],
-        )
-        joined = join_datalink_and_flight_samples(
-            datalink_samples, flight_samples, hover_power_w
-        )
-        joined_all.extend(joined)
-        overlap_reports.append(
-            {
-                "session": overlap["session"]["name"],
-                "bin": Path(overlap["bin_span"]["path"]).name,
-                "timestamp_mode": overlap["timestamp_mode"],
-                "overlap_s": overlap["overlap_s"],
-                "datalink_samples": len(datalink_samples),
-                "flight_samples": len(flight_samples),
-                "joined_samples": len(joined),
-            }
-        )
-
-    datalink_hover_power_w = estimate_datalink_hover_power(joined_all)
-    power_reference_w = datalink_hover_power_w or hover_power_w
-    raw_observations = build_datalink_speed_observations(
-        joined_all,
-        power_reference_w=power_reference_w,
-    )
-    qc_anchor = build_datalink_pph_consistency_anchor(profile, voltage_anchor)
-    qc = evaluate_datalink_pph_consistency(raw_observations, qc_anchor)
-    qc["anchor_source"] = qc_anchor.get("source")
-    qc["power_reference_source"] = (
-        "datalink_measured_hover"
-        if datalink_hover_power_w
-        else "static_hover_reference"
-    )
-    qc["power_reference_w"] = power_reference_w
-    if normalized_date_hint:
-        qc["session_date_hint"] = normalized_date_hint
-    if not datalink_hover_power_w:
-        qc["warnings"].insert(0, "no_datalink_hover_reference_using_static_hover")
-    if qc_anchor.get("raw_voltage_anchor"):
-        raw_anchor = qc_anchor["raw_voltage_anchor"]
-        band_min, band_max = qc_anchor["expected_band"]
-        qc["warnings"].insert(
-            0,
-            f"stadium_anchor_outside_expected_band: raw={raw_anchor['power_ratio']:.3f}, "
-            f"expected={band_min:.2f}-{band_max:.2f}; "
-            f"using_bauersfeld_log_target={qc_anchor['power_ratio']:.3f}",
-        )
-    accepted = raw_observations if qc["fit_allowed"] else []
-    utip_values = [obs["utip_ms"] for obs in accepted if obs.get("utip_ms")]
-    return {
-        "fit_allowed": qc["fit_allowed"],
-        "observations": accepted,
-        "raw_observations": raw_observations,
-        "qc": qc,
-        "overlaps": overlap_reports,
-        "utip_ms": _median(utip_values) if utip_values else None,
-        "joined_sample_count": len(joined_all),
-        "session_date_hint": normalized_date_hint,
-        "datalink_hover_power_w": datalink_hover_power_w,
-        "power_reference_w": power_reference_w,
     }
 
 
@@ -2802,11 +2320,6 @@ def run_datalink_measured_curve_analysis(
             model_fit["model_functions"],
             output_path=DATALINK_DIAGNOSTIC_SURROGATE_OUTPUT_PATH,
         )
-        graph_paths["battery"] = plot_battery_voltage_timeline(
-            battery_qc_report.get("rows", []),
-            sync_report,
-            output_path=f"{DATALINK_MEASURED_OUTPUT_PREFIX}_battery_voltage.png",
-        )
         graph_paths["audit"] = write_scientific_fit_audit(result)
 
     return result
@@ -2891,13 +2404,55 @@ def build_datalink_fitted_model_suite(
         correction_factor,
         battery_basis,
     )
+    # Sensor tek paralel kolda (6S1P) oldugundan OLCULEN hover gucu gercek aracin
+    # yarisidir. Fit-kaynagi (Firfir) MUTLAK degerlerini fiziksel gercege tasimak icin
+    # kol carpaniyla arac seviyesine cikariyoruz. (Reserve raporu ve P/Ph orani tek-kol
+    # tutarli kalir; 40 dk baseline degismez -- oran kol-bagimsizdir.)
+    measured_hover_power_w = result.get("measured_hover_power_w")
+    theoretical_hover_power_w = profile.get("theoretical_hover_power_w")
+    vehicle_measured_hover_power_w = (
+        measured_hover_power_w * FIRFIR_BATTERY_PARALLEL_ARMS
+        if measured_hover_power_w
+        else None
+    )
+    full_pack_usable_energy_wh = (
+        battery_basis.get("usable_energy_wh", 0.0) * FIRFIR_BATTERY_PARALLEL_ARMS
+    )
+    # Gerceklik/verim orani ARTIK arac seviyesinde: gercek hover / teorik hover.
+    # (Onceki tek-kol degeri teorigin altinda -> fiziksel olarak imkansizdi.)
+    if vehicle_measured_hover_power_w and theoretical_hover_power_w:
+        datalink_efficiency_ratio = (
+            vehicle_measured_hover_power_w / theoretical_hover_power_w
+        )
+    else:
+        datalink_efficiency_ratio = None
+    range_time_basis = {
+        "label": "6S 25.2Ah measured usable capacity / July3 calibrated hover",
+        "source": "3 Temmuz DataLink hover + 25.2Ah measured usable capacity",
+        "power_reference_w": power_reference_w,
+        "battery_basis": battery_basis,
+        "usable_energy_wh": battery_basis.get("usable_energy_wh", 0.0),
+        "reserve_fractions": battery_basis.get("reserve_fractions", {}),
+    }
+    if vehicle_measured_hover_power_w and full_pack_usable_energy_wh:
+        range_time_basis["equivalent_full_pack"] = {
+            "power_reference_w": vehicle_measured_hover_power_w,
+            "usable_energy_wh": full_pack_usable_energy_wh,
+            "parallel_arms": FIRFIR_BATTERY_PARALLEL_ARMS,
+            "note": "Equivalent only: energy and power are both multiplied by the same parallel-arm count.",
+        }
 
     return {
         "source_result": result,
         "empirical_curve": result.get("empirical_curve", {}),
         "observations": result.get("speed_bin_observations", []),
         "power_reference_w": power_reference_w,
-        "measured_hover_power_w": result.get("measured_hover_power_w"),
+        "measured_hover_power_w": measured_hover_power_w,
+        "vehicle_measured_hover_power_w": vehicle_measured_hover_power_w,
+        "full_pack_usable_energy_wh": full_pack_usable_energy_wh,
+        "battery_parallel_arms": FIRFIR_BATTERY_PARALLEL_ARMS,
+        "fit_theoretical_hover_power_w": theoretical_hover_power_w,
+        "datalink_efficiency_ratio": datalink_efficiency_ratio,
         "utip_ms": result.get("utip_ms"),
         "model_profile": result.get("model_profile", profile),
         "model_functions": model_functions,
@@ -2906,6 +2461,7 @@ def build_datalink_fitted_model_suite(
         "battery_qc_report": result.get("battery_qc_report", {}),
         "battery_basis": battery_basis,
         "battery_reserve_report": battery_reserve_report,
+        "range_time_basis": range_time_basis,
         "sync_report": result.get("sync_report", []),
     }
 
@@ -2915,7 +2471,21 @@ def print_datalink_fit_suite_summary(suite):
     battery = suite.get("battery_qc_report", {})
     reserve = suite.get("battery_reserve_report", {})
     print("\nDataLink fit suite:")
-    print(f"  P_hover(DataLink)={suite.get('power_reference_w', 0.0):.1f} W")
+    print(
+        f"  P_hover(DataLink, olculen tek kol)={suite.get('power_reference_w', 0.0):.1f} W"
+    )
+    if suite.get("vehicle_measured_hover_power_w"):
+        arms = suite.get("battery_parallel_arms", FIRFIR_BATTERY_PARALLEL_ARMS)
+        print(
+            f"  P_hover(gercek arac, 6S{arms}P = {arms} kol)"
+            f"={suite['vehicle_measured_hover_power_w']:.1f} W"
+            f"  [sensor {arms} koldan 1'ini olctu, x{arms}]"
+        )
+    if suite.get("full_pack_usable_energy_wh"):
+        print(
+            f"  Full pack usable (6S2P, 12 pil)={suite['full_pack_usable_energy_wh']:.1f} Wh"
+            "  [tek kol olcumu x2]"
+        )
     if suite.get("utip_ms") is not None:
         print(f"  Utip(DataLink RPM)={suite['utip_ms']:.1f} m/s")
     if empirical_curve.get("measured_points"):
@@ -2949,27 +2519,40 @@ def print_datalink_fit_suite_summary(suite):
             f"({basis.get('source', 'source not recorded')})"
         )
         print(
-            "  Hover check: "
+            "  Hover check (DataLink battery basis): "
             f"%20={reserve['hover_20_reserve_min']:.1f} dk, "
             f"%10={reserve['hover_10_reserve_min']:.1f} dk, "
             f"%5={reserve['hover_5_reserve_min']:.1f} dk, "
             f"pratik %0={reserve['hover_0_practical_min']:.1f} dk"
         )
         print(
-            "  Legacy input audit: "
+            "  Legacy input audit (not plotted): "
             f"{reserve['legacy_input_battery_wh']:.1f} Wh * "
-            f"CF {reserve['legacy_correction_factor']:.3f} -> "
-            f"%10 {reserve['legacy_hover_10_reserve_min']:.1f} dk "
-            "(DataLink range/time icin kullanilmiyor)"
+            f"CF {reserve['legacy_correction_factor']:.3f}; "
+            "grafik/tablo sureleri icin ustteki DataLink battery basis kullanilir."
         )
 
 
-def format_datalink_fit_method_report(suite, selected_models):
+def format_datalink_fit_method_report(
+    suite, selected_models, range_time_basis_override=None
+):
     result = suite.get("source_result", {})
     empirical = suite.get("empirical_curve", {})
     battery = suite.get("battery_qc_report", {})
-    reserve = suite.get("battery_reserve_report", {})
-    battery_basis = suite.get("battery_basis") or reserve.get("battery_basis", {})
+    range_time_basis = range_time_basis_override or suite.get("range_time_basis", {})
+    reserve = range_time_basis.get("reserve_report") or suite.get(
+        "battery_reserve_report", {}
+    )
+    battery_basis = (
+        range_time_basis.get("battery_basis")
+        or suite.get("battery_basis")
+        or reserve.get("battery_basis", {})
+    )
+    range_time_power_w = (
+        range_time_basis.get("power_reference_w")
+        or suite.get("power_reference_w")
+        or 0.0
+    )
     lines = [
         "# DataLink Fit Method Report",
         "",
@@ -2982,19 +2565,24 @@ def format_datalink_fit_method_report(suite, selected_models):
         f"- Stable measured-bin samples: `{empirical.get('sample_count_total', 0)}`",
         f"- BATT rows: `{battery.get('bat_rows', 0)}`",
         f"- BATT direct-current fit enabled: `{battery.get('direct_current_fit_enabled')}`",
-        f"- Range/time battery basis: `{battery_basis.get('label', 'not recorded')}`",
+        f"- Range/time basis: `{range_time_basis.get('label', battery_basis.get('label', 'not recorded'))}`",
+        f"- Range/time hover basis: `{range_time_power_w:.1f} W`",
         f"- Usable battery energy: `{battery_basis.get('usable_energy_wh', 0.0):.1f} Wh`",
         "",
         "BATT log is used as voltage/energy sanity evidence. Direct BATT current is not used as a fit target unless QC enables it.",
         "",
         "## Battery Basis for Flight Time",
         "",
-        "The fitted P(v) curves are converted to endurance/range with the July 3 Fırfır battery basis, not the legacy menu `battery_wh * CF` value.",
+        range_time_basis.get(
+            "description",
+            "The fitted P(v) curves are converted to endurance/range with the recorded range/time basis, not the legacy menu `battery_wh * CF` value.",
+        ),
         "",
         f"- Source: `{battery_basis.get('source', 'not recorded')}`",
         f"- Measured usable capacity: `{battery_basis.get('usable_capacity_ah', 0.0):.1f} Ah`",
         f"- Measured usable energy: `{battery_basis.get('usable_energy_wh', 0.0):.1f} Wh`",
         f"- Datasheet nominal energy: `{battery_basis.get('datasheet_nominal_energy_wh', 0.0):.1f} Wh`",
+        f"- Calibrated hover power: `{range_time_power_w:.1f} W`",
         f"- Hover %20 reserve: `{reserve.get('hover_20_reserve_min', 0.0):.1f} min`",
         f"- Hover %10 reserve: `{reserve.get('hover_10_reserve_min', 0.0):.1f} min`",
         f"- Hover %5 reserve: `{reserve.get('hover_5_reserve_min', 0.0):.1f} min`",
@@ -3072,7 +2660,7 @@ def format_datalink_fit_method_report(suite, selected_models):
             "",
             "- `*_empirical_interpolation.png` shows measured DataLink bins and within-range interpolation only.",
             "- `*_power_ratio.png` shows selected fitted model curves with DataLink measured points and Bauersfeld reference markers.",
-            "- `*_range_time.png` converts those same power ratios into range/endurance using the DataLink hover reference and the July 3 6S 25.2Ah usable battery basis.",
+            f"- `*_range_time.png` converts those same power ratios into range/endurance using `{range_time_basis.get('label', battery_basis.get('label', 'the selected range/time basis'))}`.",
             "- Speeds beyond the measured range are analytic extrapolation, not new measurements.",
             "",
         ]
@@ -3091,11 +2679,19 @@ def format_datalink_fit_method_report(suite, selected_models):
 
 
 def write_datalink_fit_method_report(
-    suite, selected_models, output_path=DATALINK_FIT_REPORT_PATH
+    suite,
+    selected_models,
+    output_path=DATALINK_FIT_REPORT_PATH,
+    range_time_basis_override=None,
 ):
     path = Path(output_path)
     path.write_text(
-        format_datalink_fit_method_report(suite, selected_models), encoding="utf-8"
+        format_datalink_fit_method_report(
+            suite,
+            selected_models,
+            range_time_basis_override=range_time_basis_override,
+        ),
+        encoding="utf-8",
     )
     return path.resolve()
 
@@ -3220,82 +2816,6 @@ def write_scientific_fit_audit(result, output_path=DATALINK_SCIENTIFIC_AUDIT_PAT
     return path.resolve()
 
 
-def print_datalink_measured_curve_report(result):
-    print("\n--- DATALINK MEASURED P(V) ANALIZI ---")
-    print(f"Log root: {result['log_root']}")
-    print(f"Date hint: {result.get('date_hint')}")
-    print(f"Joined samples accepted for fit: {result['joined_sample_count']}")
-    if result.get("measured_hover_power_w"):
-        print(
-            f"Measured DataLink hover reference: {result['measured_hover_power_w']:.1f} W"
-        )
-    print(f"DataLink RPM Utip: {result.get('utip_ms', 0.0):.1f} m/s")
-    print(f"Extrapolation starts above: {result['extrapolation_start_ms']:.1f} m/s")
-    empirical_curve = result.get("empirical_curve", {})
-    if empirical_curve.get("measured_points"):
-        print(
-            "Empirical DataLink P(v) measured range: "
-            f"{empirical_curve['min_speed_ms']:.2f}-{empirical_curve['max_speed_ms']:.2f} m/s; "
-            f"n={empirical_curve['sample_count_total']} stable samples"
-        )
-
-    print("\nSync report:")
-    for row in result["sync_report"]:
-        status = (
-            "ACCEPT" if row["accepted_for_fit"] else f"SKIP ({row['reject_reason']})"
-        )
-        print(
-            f"  {status}: {row['session']} + {row['bin']} "
-            f"{row['timestamp_mode']}, overlap={row['overlap_s']:.1f}s, "
-            f"joined={row['joined_samples']}"
-        )
-
-    battery = result["battery_qc_report"]
-    print("\nBattery QC:")
-    print(f"  BAT rows: {battery['bat_rows']}")
-    if battery.get("voltr_start_v") is not None:
-        print(
-            f"  VoltR: {battery['voltr_start_v']:.2f} -> "
-            f"{battery['voltr_end_v']:.2f} V "
-            f"(min={battery['voltr_min_v']:.2f}, max={battery['voltr_max_v']:.2f})"
-        )
-    print(f"  DataLink integrated energy: {battery['datalink_energy_wh']:.1f} Wh")
-    print(f"  BAT EnrgTot delta raw: {battery['battery_energy_delta_raw']:.4f}")
-    print(f"  Direct current fit enabled: {battery['direct_current_fit_enabled']}")
-    for warning in battery.get("warnings", []):
-        print(f"  [QC] {warning}")
-
-    print("\nMeasured speed bins:")
-    for obs in result["speed_bin_observations"]:
-        region = obs.get("extrapolation_region", "measured")
-        print(
-            f"  {obs['label']}: v={obs['speed_ms']:.2f} m/s, "
-            f"P/Ph={obs['power_ratio']:.4f}, P={obs['power_w']:.1f} W, "
-            f"n={obs['sample_count']}, raw_n={obs.get('raw_sample_count', 0)}, "
-            f"stable={obs['stable_fraction']:.2f}, bins={','.join(obs.get('source_bins', []))}, "
-            f"Utip={obs['utip_ms']:.1f}, {region}"
-        )
-
-    print("\nDiagnostic surrogate fit audit:")
-    for model_name, audit in result.get("fit_audit", {}).get("models", {}).items():
-        reasons = ",".join(audit.get("reasons", [])) or "-"
-        warnings = ",".join(audit.get("warnings", [])) or "-"
-        print(
-            f"  {model_name}: {audit['status']} reasons={reasons} warnings={warnings}"
-        )
-
-    print("\nDiagnostic surrogate residual summary:")
-    for name, rows in result["model_fit_residuals"].items():
-        mae = _mean_abs_error(rows)
-        if mae is not None:
-            print(f"  {name}: mean_abs_err={mae:.4f}")
-
-    if result.get("graph_paths"):
-        print("\nMeasured curve graph outputs:")
-        for path in result["graph_paths"].values():
-            print(f"  * {path}")
-
-
 def _fit_two_parameter_weighted(rows):
     s11 = s12 = s22 = b1 = b2 = 0.0
     for a1, a2, target, weight in rows:
@@ -3409,154 +2929,6 @@ def fit_observation_weighted_zeng(
         }
     )
     return params
-
-
-def fit_hybrid_calibrated_zeng(
-    v_endurance,
-    v_range,
-    v0_ms,
-    utip_ms,
-    hover_power_w,
-    attitude_fit,
-    voltage_anchor,
-    p_endurance_ratio=0.914,
-    p_range_ratio=1.092,
-):
-    # Hybrid model:
-    # - Tutar: Bauersfeld'in endurance/range guc oranlarini ana referans kabul eder.
-    # - Tutar: stadyum voltaj verisinden gelen 6 m/s civari P/Ph anchor'ini kullanir.
-    # - Tutar: logdaki farkli hiz bantlarindan pitch/roll kaynakli C_DA/k_drag prior'lari kullanir.
-    # - Tutmaz: P(v)'yi tamamen logdan olcmus saymaz; current/power olmadigi icin 10 m/s ustu halen extrapolation.
-    observations = [
-        {
-            "label": "Bauersfeld endurance",
-            "speed_ms": v_endurance,
-            "power_ratio": p_endurance_ratio,
-            "weight": 30.0,
-        },
-        {
-            "label": "Bauersfeld range",
-            "speed_ms": v_range,
-            "power_ratio": p_range_ratio,
-            "weight": 30.0,
-        },
-    ]
-    if voltage_anchor:
-        observations.append(
-            {
-                "label": "stadium voltage lap",
-                "speed_ms": voltage_anchor["speed_ms"],
-                "power_ratio": voltage_anchor["power_ratio"],
-                "weight": 8.0,
-            }
-        )
-
-    k_prior = None
-    k_prior_weight = 0.0
-    k_priors = []
-    if attitude_fit and attitude_fit.get("cda_m2"):
-        rho = attitude_fit.get("rho", 1.225)
-        for speed_bin in attitude_fit.get("speed_bins", []):
-            k_bin = 0.5 * rho * speed_bin["cda_m2"] / hover_power_w
-            k_priors.append(
-                {
-                    "speed_ms": speed_bin["speed_ms"],
-                    "k_par": k_bin,
-                    "weight": min(3.0, max(0.5, speed_bin["sample_count"] / 500.0)),
-                    "sample_count": speed_bin["sample_count"],
-                    "cda_m2": speed_bin["cda_m2"],
-                }
-            )
-        if not k_priors:
-            k_prior = 0.5 * rho * attitude_fit["cda_m2"] / hover_power_w
-            k_prior_weight = 6.0
-
-    params = fit_weighted_zeng_ratio(
-        v0_ms,
-        utip_ms,
-        observations,
-        k_prior=k_prior,
-        k_prior_speed_ms=voltage_anchor["speed_ms"] if voltage_anchor else 6.0,
-        k_prior_weight=k_prior_weight,
-        k_priors=k_priors,
-    )
-    params.update(
-        {
-            "fit_observations": observations,
-            "k_prior": k_prior,
-            "k_priors": k_priors,
-            "attitude_fit": attitude_fit,
-            "voltage_anchor": voltage_anchor,
-        }
-    )
-    return params
-
-
-def fit_pure_zeng_flight(
-    v0_ms, utip_ms, hover_power_w, theoretical_params, attitude_fit, voltage_anchor
-):
-    # Pure flight-fit Zeng model:
-    # - Tutar: P(0)/P_hover = 1 olacak sekilde normalize edilmis Zeng formunu kullanir.
-    # - Tutar: log hiz bantlarindan gelen C_DA bilgisini parasite/drag terimine koyar.
-    # - Tutar: stadyum voltaj verisiyle 6 m/s civari P/Ph noktasini yakalar.
-    # - Tutmaz: Bauersfeld endurance/range noktalarini zorla tutmaz.
-    # - Tutmaz: U_tip, v0 gibi rotor parametrelerini serbest fit etmez; mevcut logda bunlar ayirt edilemez.
-    if attitude_fit and attitude_fit.get("cda_m2"):
-        if attitude_fit.get("speed_bins"):
-            total_weight = 0.0
-            weighted_cda = 0.0
-            for speed_bin in attitude_fit["speed_bins"]:
-                weight = min(3.0, max(0.5, speed_bin["sample_count"] / 500.0))
-                weighted_cda += weight * speed_bin["cda_m2"]
-                total_weight += weight
-            cda_m2 = weighted_cda / total_weight
-            cda_source = "attitude_log_speed_bins"
-        else:
-            cda_m2 = attitude_fit["cda_m2"]
-            cda_source = "attitude_log"
-    else:
-        cda_m2 = theoretical_params["cda_body_m2"]
-        cda_source = "theoretical_profile"
-
-    k_par = 0.5 * theoretical_params["rho"] * cda_m2 / hover_power_w
-
-    if voltage_anchor:
-        speed_ms = voltage_anchor["speed_ms"]
-        induced = zeng_induced_ratio(speed_ms, v0_ms)
-        profile = zeng_profile_ratio(speed_ms, utip_ms)
-        denom = profile - induced
-        if abs(denom) > 1e-12:
-            f0_raw = (
-                voltage_anchor["power_ratio"] - induced - k_par * speed_ms**3
-            ) / denom
-            f0 = max(0.0, min(1.0, f0_raw))
-            f0_source = "stadium_voltage_anchor"
-        else:
-            f0_raw = None
-            f0 = theoretical_params["p0_mech"] / (
-                theoretical_params["p0_mech"] + theoretical_params["pi_mech"]
-            )
-            f0_source = "theoretical_hover_split"
-    else:
-        f0_raw = None
-        f0 = theoretical_params["p0_mech"] / (
-            theoretical_params["p0_mech"] + theoretical_params["pi_mech"]
-        )
-        f0_source = "theoretical_hover_split"
-
-    return {
-        "v0_ms": v0_ms,
-        "utip_ms": utip_ms,
-        "f0": f0,
-        "f0_raw": f0_raw,
-        "induced_fraction": 1.0 - f0,
-        "k_par": k_par,
-        "cda_m2": cda_m2,
-        "cda_source": cda_source,
-        "f0_source": f0_source,
-        "attitude_fit": attitude_fit,
-        "voltage_anchor": voltage_anchor,
-    }
 
 
 def estimate_faessler_drag_from_attitude_log(
@@ -3754,15 +3126,6 @@ def fit_faessler_drag_constrained_zeng(
 
     if observations is None:
         observations = []
-        if voltage_anchor:
-            observations.append(
-                {
-                    "label": "stadium voltage lap",
-                    "speed_ms": voltage_anchor["speed_ms"],
-                    "power_ratio": voltage_anchor["power_ratio"],
-                    "weight": 8.0,
-                }
-            )
 
     if len(observations) >= 2:
         rows = []
@@ -3933,47 +3296,6 @@ def fit_kirschstein_all_data(
     return params
 
 
-def fit_kirschstein_experimental_data(
-    profile, hover_power_reference_w, v0_ms, voltage_anchor, faessler_fit=None
-):
-    params = build_kirschstein_params(profile, hover_power_reference_w, faessler_fit)
-    observations = []
-    if voltage_anchor:
-        observations.append(
-            {
-                "label": "stadium voltage lap",
-                "speed_ms": voltage_anchor["speed_ms"],
-                "power_ratio": voltage_anchor["power_ratio"],
-                "weight": 8.0,
-            }
-        )
-
-    induced_relief_scale = 0.0
-    extra_cubic_k = 0.0
-    if observations:
-        obs = observations[0]
-        speed_ms = obs["speed_ms"]
-        base_ratio = (
-            power_kirschstein_component(speed_ms, params) / hover_power_reference_w
-        )
-        target_delta = obs["power_ratio"] - base_ratio
-        induced_relief_shape = zeng_induced_ratio(speed_ms, v0_ms) - 1.0
-        if abs(induced_relief_shape) > 1e-12:
-            induced_relief_scale = target_delta / induced_relief_shape
-        elif speed_ms > 0:
-            extra_cubic_k = target_delta / speed_ms**3
-
-    params.update(
-        {
-            "v0_ms": v0_ms,
-            "induced_relief_scale": induced_relief_scale,
-            "extra_cubic_k": extra_cubic_k,
-            "fit_observations": observations,
-        }
-    )
-    return params
-
-
 def power_ratio_kirschstein_all_data(speed_ms, params):
     v = max(0.0, speed_ms)
     base_ratio = (
@@ -3987,38 +3309,18 @@ def power_ratio_kirschstein_all_data(speed_ms, params):
     return max(0.01, base_ratio + correction)
 
 
-def zeng_fit_residuals(params, observations):
-    residuals = []
-    for obs in observations:
-        predicted = power_ratio_bauersfeld_anchored_zeng(obs["speed_ms"], params)
-        residuals.append(
-            {
-                "label": obs["label"],
-                "speed_ms": obs["speed_ms"],
-                "target": obs["power_ratio"],
-                "predicted": predicted,
-                "error": predicted - obs["power_ratio"],
-            }
-        )
-    return residuals
-
-
 def estimate_cda_from_pitch(speed_ms, pitch_deg, mass_kg, rho=1.225):
     weight_n = mass_kg * 9.81
     drag_n = weight_n * math.tan(math.radians(abs(pitch_deg)))
     return 2.0 * drag_n / (rho * speed_ms**2)
 
 
-def estimate_tilt_from_cda(speed_ms, cda_m2, mass_kg, rho=1.225):
-    weight_n = mass_kg * 9.81
-    drag_n = 0.5 * rho * cda_m2 * speed_ms**2
-    theta_rad = math.atan(drag_n / weight_n)
-    theta_deg = math.degrees(theta_rad)
-    drag_power_w = drag_n * speed_ms
-    return drag_n, theta_deg, drag_power_w
-
-
 def build_july3_firfir_battery_basis():
+    # Bu basis, sensorun olctugu TEK KOLA (6S1P) karsilik gelir; olculen hover gucu
+    # (~758 W) da tek koldur, bu yuzden ikisinin orani = 40 dk baseline dogru cikar.
+    # Gercek pack 6S2P (12 pil): full usable = usable_energy_wh x
+    # FIRFIR_BATTERY_PARALLEL_ARMS (~1119 Wh). Full pack'i tek basina kullanmak icin
+    # olculen hover gucunu de x2 yapmak GEREKIR yoksa sure ikiye katlanir.
     usable_energy_wh = (
         FIRFIR_BATTERY_CELLS
         * FIRFIR_BATTERY_NOMINAL_V_PER_CELL
@@ -4030,7 +3332,7 @@ def build_july3_firfir_battery_basis():
         * FIRFIR_BATTERY_DATASHEET_NOMINAL_AH
     )
     return {
-        "label": "6S 25.2Ah measured usable capacity",
+        "label": "6S1P (tek kol, sensor) 25.2Ah measured usable -- full pack 6S2P x2",
         "source": "3 Temmuz battery analysis + ham_ucus_verileri.md",
         "cells": FIRFIR_BATTERY_CELLS,
         "nominal_v_per_cell": FIRFIR_BATTERY_NOMINAL_V_PER_CELL,
@@ -4038,6 +3340,29 @@ def build_july3_firfir_battery_basis():
         "usable_energy_wh": usable_energy_wh,
         "datasheet_nominal_capacity_ah": FIRFIR_BATTERY_DATASHEET_NOMINAL_AH,
         "datasheet_nominal_energy_wh": nominal_energy_wh,
+        "reserve_fractions": {
+            "20": 0.80,
+            "10": 0.90,
+            "5": 0.95,
+            "0_practical": 1.00,
+        },
+    }
+
+
+def build_applied_battery_basis(nominal_energy_wh, label=None):
+    """Girilen bataryanin datasheet (nominal) enerjisini, July3 Firfir modelinin
+    olctugu usable orani (FIRFIR_BATTERY_USABLE_FRACTION ~ 25.2/27) ve ayni rezerv
+    fraksiyonlari ile kullanilabilir enerjiye olcekler. Boylece kullanicinin
+    girdigi her batarya, eski CF yerine model-tabanli ve July3 ile tutarli davranir.
+    """
+    usable_energy_wh = nominal_energy_wh * FIRFIR_BATTERY_USABLE_FRACTION
+    return {
+        "label": label
+        or f"Girilen batarya usable ({FIRFIR_BATTERY_USABLE_FRACTION * 100:.1f}% nominal, July3 orani)",
+        "source": "July3 Firfir usable orani girilen bataryaya olceklendi",
+        "usable_energy_wh": usable_energy_wh,
+        "datasheet_nominal_energy_wh": nominal_energy_wh,
+        "usable_fraction_of_nominal": FIRFIR_BATTERY_USABLE_FRACTION,
         "reserve_fractions": {
             "20": 0.80,
             "10": 0.90,
@@ -4216,11 +3541,6 @@ def build_speed_model_profile(
     return profile
 
 
-def legacy_ratio_factory(v_endurance, v_range):
-    a, b = calculate_poly_coeffs(v_endurance, v_range)
-    return lambda v: max(0.01, a * v**2 + b * v + 1.0)
-
-
 def make_speed_sweep(
     model_functions, hover_power_w, battery_wh, correction_factor, battery_basis=None
 ):
@@ -4239,94 +3559,6 @@ def make_speed_sweep(
             for speed in speeds
         ]
     return sweep
-
-
-def plot_range_time_vs_speed(
-    model_functions,
-    hover_power_w,
-    battery_wh,
-    correction_factor,
-    output_path="range_time_vs_speed.png",
-    battery_basis=None,
-):
-    import matplotlib.pyplot as plt
-
-    sweep = make_speed_sweep(
-        model_functions,
-        hover_power_w,
-        battery_wh,
-        correction_factor,
-        battery_basis=battery_basis,
-    )
-    fig, (ax_range, ax_time) = plt.subplots(2, 1, figsize=(10, 8), sharex=True)
-    for name, rows in sweep.items():
-        speeds = [r["speed_ms"] for r in rows]
-        ax_range.plot(speeds, [r["range_10_km"] for r in rows], label=name)
-        ax_time.plot(speeds, [r["time_10_min"] for r in rows], label=name)
-    ax_range.set_ylabel("%10 rezerv menzil [km]")
-    ax_range.grid(True, alpha=0.3)
-    ax_range.legend(fontsize=8)
-    ax_time.set_xlabel("Hiz [m/s]")
-    ax_time.set_ylabel("%10 rezerv sure [dk]")
-    ax_time.grid(True, alpha=0.3)
-    fig.tight_layout()
-    fig.savefig(output_path, dpi=180)
-    return Path(output_path).resolve()
-
-
-def plot_power_ratio_vs_speed(
-    model_functions,
-    v_endurance,
-    v_range,
-    pitch_speed=None,
-    pitch_deg=None,
-    output_path="power_ratio_vs_speed.png",
-    extra_points=None,
-    show_bauersfeld_points=True,
-):
-    import matplotlib.pyplot as plt
-
-    speeds = [0.1 + i * (24.9 / 249.0) for i in range(250)]
-    fig, ax = plt.subplots(figsize=(10, 6))
-    for name, ratio_fn in model_functions.items():
-        ax.plot(speeds, [ratio_fn(s) for s in speeds], label=name)
-    ax.scatter([0.0], [1.0], marker="o", color="black", label="hover")
-    if show_bauersfeld_points:
-        ax.scatter(
-            [v_endurance],
-            [0.914],
-            marker="s",
-            color="green",
-            label="Bauersfeld endurance",
-        )
-        ax.scatter(
-            [v_range], [1.092], marker="D", color="red", label="Bauersfeld range"
-        )
-    if extra_points:
-        for point in extra_points:
-            ax.scatter(
-                [point["speed_ms"]],
-                [point["power_ratio"]],
-                marker=point.get("marker", "x"),
-                color=point.get("color", "purple"),
-                label=point.get("label", "extra point"),
-            )
-    if pitch_speed and pitch_deg:
-        ax.axvline(pitch_speed, linestyle="--", color="gray", alpha=0.7)
-        ax.annotate(
-            f"pitch-derived CdA point: {pitch_speed:.2f} m/s, {pitch_deg:.0f} deg",
-            xy=(pitch_speed, 1.0),
-            xytext=(pitch_speed + 0.7, 1.25),
-            arrowprops={"arrowstyle": "->", "color": "gray"},
-            fontsize=8,
-        )
-    ax.set_xlabel("Hiz [m/s]")
-    ax.set_ylabel("P(V) / P_hover")
-    ax.grid(True, alpha=0.3)
-    ax.legend(fontsize=8)
-    fig.tight_layout()
-    fig.savefig(output_path, dpi=180)
-    return Path(output_path).resolve()
 
 
 def build_bauersfeld_reference_points(v_endurance, v_range):
@@ -4363,7 +3595,6 @@ def datalink_graph_output_paths(selected_models):
         "empirical": f"datalink_{slug}_empirical_interpolation.png",
         "power": f"datalink_{slug}_power_ratio.png",
         "range": f"datalink_{slug}_range_time.png",
-        "battery": f"datalink_{slug}_battery_voltage.png",
     }
 
 
@@ -4553,7 +3784,8 @@ def plot_datalink_range_time_comparison(
     ax_range.set_ylabel("%10 rezerv menzil [km]")
     if battery_basis:
         ax_range.set_title(
-            f"Range/time basis: {battery_basis.get('label', 'battery usable capacity')}"
+            f"Range/time basis: {battery_basis.get('label', 'battery usable capacity')} / "
+            f"P_hover={hover_power_w:.1f} W"
         )
     ax_range.grid(True, alpha=0.3)
     ax_range.legend(fontsize=8)
@@ -4591,16 +3823,6 @@ def plot_datalink_range_time_comparison(
 # 8) datalink_empirical_pv:
 #    Tutar: 3 Temmuz DataLink + ArduPilot measured speed bins.
 #    Tutmaz: olcum araligi disina deger uydurmaz.
-MODEL_SELECTIONS = {
-    "1": "legacy_parabola_baseline",
-    "2": "bauersfeld_anchored_zeng",
-    "3": "theoretical_zeng_pitch_CDA",
-    "4": "hybrid_calibrated_zeng_fit",
-    "5": "pure_zeng_flight_fit",
-    "6": "faessler_drag_constrained_zeng",
-    "7": "kirschstein_component_benchmark",
-    "8": "datalink_empirical_pv",
-}
 
 
 def parse_datalink_model_selection(raw):
@@ -4669,115 +3891,6 @@ def print_datalink_model_descriptions():
         "  Her seçimde DataLink interpolasyon, P(V)/P_hover ve menzil/süre grafikleri üretilir."
     )
     print("  Bauersfeld yalnızca referans marker'dır; fit hedefi değildir.")
-
-
-def parse_model_selection(raw):
-    raw = (raw or "4").strip().lower()
-    if raw in {"all", "hepsi", "*"}:
-        return list(MODEL_SELECTIONS.values())
-
-    selected = []
-    for part in raw.replace(";", ",").split(","):
-        key = part.strip().lower()
-        if not key:
-            continue
-        model_name = MODEL_SELECTIONS.get(key)
-        if model_name is None and key in MODEL_SELECTIONS.values():
-            model_name = key
-        if model_name and model_name not in selected:
-            selected.append(model_name)
-    return selected or ["hybrid_calibrated_zeng_fit"]
-
-
-def model_selection_requires_theoretical(raw):
-    selected = parse_model_selection(raw)
-    return any(
-        name in {"theoretical_zeng_pitch_CDA", "pure_zeng_flight_fit"}
-        for name in selected
-    )
-
-
-def print_model_descriptions():
-    print("\n--- Model Se\u00e7imi ---")
-    print("  1) legacy_parabola_baseline")
-    print(
-        "       Kaynak: eski menzil1 parabola baseline; hover, endurance ve range noktalarindan gecer."
-    )
-    print(
-        "       Fit: iki parabol katsayisi, yalnizca P(0)=1, P(ve)=0.914, P(vr)=1.092 kosullarina gore."
-    )
-    print(
-        "       Kullanim: geriye donuk karsilastirma icin; yeni araclarda fiziksel extrapolation kaniti sayilmaz."
-    )
-    print("  2) bauersfeld_anchored_zeng")
-    print(
-        "       Kaynak: Bauersfeld optimum hiz/guc oranlari + Zeng benzeri induced/profile/parasite sekli."
-    )
-    print(
-        "       Fit: f0=P_profile/Ph ve k_par; Utip, vi,h, kutle, disk alani olcum/giris olarak kalir."
-    )
-    print(
-        "       Kullanim: anchor tabanli analitik extrapolation; log verisi kullanmaz, dogrulama ayridir."
-    )
-    print("  3) theoretical_zeng_pitch_CDA")
-    print("       Kaynak: Zeng rotor terimleri + pitch/tilt'ten turetilen body C_DA.")
-    print(
-        "       Fit: ana serbest fit yok; rotor/geometri/eta/C_DA dogrudan giris veya log-derived."
-    )
-    print(
-        "       Kullanim: fizik sanity-check; P(0)/P_hover farki buyukse ana menzil modeli olarak guvenilmez."
-    )
-    print("  4) hybrid_calibrated_zeng_fit  [\u00d6neri]")
-    print(
-        "       Kaynak: Bauersfeld anchor + stadyum voltaj turu + attitude log C_DA hiz bantlari."
-    )
-    print(
-        "       Fit: f0 ve k_par agirlikli least-squares; Utip/vi,h sabit, C_DA logdan prior olarak girer."
-    )
-    print(
-        "       Kullanim: ana operasyonel extrapolation adayi; residual ve anchor hatalariyla izlenmeli."
-    )
-    print("  5) pure_zeng_flight_fit")
-    print(
-        "       Kaynak: normalize Zeng sekli + attitude-derived C_DA + stadyum 6 m/s anchor'i."
-    )
-    print(
-        "       Fit: k_par dogrudan C_DA'dan, f0 tek anchor'dan; Bauersfeld endurance/range zorlanmaz."
-    )
-    print(
-        "       Kullanim: Bauersfeld'den bagimsiz flight-fit bakisi; tek anchor'a fazla guvenmemek gerekir."
-    )
-    print("  6) faessler_drag_constrained_zeng")
-    print(
-        "       Kaynak: Faessler rotor-drag fikri + attitude log tilt kuvveti + Zeng induced/profile sekli."
-    )
-    print(
-        "       Fit: body C_DA ve lambda logdan; gerekirse f0 ve drag_scale agirlikli fit edilir."
-    )
-    print(
-        "       Kullanim: body drag ile rotor drag ayrimini test eder; lambda/Cd mantikli aralikta kalmali."
-    )
-    print("  7) kirschstein_component_benchmark")
-    print(
-        "       Kaynak: bilesen tabanli Pair + Plift + Pprofile + hotel power ayrimi."
-    )
-    print(
-        "       Fit: normal benchmark modunda az/hic fit; DataLink diagnostic modda induced relief ve cubic correction."
-    )
-    print(
-        "       Kullanim: Zeng ailesine karsi fizik benchmark'i; cok esnek fitlenirse bagimsiz dogrulama sayilmaz."
-    )
-    print("  8) datalink_empirical_pv")
-    print(
-        "       Kaynak: 3 Temmuz DataLink guc/RPM + ArduPilot hiz/attitude zaman eslesmesi."
-    )
-    print(
-        "       Fit: model fit etmez; stable speed bin medyanlarini ve lineer aralik ici interpolasyonu raporlar."
-    )
-    print(
-        "       Kullanim: olcum katmani ve model kalibrasyon hedefi. Tek secilirse 4/6/7 analitik extrapolation da eklenir."
-    )
-    print("  Birden fazla model icin virgul kullan: 2,4,5,6,7,8 veya all")
 
 
 def run_custom_speed_models(
@@ -4886,11 +3999,6 @@ def run_custom_speed_models(
                 output_paths["range"],
                 battery_basis=battery_basis,
             )
-            graph_paths["battery"] = plot_battery_voltage_timeline(
-                suite.get("battery_qc_report", {}).get("rows", []),
-                suite.get("sync_report", []),
-                output_path=output_paths["battery"],
-            )
             print("\nGrafik ciktilari:")
             for path in graph_paths.values():
                 print(f"* {path}")
@@ -4921,17 +4029,17 @@ def run_preset_fit_apply_to_vehicle(
     make_graph,
     datalink_log_root=None,
     datalink_date_hint=DATALINK_MEASURED_CURVE_DATE_HINT,
+    apply_sonuc=None,
 ):
-    # Secenek 4: DataLink/log fit'i HER ZAMAN fit_profile uzerinden yapar (test
-    # ucusunu ucuran gercek arac, orn. Firfir preset); RPM->Utip donusumu ve
-    # teorik Zeng parametreleri boylece gercek test aracinin fiziksel
-    # olculerini kullanir. Fit tamamlandiktan sonra elde edilen P(v)/P_hover
-    # fonksiyonlari kullanicinin kodun basinda girdigi aracin
-    # (apply_hover_power_w / apply_battery_wh / apply_correction_factor)
-    # degerlerine uygulanir; battery_basis=None ile July3 sabit batarya
-    # yerine kullanicinin kendi girdigi batarya/CF kullanilir.
-    v_endurance = fit_sonuc["optimal_endurance_speed_ms"]
-    v_range = fit_sonuc["optimal_speed_ms"]
+    # Model (P/Ph oran egrisi) HER ZAMAN fit_profile uzerinden, Firfir DataLink
+    # verisiyle tune edilir -- bu, tune edilmis normalize aerodinamik imza (sekil).
+    # ANA SONUC (mutlak guc/sure/menzil) ise kullanicinin girdigi aracin KENDI hover
+    # gucu + bataryasi ile hesaplanir; boylece farkli arac girisleri farkli grafik
+    # uretir. Firfir July3 calibrated basis yalnizca "tune kaynagi" bilgisi olarak
+    # gosterilir (calibrated_* degiskenleri, sonuc degil).
+    apply_sonuc = apply_sonuc or fit_sonuc
+    v_endurance = apply_sonuc["optimal_endurance_speed_ms"]
+    v_range = apply_sonuc["optimal_speed_ms"]
 
     selected = parse_datalink_model_selection(model_choice)
     suite = build_datalink_fitted_model_suite(
@@ -4947,33 +4055,121 @@ def run_preset_fit_apply_to_vehicle(
     graph_models = {
         name: model_functions[name] for name in selected if name in model_functions
     }
+    fit_reference_hover_w = suite.get("power_reference_w") or apply_hover_power_w
     empirical_curve = suite.get("empirical_curve", {})
+
+    typed_battery_basis = build_applied_battery_basis(
+        apply_battery_wh,
+        label="Girilen arac usable",
+    )
+    range_time_basis = suite.get("range_time_basis", {})
+    calibrated_battery_basis = (
+        range_time_basis.get("battery_basis")
+        or suite.get("battery_basis")
+        or typed_battery_basis
+    )
+    calibrated_hover_power_w = (
+        range_time_basis.get("power_reference_w")
+        or suite.get("power_reference_w")
+        or apply_hover_power_w
+    )
+
+    hover_scale = suite.get("datalink_efficiency_ratio")
+    if not hover_scale or not math.isfinite(hover_scale) or hover_scale <= 0.0:
+        hover_scale = 1.0
+    result_hover_power_w = apply_hover_power_w * hover_scale
+    result_battery_basis = typed_battery_basis
+    if abs(hover_scale - 1.0) > 1e-6:
+        result_mode = "datalink_calibrated_application"
+        result_basis_label = "DataLink-calibrated entered vehicle basis"
+        result_basis_source = (
+            f"Girilen teorik hover gucu {apply_hover_power_w:.1f} W, Firfir "
+            f"DataLink gercek/teorik hover olcegi {hover_scale:.3f} ile "
+            f"{result_hover_power_w:.1f} W olarak kalibre edildi."
+        )
+    else:
+        result_mode = "entered_vehicle_application"
+        result_basis_label = "Girilen arac application basis"
+        result_basis_source = (
+            "DataLink gercek/teorik hover olcegi bulunamadigi icin girilen "
+            "hover gucu dogrudan kullanildi."
+        )
+    result_reserve_report = build_battery_reserve_report(
+        result_hover_power_w,
+        apply_battery_wh,
+        apply_correction_factor,
+        result_battery_basis,
+    )
+    result_range_time_basis = {
+        "mode": result_mode,
+        "label": result_basis_label,
+        "source": result_basis_source,
+        "power_reference_w": result_hover_power_w,
+        "battery_basis": result_battery_basis,
+        "reserve_report": result_reserve_report,
+        "description": (
+            "The fitted P(v) ratios are converted to endurance/range with "
+            f"`{result_basis_label}`. This is the same basis used by the "
+            "console tables and range/time graph."
+        ),
+    }
     bauersfeld_points = build_bauersfeld_reference_points(v_endurance, v_range)
 
-    print_datalink_fit_suite_summary(suite)
+    # --- Modelin tune edildigi kaynak (sadece bilgi, sonuc degil) ---
+    print("\n--- MODEL TUNE KAYNAGI (Firfir DataLink) ---")
     print(
-        f"\nFit arac profili: {fit_profile['vehicle_name']} "
-        "(DataLink/log verisi bu ucustan geldigi icin fit bu profille yapildi)"
+        "Model Firfir ucus verisiyle tune edildi; P/Ph oran egrisi bu veriden cikarildi "
+        f"(referans hover {fit_reference_hover_w:.1f} W yalnizca orani normalize eder)."
     )
+    if empirical_curve.get("measured_points"):
+        print(
+            "  Fit hedefi: stable DataLink binleri "
+            f"{empirical_curve['min_speed_ms']:.2f}-{empirical_curve['max_speed_ms']:.2f} m/s, "
+            f"n={empirical_curve.get('sample_count_total', 0)}"
+        )
     print(
-        f"Uygulanan (girilen) arac: P_hover={apply_hover_power_w:.1f} W, "
-        f"batarya={apply_battery_wh:.1f} Wh, CF={apply_correction_factor:.4f}"
+        "  Ana sure/menzil sonucu girilen batarya ve DataLink gercek/teorik "
+        f"hover olcegi ({hover_scale:.3f}) ile hesaplanir."
+    )
+
+    result_usable_wh = result_battery_basis["usable_energy_wh"]
+    result_nominal_wh = result_battery_basis.get(
+        "datasheet_nominal_energy_wh", apply_battery_wh
+    )
+    print(f"\n--- ANA SONUC BASIS ({result_basis_label}) ---")
+    print(f"  P_hover = {result_hover_power_w:.1f} W")
+    print(
+        f"  Batarya = {result_battery_basis.get('label', 'girilen batarya usable')}: "
+        f"{result_usable_wh:.1f} Wh usable ({result_nominal_wh:.1f} Wh nominal/equivalent)"
+    )
+    if result_reserve_report.get("hover_20_reserve_min") is not None:
+        print(
+            "  Hover kontrol: "
+            f"%20={result_reserve_report['hover_20_reserve_min']:.1f} dk, "
+            f"%10={result_reserve_report['hover_10_reserve_min']:.1f} dk, "
+            f"%5={result_reserve_report['hover_5_reserve_min']:.1f} dk, "
+            f"pratik %0={result_reserve_report['hover_0_practical_min']:.1f} dk"
+        )
+    calibrated_usable_wh = calibrated_battery_basis["usable_energy_wh"]
+    print("\n--- MODEL TUNE-KAYNAGI BASIS (Firfir July3, sadece bilgi) ---")
+    print(f"  P_hover(Firfir calibrated) = {calibrated_hover_power_w:.1f} W")
+    print(
+        f"  Batarya(Firfir) = {calibrated_battery_basis.get('label', 'July3 calibrated usable')}: "
+        f"{calibrated_usable_wh:.1f} Wh usable"
     )
     print("\nSecilen DataLink-fitted modeller: " + ", ".join(selected))
 
-    print(
-        "\nDataLink empirical interpolation kontrolu (girilen aracin guc/bataryasina uygulanmis):"
-    )
+    print(f"\nDataLink empirical interpolation kontrolu ({result_basis_label}):")
     for speed in speeds:
         evaluation = evaluate_empirical_datalink_power_ratio(empirical_curve, speed)
         if evaluation["available"]:
             row = calculate_flight_for_speed(
                 speed,
                 evaluation["power_ratio"],
-                apply_hover_power_w,
+                result_hover_power_w,
                 apply_battery_wh,
                 apply_correction_factor,
-                battery_basis=None,
+                battery_basis=result_battery_basis,
             )
             print(
                 f"  v={speed:.2f} m/s: P/Ph={evaluation['power_ratio']:.4f} "
@@ -4995,10 +4191,10 @@ def run_preset_fit_apply_to_vehicle(
             calculate_flight_for_speed(
                 speed,
                 model_functions[model_name](speed),
-                apply_hover_power_w,
+                result_hover_power_w,
                 apply_battery_wh,
                 apply_correction_factor,
-                battery_basis=None,
+                battery_basis=result_battery_basis,
             )
             for speed in speeds
         ]
@@ -5007,15 +4203,12 @@ def run_preset_fit_apply_to_vehicle(
     report_path = write_datalink_fit_method_report(
         suite,
         selected,
-        output_path="applied_datalink_fit_method_report.md",
+        range_time_basis_override=result_range_time_basis,
     )
 
     graph_paths = {}
     if make_graph:
-        output_paths = {
-            key: f"applied_{filename}"
-            for key, filename in datalink_graph_output_paths(selected).items()
-        }
+        output_paths = datalink_graph_output_paths(selected)
         try:
             graph_paths["empirical"] = plot_datalink_empirical_interpolation(
                 empirical_curve,
@@ -5032,16 +4225,11 @@ def run_preset_fit_apply_to_vehicle(
                 graph_models,
                 empirical_curve,
                 bauersfeld_points,
-                apply_hover_power_w,
+                result_hover_power_w,
                 apply_battery_wh,
                 apply_correction_factor,
                 output_paths["range"],
-                battery_basis=None,
-            )
-            graph_paths["battery"] = plot_battery_voltage_timeline(
-                suite.get("battery_qc_report", {}).get("rows", []),
-                suite.get("sync_report", []),
-                output_path=output_paths["battery"],
+                battery_basis=result_battery_basis,
             )
             print("\nGrafik ciktilari:")
             for path in graph_paths.values():
@@ -5057,10 +4245,10 @@ def run_preset_fit_apply_to_vehicle(
     return {
         "selected_models": selected,
         "suite": suite,
+        "result_range_time_basis": result_range_time_basis,
         "graph_paths": graph_paths,
         "report_path": report_path,
     }
-
 
 
 def calculate_real_energy_wh(total_cells, capacity_mah, battery_type="lihv"):
@@ -5075,6 +4263,47 @@ def calculate_real_energy_wh(total_cells, capacity_mah, battery_type="lihv"):
     else:
         nominal_voltage = 3.7
     return total_cells * nominal_voltage * (capacity_mah / 1000.0)
+
+
+def run_datalink_raw_data_viewer(log_root, date_hint):
+    import matplotlib.pyplot as plt
+
+    print("\n--- DataLink Ham Veri Görselleyici ---")
+    try:
+        result = run_datalink_measured_curve_analysis(
+            FIRFIR_SPEED_PRESET,
+            {},
+            1000.0,
+            1000.0,
+            1.0,
+            log_root=log_root,
+            date_hint=date_hint,
+            make_graph=False,
+        )
+        if not result:
+            print("Ham veri okunamadı veya analiz edilemedi.")
+            return
+
+        empirical_curve = result.get("empirical_curve", {})
+
+        plot_datalink_empirical_interpolation(
+            empirical_curve,
+            "raw_datalink_empirical_interpolation.png",
+            bauersfeld_points=None,
+        )
+
+        plot_battery_voltage_timeline(
+            result.get("battery_qc_report", {}).get("rows", []),
+            result.get("sync_report", []),
+            output_path="raw_datalink_battery_voltage.png",
+        )
+
+        print("\nHam veri grafikleri (Empirical Curve & Battery Voltage) oluşturuldu.")
+        print("plt.show() çağrılıyor...")
+        plt.show()
+
+    except Exception as exc:
+        print(f"Ham veri görselleştirici hatası: {exc}")
 
 
 def drone_simulasyon():
@@ -5141,6 +4370,7 @@ def drone_simulasyon():
         print(f"   * Correction Factor: {correction_factor:.4f} (Gerçeklik Çarpanı)")
 
     # YENİ DRONE TASARIMI
+    sonuc = None  # kullanicinin arac cozumu; option-3 fit uygulamasinda kullanilir
     while True:
         print("\n--- GÖVDE TİPİ ---")
         print("1. Quadcopter (4 Motor)")
@@ -5435,7 +4665,6 @@ def drone_simulasyon():
                 continue  # Hata verip en başa (menüye) döner
 
             toplam_hucre = p_adet * p_s
-            sistem_voltaji_s = p_s * (1 if p_adet > 1 else 1)
 
             # Voltaj Uyarısı
             # Kullanıcı 6s motora 8s falan takmaya çalışırsa nazikçe uyaralım
@@ -5637,98 +4866,19 @@ def drone_simulasyon():
         # --- KULLANICI ETKİLEŞİMLİ SEÇENEK ---
         print("\nNe yapmak istersiniz?")
         print("   [Enter] Yeni Hesaplama Yap")
+        print("   (3)     Preset/log DataLink fit analizi")
         print(
-            "   (3)     Logla ve DataLink'le fit edilen modelleri girilen araca uygula"
+            "   (5)     Sadece DataLink ham verilerini (log) ve batarya grafiğini göster"
         )
-        print("   (4)     Preset+log fit et, fitlenmis modelleri girilen araca uygula")
         print("   (q)     Çıkış")
 
         son_secim = input("Seçiminiz: ").strip().lower()
 
         if son_secim == "q":
             break
-        elif son_secim == "3":
+        elif son_secim in {"3", "4"}:
             try:
-                print("\n--- ÖZEL HIZ MODEL ANALİZİ ---")
-                raw_speeds = input(
-                    "Uçuş hızı/hızları (m/s, virgülle; örn 6,10,15,20) [20]: "
-                ).strip()
-                speeds = parse_speed_list(raw_speeds) if raw_speeds else [20.0]
-                if not speeds:
-                    raise ValueError("En az bir hız girilmeli.")
-
-                print("\nAraç profili:")
-                print("1) Fırfır preset")
-                print("   12.4 kg, 4 rotor, U8 Lite KV190 6S + T-MOTOR G28x9.2 CF.")
-                print("   Utip DataLink RPM'den hesaplanir; fallback ~167.6 m/s.")
-                print("2) Yeni drone / mevcut girişlerden manual")
-                vehicle_choice = input("Araç profili seçimi (1/2) [1]: ").strip() or "1"
-                if vehicle_choice not in {"1", "2"}:
-                    vehicle_choice = "1"
-
-                print_datalink_model_descriptions()
-                model_choice = (
-                    input("Model secimi (1/2/3/4 veya all) [4]: ").strip() or "4"
-                )
-                selected_preview = parse_datalink_model_selection(model_choice)
-                print("Se\u00e7ilen modeller: " + ", ".join(selected_preview))
-                root_raw = input(
-                    "DataLink/log klasoru [otomatik: 3 Temmuz Tum Test Loglari]: "
-                ).strip()
-                datalink_log_root = Path(root_raw) if root_raw else None
-                date_hint_raw = input(
-                    "DataLink tarih hint'i (YYMMDD) [260703]: "
-                ).strip()
-                datalink_date_hint = (
-                    normalize_datalink_date_hint(date_hint_raw)
-                    or DATALINK_MEASURED_CURVE_DATE_HINT
-                )
-
-                profile = build_speed_model_profile(
-                    vehicle_choice,
-                    yeni_agirlik / 1000.0,
-                    motor_sayisi,
-                    secilen_prop_inc,
-                    drag_area,
-                    require_theoretical=False,
-                )
-
-                graph_raw = (
-                    input(
-                        "Se\u00e7ilen modeller i\u00e7in grafik olu\u015fturulsun mu? (e/h) [h]: "
-                    )
-                    .strip()
-                    .lower()
-                )
-                make_graph = graph_raw == "e"
-
-                run_custom_speed_models(
-                    speeds,
-                    profile,
-                    model_choice,
-                    sonuc,
-                    yeni_total_power,
-                    yeni_enerji,
-                    correction_factor,
-                    make_graph,
-                    datalink_log_root=datalink_log_root,
-                    datalink_date_hint=datalink_date_hint,
-                )
-
-                print("\nSonraki adım:")
-                print("   [Enter / 1] Ana menüye dön")
-                print("   (q / 2)     Çıkış")
-                sonraki_adim = input("Seçiminiz: ").strip().lower()
-                if sonraki_adim in {"q", "2", "c", "ç", "exit"}:
-                    break
-
-            except ValueError:
-                print("Lütfen geçerli sayısal değerler giriniz!")
-            except Exception as exc:
-                print(f"Özel hız model analizi çalıştırılamadı: {exc}")
-        elif son_secim == "4":
-            try:
-                print("\n--- PRESET+LOG FIT, GIRILEN ARACA UYGULAMA ---")
+                print("\n--- PRESET/LOG DATALINK FIT ANALIZI ---")
                 raw_speeds = input(
                     "Uçuş hızı/hızları (m/s, virgülle; örn 6,10,15,20,25) [6,10,15,20,25]: "
                 ).strip()
@@ -5814,6 +4964,7 @@ def drone_simulasyon():
                     make_graph,
                     datalink_log_root=datalink_log_root,
                     datalink_date_hint=datalink_date_hint,
+                    apply_sonuc=sonuc,
                 )
 
                 print("\nSonraki adım:")
@@ -5827,6 +4978,33 @@ def drone_simulasyon():
                 print("Lütfen geçerli sayısal değerler giriniz!")
             except Exception as exc:
                 print(f"Preset fit + uygulama analizi çalıştırılamadı: {exc}")
+
+        elif son_secim == "5":
+            try:
+                log_root = input(
+                    "DataLink/log klasörü [otomatik: 3 Temmuz Tüm Test Logları]: "
+                ).strip()
+                date_hint = input("DataLink tarih hint'i (YYMMDD) [260703]: ").strip()
+
+                if not log_root:
+                    log_root = "Datalink Data From my Retarded Friend/datalink/3 Temmuz Tüm Test Logları"
+                if not date_hint:
+                    date_hint = "260703"
+
+                run_datalink_raw_data_viewer(log_root, date_hint)
+
+                sonraki_adim = (
+                    input(
+                        "\nSonraki adım:\n   [Enter / 1] Ana menüye dön\n   (q / 2)     Çıkış\nSeçiminiz: "
+                    )
+                    .strip()
+                    .lower()
+                )
+                if sonraki_adim in {"q", "2", "c", "ç", "exit"}:
+                    break
+
+            except Exception as exc:
+                print(f"Ham veri görselleştirici çalıştırılamadı: {exc}")
 
 
 if __name__ == "__main__":
