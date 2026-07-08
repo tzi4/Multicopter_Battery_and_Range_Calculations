@@ -2,8 +2,11 @@
 *
 !*/
 !.gitignore
+!.gitattributes
 !*.py
 !requirements.txt
+!README.md
+!LICENSE
 
 # Runtime data used by menzil2.py DataLink analysis.
 !flight_attitude_00000075.csv
@@ -11,6 +14,11 @@
 !ham_ucus_verileri.md
 !3 Temmuz Tüm Test Logları/
 !3 Temmuz Tüm Test Logları/**
+
+# Figures embedded in README.md.
+!datalink_all_empirical_interpolation.png
+!datalink_all_power_ratio.png
+!datalink_all_range_time.png
 
 # Local scratch scripts from the cleanup/refactor work.
 add_option5.py
