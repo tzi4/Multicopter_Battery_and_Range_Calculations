@@ -101,36 +101,6 @@ This figure converts the fitted power-speed curves into practical outputs: range
 - `flight_attitude_00000075.csv` and `flight_attitude_00000075_armed.csv`: attitude-derived support data used by the model-fitting workflow.
 - `menzil1.py` and other Python scripts: legacy or auxiliary files retained for comparison, continuity, and earlier analyses.
 
-## Working With a Collaborator
-
-To let another user run the repository, add them as a collaborator on GitHub. After they accept the invitation, they can clone the repository and run the installation steps above.
-
-If you later add code, commit it, and push it to GitHub, your collaborator can update their local copy with:
-
-```powershell
-git pull origin main
-```
-
-If they have made local edits, they should first inspect their state:
-
-```powershell
-git status
-```
-
-For a simple personal workflow, they can commit their own work before pulling:
-
-```powershell
-git add .
-git commit -m "describe local changes"
-git pull --rebase origin main
-```
-
-If they only want to discard uncommitted local experiments, they should do so deliberately rather than running destructive commands accidentally. In normal use, `git pull origin main` is the command that brings their clone to the latest pushed version.
-
-## Large Log Files
-
-The included raw `.BIN` and `.udat` logs are stored directly in Git so that the repository is immediately reproducible after cloning. GitHub may warn about files larger than 50 MB. If future log files exceed GitHub's hard file-size limits or the repository becomes too large, move raw logs to Git LFS or to an external data archive and keep the folder structure documented here.
-
 ## License
 
 This project is distributed under the MIT License. See `LICENSE` for details.
