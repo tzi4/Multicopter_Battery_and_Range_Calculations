@@ -5446,11 +5446,11 @@ def drone_simulasyon():
                 )
 
                 graph_raw = (
-                    input("Seçilen modeller için grafik oluşturulsun mu? (e/h) [h]: ")
+                    input("Seçilen modeller için grafik oluşturulsun mu? (e/h) [e]: ")
                     .strip()
                     .lower()
                 )
-                make_graph = graph_raw == "e"
+                make_graph = graph_raw != "h"
 
                 print(
                     "\nFiziksel parametre transferi: fitten çözülen boyutsuz aero "
@@ -5482,7 +5482,7 @@ def drone_simulasyon():
                         "kütleyle; Fırfır ölçümüne göre % fark raporlanır)"
                     )
                     print("3) Elle gir (m/s)")
-                    utip_secim = input("Utip seçimi (1/2/3) [1]: ").strip() or "1"
+                    utip_secim = input("Utip seçimi (1/2/3) [2]: ").strip() or "2"
                     if utip_secim == "2":
                         apply_utip_mode = "theoretical_datasheet"
                     elif utip_secim == "3":

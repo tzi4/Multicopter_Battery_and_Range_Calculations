@@ -60,12 +60,13 @@ Multicopter batarya ve menzil analiz araç seti (Türkçe proje). Fiziksel güç
   yeniden kurar. Özdeşlik garantisi test edilir (Fırfır→Fırfır birebir). Menüde
   varsayılan açıktır; "h" ile eski donmuş-şekil davranışına dönülür. Batarya değişimi
   kütleyi değiştiriyorsa yeni TOPLAM kütle girilmelidir.
-- **Utip kaynağı (transfer içinde):** 1) Fırfır ölçümü (varsayılan), 2) teorik —
+- **Utip kaynağı (transfer içinde):** 1) Fırfır ölçümü, 2) teorik (VARSAYILAN) —
   `estimate_theoretical_utip_datasheet` KV190 datasheet thrust→RPM eğrisinden
   (`u8lite_kv190_g28/g29_thrust_rpm` tabloları, pervaneye göre 28"/29") girilen
   kütleyle Utip türetir ve Fırfır ölçümüne göre % farkı raporlar; tablo yoksa
   pervane benzerliği (`estimate_theoretical_utip_similarity`) fallback'i,
   3) elle giriş. Başka motor/pervane konfigürasyonlarına genelleme planlanan iş.
+  Menü-3'te grafik üretimi de varsayılan olarak açıktır (`[e]`).
 - **DataLink RPM ölçeği (DÜZELTİLDİ):** ham `.udat` RPM alanı eRPM/10'dur
   (36N42P → 21 kutup çifti); parser `DATALINK_RPM_SCALE = 10/21` ile mekanik
   RPM'e çevirir. Doğrulama çapası: hover 3100 g/rotor → datasheet ~2216 RPM,

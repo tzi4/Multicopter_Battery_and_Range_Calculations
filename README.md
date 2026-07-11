@@ -40,12 +40,13 @@ Run the program with:
 python menzil2.py
 ```
 
-The script opens an interactive menu. Enter the aircraft mass, battery configuration, motor selection, and requested analysis mode when prompted. For current work, the recommended path is the `Preset/log DataLink fit analysis` option (menu option 3), followed by the DataLink-fitted model selection. That flow then asks two additional questions:
+The script opens an interactive menu. Enter the aircraft mass, battery configuration, motor selection, and requested analysis mode when prompted. For current work, the recommended path is the `Preset/log DataLink fit analysis` option (menu option 3).
 
-- **Physical parameter transfer** (`e`/`h`, default `e`): rebuilds the fitted curves from the entered aircraft's physics instead of reusing the frozen calibration shape.
-- **Tip speed (Utip) source**: (1) the calibration aircraft's measured value, (2) a theoretical value interpolated from the T-MOTOR U8 Lite KV190 datasheet thrust-to-RPM tables (G28x9.2 or G29x9.5, chosen by the entered propeller) with the percent difference against the measured value reported, or (3) manual entry.
+**If you are not an advanced user, simply press Enter at every prompt to accept the defaults, and only type the flight speeds you want evaluated when the speed list is requested.** The defaults already select the calibrated fit source, all three DataLink-fitted models, the physical parameter transfer with the datasheet-based theoretical tip speed, and graph generation.
 
-Selecting all DataLink-fitted models with graphs enabled produces the power-ratio and range/time figures shown below. The empirical interpolation figure is produced separately by the raw DataLink data viewer (menu option 5).
+Advanced users can override the transfer (`h` reuses the frozen calibration curve shape instead of rebuilding it from the entered aircraft's physics), the tip-speed source (datasheet-based theoretical Utip is the default; the calibration aircraft's measured value or a manual value can be selected instead), and the graph option at the corresponding prompts.
+
+Selecting all DataLink-fitted models produces the power-ratio and range/time figures shown below. The empirical interpolation figure is produced separately by the raw DataLink data viewer (menu option 5).
 
 ### Battery Chemistry Requirement
 
