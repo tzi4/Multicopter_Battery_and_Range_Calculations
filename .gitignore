@@ -7,6 +7,8 @@
 !requirements.txt
 !README.md
 !LICENSE
+!CLAUDE.md
+!mukerrer_egri_davranisi_raporu.md
 
 # Runtime data used by menzil2.py DataLink analysis.
 !flight_attitude_00000075.csv

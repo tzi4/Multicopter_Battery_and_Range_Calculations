@@ -61,7 +61,9 @@ def test_july3_measured_curve_builds_sync_battery_and_model_reports():
     )
 
     assert 700.0 <= result["measured_hover_power_w"] <= 820.0
-    assert 165.0 <= result["utip_ms"] <= 180.0
+    # Mekanik olcek (DATALINK_RPM_SCALE sonrasi): datasheet capasi hover ~2216 RPM
+    # -> Utip ~82.5 m/s; olculen medyan ~80 m/s beklenir.
+    assert 78.0 <= result["utip_ms"] <= 86.0
     observations = result["speed_bin_observations"]
     assert len([obs for obs in observations if 2.0 <= obs["speed_ms"] <= 12.5]) >= 8
     assert all(obs["power_ratio"] > 0.0 for obs in observations)
@@ -137,7 +139,7 @@ def test_measured_curve_graph_mode_does_not_emit_voltage_graph(monkeypatch, tmp_
         menzil2,
         "build_measured_curve_model_fit",
         lambda profile, *_args, **_kwargs: {
-            "profile": dict(profile, utip_ms=171.0),
+            "profile": dict(profile, utip_ms=81.4),
             "model_functions": {},
             "model_fit_residuals": {},
             "zeng_params": {},
@@ -218,11 +220,12 @@ def test_datalink_flight_time_uses_july3_6s_usable_capacity_not_legacy_cf():
         battery_basis=battery_basis,
     )
 
-    # Legacy 12-pil (1056.2 Wh) yorumu, CF ile bile dogru July3 (559 Wh) baseline'dan
-    # cok daha uzun bir sure verir -> loglardaki 40 dk gerceginden sapar. Bu yuzden
-    # July3 usable kapasitesi kullanilir. (gercek deger ~67.73 dk, baseline 39.86 dk)
+    # Legacy 12-pil (1198.8 Wh, 3.7 V/hucre liion) yorumu, CF ile bile dogru July3
+    # (559 Wh) baseline'dan cok daha uzun bir sure verir -> loglardaki 40 dk
+    # gerceginden sapar. Bu yuzden July3 usable kapasitesi kullanilir.
+    # (legacy deger ~76.87 dk, baseline 39.86 dk)
     legacy_time_10_min = legacy_battery_wh / 757.891 * 60.0 * 0.72 * 1.125
-    assert legacy_time_10_min == pytest.approx(67.73, abs=0.1)
+    assert legacy_time_10_min == pytest.approx(76.87, abs=0.1)
     assert legacy_time_10_min > row["time_10_min"] * 1.5
     assert row["time_10_min"] == pytest.approx(39.86, abs=0.05)
     assert row["time_20_min"] == pytest.approx(35.43, abs=0.05)
@@ -237,7 +240,7 @@ def test_datalink_fit_suite_reports_july3_battery_basis(monkeypatch):
         "speed_bin_observations": [],
         "power_reference_w": 757.891,
         "measured_hover_power_w": 757.891,
-        "utip_ms": 174.0,
+        "utip_ms": 82.9,
         "model_profile": profile,
         "model_functions": {
             "zeng_measured_fit": lambda v: 1.0,
@@ -272,8 +275,9 @@ def test_datalink_fit_suite_reports_july3_battery_basis(monkeypatch):
     assert suite["battery_basis"]["usable_energy_wh"] == pytest.approx(559.44, abs=0.01)
     assert reserve["hover_10_reserve_min"] == pytest.approx(39.86, abs=0.05)
     assert reserve["hover_20_reserve_min"] == pytest.approx(35.43, abs=0.05)
-    # Legacy 12-pil yorumu dogru baseline'dan >1.5x uzun (gercek ~67.73 dk)
-    assert reserve["legacy_hover_10_reserve_min"] == pytest.approx(67.73, abs=0.1)
+    # Legacy 12-pil yorumu dogru baseline'dan >1.5x uzun (legacy ~76.87 dk,
+    # 3.7 V/hucre liion enerjisiyle)
+    assert reserve["legacy_hover_10_reserve_min"] == pytest.approx(76.87, abs=0.1)
     assert reserve["legacy_hover_10_reserve_min"] > reserve["hover_10_reserve_min"] * 1.5
 
     # Sensor tek koldaydi: gercek arac hover ve full pack usable = x2 (6S2P, 12 pil).
@@ -371,7 +375,9 @@ def test_datalink_empirical_pv_is_available_from_custom_speed_model_selection():
     assert menzil2.parse_datalink_model_selection("zeng") == ["zeng_datalink_fit"]
 
 
-def test_custom_speed_datalink_fit_selection_uses_measured_reference_and_reports_batt(monkeypatch, capsys):
+def test_preset_fit_console_summary_uses_measured_reference_and_reports_batt(
+    monkeypatch, capsys, tmp_path
+):
     profile, sonuc, hover_power_w, battery_wh, correction_factor = _firfir_context()
     observations = [
         {
@@ -405,7 +411,7 @@ def test_custom_speed_datalink_fit_selection_uses_measured_reference_and_reports
         "observations": observations,
         "power_reference_w": 760.0,
         "measured_hover_power_w": 760.0,
-        "utip_ms": 171.0,
+        "utip_ms": 81.4,
         "model_functions": {
             "zeng_datalink_fit": lambda v: 1.0 + 0.01 * v,
             "faessler_datalink_fit": lambda v: 1.0 + 0.02 * v,
@@ -432,23 +438,29 @@ def test_custom_speed_datalink_fit_selection_uses_measured_reference_and_reports
         "build_datalink_fitted_model_suite",
         lambda *_args, **_kwargs: suite,
     )
+    monkeypatch.setattr(
+        menzil2,
+        "write_datalink_fit_method_report",
+        lambda *_args, **_kwargs: tmp_path / "report.md",
+    )
 
-    menzil2.run_custom_speed_models(
+    menzil2.run_preset_fit_apply_to_vehicle(
         [6.0, 20.0],
         profile,
-        "1",
         sonuc,
-        hover_power_w,
+        "1",
+        760.0,
         battery_wh,
         correction_factor,
         make_graph=False,
+        apply_sonuc=sonuc,
     )
 
     out = capsys.readouterr().out
     assert "DataLink fit suite" in out
     # Olculen hover tek kol (6S1P) olarak etiketlenir
     assert "P_hover(DataLink, olculen tek kol)=760.0 W" in out
-    assert "Utip(DataLink RPM)=171.0 m/s" in out
+    assert "Utip(DataLink RPM)=81.4 m/s" in out
     assert "BATT QC" in out
     assert "battery_current_scale_suspect" in out
     assert "zeng_datalink_fit" in out
@@ -480,7 +492,7 @@ def test_preset_fit_application_uses_global_hover_scale_and_entered_battery_basi
         "observations": observations,
         "power_reference_w": 760.0,
         "measured_hover_power_w": 760.0,
-        "utip_ms": 171.0,
+        "utip_ms": 81.4,
         "model_functions": {"zeng_datalink_fit": lambda v: 1.0},
         "model_params": {},
         "battery_qc_report": {"warnings": [], "direct_current_fit_enabled": False},
@@ -548,7 +560,7 @@ def test_preset_fit_application_generates_datalink_graphs_with_global_hover_scal
         "observations": observations,
         "power_reference_w": 760.0,
         "measured_hover_power_w": 760.0,
-        "utip_ms": 171.0,
+        "utip_ms": 81.4,
         "model_functions": {"zeng_datalink_fit": lambda v: 1.0},
         "model_params": {},
         "battery_qc_report": {
@@ -616,7 +628,9 @@ def test_preset_fit_application_generates_datalink_graphs_with_global_hover_scal
         apply_sonuc=fit_sonuc,
     )
 
-    assert calls["empirical_output_path"] == "datalink_zeng_empirical_interpolation.png"
+    # Empirical interpolation grafigi artik yalnizca menu-5 ham veri
+    # gorselleyicisinde uretilir; preset akisi cizmez.
+    assert "empirical_output_path" not in calls
     assert calls["power_output_path"] == "datalink_zeng_power_ratio.png"
     assert calls["range_output_path"] == "datalink_zeng_range_time.png"
     assert "battery_output_path" not in calls
@@ -653,7 +667,7 @@ def test_preset_fit_application_uses_global_datalink_hover_scale(
         "observations": observations,
         "power_reference_w": 757.891,
         "measured_hover_power_w": 757.891,
-        "utip_ms": 171.0,
+        "utip_ms": 81.4,
         "model_functions": {"zeng_datalink_fit": lambda v: 1.0},
         "model_params": {},
         "battery_qc_report": {"warnings": [], "direct_current_fit_enabled": False},
@@ -692,7 +706,8 @@ def test_preset_fit_application_uses_global_datalink_hover_scale(
     assert "DataLink-calibrated entered vehicle basis" in out
     assert "P_hover = 1515.8 W" in out
     assert f"{expected_usable:.1f} Wh usable" in out
-    assert "%20=31.2 dk, %10=35.1 dk" in out
+    # 1198.8 Wh liion -> 1118.9 Wh usable; 1515.8 W hover -> 44.3 dk pratik %0
+    assert "%20=35.4 dk, %10=39.9 dk" in out
     # Firfir calibrated tek-kol basis hala tune-kaynagi bilgisi olarak gosterilir.
     assert "P_hover(Firfir calibrated) = 757.9 W" in out
 
@@ -721,7 +736,7 @@ def test_global_hover_scale_lowers_16ms_estimate_without_vehicle_special_case(
         "observations": observations,
         "power_reference_w": 757.891,
         "measured_hover_power_w": 757.891,
-        "utip_ms": 171.0,
+        "utip_ms": 81.4,
         "model_functions": {"zeng_datalink_fit": lambda _v: 1.1859},
         "model_params": {},
         "battery_qc_report": {"warnings": [], "direct_current_fit_enabled": False},
@@ -773,8 +788,8 @@ def test_global_hover_scale_lowers_16ms_estimate_without_vehicle_special_case(
     )
 
     assert basis["mode"] == "datalink_calibrated_application"
-    assert row["time_10_min"] == pytest.approx(29.61, abs=0.05)
-    assert old_row["time_10_min"] == pytest.approx(39.94, abs=0.05)
+    assert row["time_10_min"] == pytest.approx(33.61, abs=0.05)
+    assert old_row["time_10_min"] == pytest.approx(45.33, abs=0.05)
 
 
 def test_global_hover_scale_report_and_graph_use_same_result_basis(
@@ -801,7 +816,7 @@ def test_global_hover_scale_report_and_graph_use_same_result_basis(
         "observations": observations,
         "power_reference_w": 757.891,
         "measured_hover_power_w": 757.891,
-        "utip_ms": 171.0,
+        "utip_ms": 81.4,
         "model_functions": {"zeng_datalink_fit": lambda _v: 1.0},
         "model_params": {},
         "battery_qc_report": {"warnings": [], "direct_current_fit_enabled": False},
@@ -875,10 +890,10 @@ def test_global_hover_scale_report_and_graph_use_same_result_basis(
     )
     assert "DataLink-calibrated entered vehicle basis" in report_text
     assert "1515.8 W" in report_text
-    assert "985.8 Wh" in report_text
+    assert "1118.9 Wh" in report_text
 
 
-def test_custom_speed_datalink_selection_generates_three_model_specific_graphs(monkeypatch):
+def test_preset_fit_selection_generates_model_specific_graphs(monkeypatch, tmp_path):
     profile, sonuc, hover_power_w, battery_wh, correction_factor = _firfir_context()
     observations = [
         {
@@ -913,7 +928,7 @@ def test_custom_speed_datalink_selection_generates_three_model_specific_graphs(m
         "observations": observations,
         "power_reference_w": 760.0,
         "measured_hover_power_w": 760.0,
-        "utip_ms": 171.0,
+        "utip_ms": 81.4,
         "model_functions": {
             "zeng_datalink_fit": lambda v: 1.0 + 0.01 * v,
             "faessler_datalink_fit": lambda v: 1.0 + 0.02 * v,
@@ -969,31 +984,43 @@ def test_custom_speed_datalink_selection_generates_three_model_specific_graphs(m
     monkeypatch.setattr(menzil2, "plot_datalink_power_ratio_comparison", fake_power_plot)
     monkeypatch.setattr(menzil2, "plot_datalink_range_time_comparison", fake_range_plot)
     monkeypatch.setattr(menzil2, "plot_battery_voltage_timeline", fake_battery_plot)
+    monkeypatch.setattr(
+        menzil2,
+        "write_datalink_fit_method_report",
+        lambda *_args, **_kwargs: tmp_path / "report.md",
+    )
 
-    menzil2.run_custom_speed_models(
+    menzil2.run_preset_fit_apply_to_vehicle(
         [6.0, 20.0],
         profile,
-        "1",
         sonuc,
-        hover_power_w,
+        "1",
+        760.0,
         battery_wh,
         correction_factor,
         make_graph=True,
+        apply_sonuc=sonuc,
     )
 
     assert calls["range_model_names"] == ["zeng_datalink_fit"]
     assert calls["power_model_names"] == ["zeng_datalink_fit"]
-    assert calls["empirical_output_path"] == "datalink_zeng_empirical_interpolation.png"
+    # Empirical interpolation grafigi artik yalnizca menu-5 ham veri
+    # gorselleyicisinde uretilir; preset akisi cizmez.
+    assert "empirical_output_path" not in calls
     assert calls["power_output_path"] == "datalink_zeng_power_ratio.png"
     assert calls["range_output_path"] == "datalink_zeng_range_time.png"
     assert "battery_output_path" not in calls
     assert calls["range_power_reference_w"] == 760.0
-    assert calls["range_battery_basis"]["usable_energy_wh"] == pytest.approx(559.44, abs=0.01)
+    # Preset akisi girilen bataryayi July3 usable oraniyla olcekler.
+    expected_usable = battery_wh * menzil2.FIRFIR_BATTERY_USABLE_FRACTION
+    assert calls["range_battery_basis"]["usable_energy_wh"] == pytest.approx(
+        expected_usable, abs=0.01
+    )
     assert any(point["label"].startswith("Bauersfeld") for point in calls["power_bauersfeld_points"])
     assert any(point["label"].startswith("Bauersfeld") for point in calls["range_bauersfeld_points"])
 
 
-def test_custom_speed_datalink_all_selection_uses_all_three_models(monkeypatch):
+def test_preset_fit_all_selection_uses_all_three_models(monkeypatch, tmp_path):
     profile, sonuc, hover_power_w, battery_wh, correction_factor = _firfir_context()
     observations = [
         {
@@ -1026,7 +1053,7 @@ def test_custom_speed_datalink_all_selection_uses_all_three_models(monkeypatch):
         "observations": observations,
         "power_reference_w": 760.0,
         "measured_hover_power_w": 760.0,
-        "utip_ms": 171.0,
+        "utip_ms": 81.4,
         "model_functions": {
             "zeng_datalink_fit": lambda v: 1.0 + 0.01 * v,
             "faessler_datalink_fit": lambda v: 1.0 + 0.02 * v,
@@ -1074,15 +1101,22 @@ def test_custom_speed_datalink_all_selection_uses_all_three_models(monkeypatch):
         ).resolve(),
     )
 
-    menzil2.run_custom_speed_models(
+    monkeypatch.setattr(
+        menzil2,
+        "write_datalink_fit_method_report",
+        lambda *_args, **_kwargs: tmp_path / "report.md",
+    )
+
+    menzil2.run_preset_fit_apply_to_vehicle(
         [6.0, 20.0],
         profile,
-        "4",
         sonuc,
-        hover_power_w,
+        "4",
+        760.0,
         battery_wh,
         correction_factor,
         make_graph=True,
+        apply_sonuc=sonuc,
     )
 
     assert calls["power_model_names"] == [
@@ -1091,7 +1125,10 @@ def test_custom_speed_datalink_all_selection_uses_all_three_models(monkeypatch):
         "kirschstein_datalink_fit",
     ]
     assert calls["range_output_path"] == "datalink_all_range_time.png"
-    assert calls["range_battery_basis"]["usable_energy_wh"] == pytest.approx(559.44, abs=0.01)
+    expected_usable = battery_wh * menzil2.FIRFIR_BATTERY_USABLE_FRACTION
+    assert calls["range_battery_basis"]["usable_energy_wh"] == pytest.approx(
+        expected_usable, abs=0.01
+    )
 
 
 def test_raw_datalink_viewer_is_the_only_voltage_graph_path(monkeypatch):

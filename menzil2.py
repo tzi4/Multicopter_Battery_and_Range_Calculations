@@ -504,6 +504,63 @@ u8lite_kv190_g29_data = [
     [7334, 1049],
 ]
 
+# T-MOTOR datasheet yuk testi ("testParameter_U8 Lite ... KV190.xls"):
+# U8 Lite KV190, 6S (24V), [thrust_g, mekanik RPM].
+# NOT: DataLink loglarindaki ham 'RPM' alani eRPM/10'dur (36N42P -> 21 kutup
+# cifti); parser bunu DATALINK_RPM_SCALE (=10/21) ile mekanik RPM'e cevirir.
+# Bu tablo duzeltilmis olcegin dogrulama capasidir (hover ~3100 g -> ~2216 RPM).
+u8lite_kv190_g28_thrust_rpm = [
+    [1662, 1632],
+    [1806, 1709],
+    [1951, 1745],
+    [2134, 1828],
+    [2254, 1892],
+    [2401, 1953],
+    [2566, 2022],
+    [2774, 2093],
+    [2892, 2144],
+    [3081, 2210],
+    [3208, 2252],
+    [3389, 2312],
+    [3502, 2358],
+    [3623, 2394],
+    [3801, 2441],
+    [3934, 2497],
+    [4376, 2620],
+    [4816, 2776],
+    [5563, 2972],
+    [6761, 3248],
+]
+
+u8lite_kv190_g29_thrust_rpm = [
+    [1879, 1616],
+    [2035, 1662],
+    [2173, 1722],
+    [2328, 1775],
+    [2486, 1828],
+    [2627, 1899],
+    [2812, 1955],
+    [2961, 2008],
+    [3195, 2073],
+    [3344, 2129],
+    [3502, 2174],
+    [3669, 2223],
+    [3833, 2286],
+    [4005, 2348],
+    [4214, 2400],
+    [4365, 2432],
+    [4782, 2541],
+    [5184, 2662],
+    [6026, 2866],
+    [7334, 3125],
+]
+
+U8LITE_KV190_THRUST_RPM_TABLES = {
+    28.0: u8lite_kv190_g28_thrust_rpm,
+    29.0: u8lite_kv190_g29_thrust_rpm,
+}
+
+
 # 17. U8 Lite KV190 + G28x9.2" (6S - 24V Test Verisi)
 u8lite_kv190_data = [
     [1662, 115],
@@ -802,8 +859,10 @@ FIRFIR_SPEED_PRESET = {
     "prop_diameter_inch": 28.0,
     "blade_count": 2,
     "rho": 1.225,
-    "utip_ms": 167.6,
-    "hover_rpm_estimate": 4500.0,
+    # DataLink ham hover ~4500 (eRPM/10) * DATALINK_RPM_SCALE = ~2143 mekanik RPM;
+    # datasheet yuk testi ayni itkide ~2216 RPM verir (uyumlu, fark ~%3).
+    "utip_ms": 79.8,
+    "hover_rpm_estimate": 2142.9,
     "rotor_solidity_s": 0.05,
     "mean_blade_chord_m": 0.029,
     "blade_profile_drag_delta": 0.012,
@@ -829,7 +888,7 @@ FIRFIR_ATTITUDE_LOG_CANDIDATES = [
     "flight_attitude_00000075_armed.csv",
 ]
 FIRFIR_DATALINK_ROOT_CANDIDATES = [
-    "Datalink Data From my Retarded Friend/datalink",
+    "Some Datalink Data/datalink",
 ]
 DATALINK_EXPECTED_MOTOR_COUNT = 4
 DATALINK_RECORD_HEADER_BYTES = 32
@@ -837,6 +896,14 @@ DATALINK_RECORD_BYTES = 160
 DATALINK_SLOT_BYTES = 19
 DATALINK_DEFAULT_SAMPLE_HZ = 20.0
 DATALINK_CURRENT_SCALE = 100.0
+# Ham .udat 'RPM' alani mekanik RPM degil eRPM/10'dur (U8 Lite 36N42P -> 21
+# kutup cifti): mekanik RPM = ham * 10/21. Datasheet capasi: Firfir hover
+# itkisinde (3100 g/rotor, G28x9.2) yuk testi ~2216 mekanik RPM verir; ham
+# ~4500 * 10/21 = ~2143 bununla uyumlu. KV190@6S yuksuz maks ~4218 RPM
+# oldugundan ham 4500'un mekanik olmasi zaten imkansizdi.
+DATALINK_RPM_SCALE = 10.0 / 21.0
+# Eski ham-alan sanity filtresi 300-12000'in mekanik karsiligi (~143-5714).
+DATALINK_RPM_SANITY_RANGE_MECH = (140.0, 5750.0)
 DATALINK_SPEED_BIN_WIDTH_MS = 1.0
 DATALINK_MIN_BIN_SAMPLES = 80
 DATALINK_MEASURED_CURVE_DATE_HINT = "260703"
@@ -861,7 +928,7 @@ DATALINK_FIT_MODEL_SLUGS = {
     "faessler_datalink_fit": "faessler",
     "kirschstein_datalink_fit": "kirschstein",
 }
-DATALINK_DATASHEET_UTIP_RANGE_MS = (120.0, 230.0)
+DATALINK_DATASHEET_UTIP_RANGE_MS = (57.0, 110.0)
 DATALINK_FIRFIR_LAMBDA_ACCEPTANCE_N_PER_MS = (0.3, 3.5)
 DATALINK_BODY_CD_MAX = 5.0
 
@@ -1136,14 +1203,18 @@ def parse_datalink_udat_file(
             motor_id = slot[6]
             voltage_v = int.from_bytes(slot[15:17], "big") / 10.0
             current_a = int.from_bytes(slot[17:19], "big") / current_scale
-            rpm = int.from_bytes(slot[13:15], "big")
+            rpm = int.from_bytes(slot[13:15], "big") * DATALINK_RPM_SCALE
             if motor_id < 1 or motor_id > expected_motor_count:
                 continue
             if not (10.0 <= voltage_v <= 30.0):
                 continue
             if not (0.0 <= current_a <= 100.0):
                 continue
-            if not (300.0 <= rpm <= 12000.0):
+            if not (
+                DATALINK_RPM_SANITY_RANGE_MECH[0]
+                <= rpm
+                <= DATALINK_RPM_SANITY_RANGE_MECH[1]
+            ):
                 continue
             motors.append(
                 {
@@ -1772,6 +1843,30 @@ def audit_scientific_fit_parameters(model_name, params, profile=None):
     }
 
 
+def resolve_fit_power_reference(measured_hover_power_w, profile, entered_hover_power_w):
+    """P/Ph oran egrisinin normalizasyon referansini secer.
+
+    Olculen DataLink hover'i esastir. Bulunamazsa girilen aracin hover'i DEGIL,
+    fit aracinin (profil) teorik hover'i kullanilir; aksi halde fit verisi yanlis
+    aracin gucuyle normalize edilip sessizce bozuk bir oran egrisi uretir.
+    """
+    if measured_hover_power_w:
+        return measured_hover_power_w
+    theoretical_w = profile.get("theoretical_hover_power_w")
+    if theoretical_w:
+        print(
+            "UYARI: DataLink hover gucu olculemedi; P/Ph normalizasyonu fit "
+            f"aracinin teorik hover'i ({theoretical_w:.1f} W) ile yapildi."
+        )
+        return theoretical_w
+    print(
+        "UYARI: DataLink hover gucu olculemedi ve fit profilinde teorik hover "
+        f"yok; oran egrisi girilen hover ({entered_hover_power_w:.1f} W) ile "
+        "normalize edildi -- girilen arac fit araci degilse sonuclar guvenilmez."
+    )
+    return entered_hover_power_w
+
+
 def find_measured_curve_log_root(log_root=None):
     if log_root:
         path = Path(log_root)
@@ -2269,7 +2364,9 @@ def run_datalink_measured_curve_analysis(
 
     joined_for_fit = annotate_joined_sample_stability(joined_for_fit)
     measured_hover_power_w = estimate_datalink_hover_power(joined_for_fit)
-    power_reference_w = measured_hover_power_w or hover_power_w
+    power_reference_w = resolve_fit_power_reference(
+        measured_hover_power_w, profile, hover_power_w
+    )
     observations = build_datalink_speed_observations(
         joined_for_fit,
         min_speed_ms=2.0,
@@ -2899,12 +2996,21 @@ def fit_observation_weighted_zeng(
         hover_split = theoretical_params["p0_mech"] / (
             theoretical_params["p0_mech"] + theoretical_params["pi_mech"]
         )
+        # build_theoretical_zeng_params "k_par" anahtari uretmez; gozlemsiz
+        # fallback'te parazit katsayisi attitude-log prior'indan, o da yoksa
+        # teorik CdA'dan turetilir (k = 0.5*rho*CdA / P_hover_ref).
+        theoretical_k_par = (
+            0.5
+            * theoretical_params["rho"]
+            * theoretical_params["cda_body_m2"]
+            / theoretical_params["hover_power_reference_w"]
+        )
         return {
             "v0_ms": v0_ms,
             "utip_ms": utip_ms,
             "f0": hover_split,
             "induced_fraction": 1.0 - hover_split,
-            "k_par": theoretical_params["k_par"],
+            "k_par": k_prior if k_prior is not None else theoretical_k_par,
             "fit_observations": [],
             "k_prior": k_prior,
             "k_priors": k_priors,
@@ -3315,6 +3421,403 @@ def estimate_cda_from_pitch(speed_ms, pitch_deg, mass_kg, rho=1.225):
     return 2.0 * drag_n / (rho * speed_ms**2)
 
 
+# --- FAZ-4: FIZIKSEL PARAMETRE TRANSFERI ---------------------------------
+# Dondurulmus Firfir P/Ph seklini kopyalamak yerine, fitten boyutsuz aero
+# katsayilari (delta*sigma, 1+k_induced, CdA, lambda/W, lift/N) cozulur ve
+# girilen aracin kutle / disk alani / Utip degerleriyle uc modelin oran
+# egrileri yeniden kurulur. CF analojisinin dogru genellemesi: aractan araca
+# tasinabilir olan sey oran egrisi degil, boyutsuz katsayilardir.
+
+
+def _disc_area_total_m2(profile):
+    radius_m = profile["prop_diameter_inch"] * 0.0254 / 2.0
+    return profile["num_rotors"] * math.pi * radius_m**2
+
+
+def _decompose_hover_split_to_physical(f0, hover_power_vehicle_w, fit_dims, rho):
+    """f0*Ph -> profil gucu, (1-f0)*Ph -> induced guc; fit aracinin geometrisi
+    ile boyutsuz katsayilara (delta*sigma, 1+k_induced) cozer."""
+    area_m2 = _disc_area_total_m2(fit_dims)
+    weight_n = fit_dims["mass_kg"] * 9.81
+    utip_ms = fit_dims["utip_ms"]
+    p_profile_w = f0 * hover_power_vehicle_w
+    p_induced_w = (1.0 - f0) * hover_power_vehicle_w
+    delta_sigma_eff = 8.0 * p_profile_w / (rho * area_m2 * utip_ms**3)
+    one_plus_k_induced = p_induced_w * math.sqrt(2.0 * rho * area_m2) / weight_n**1.5
+    return delta_sigma_eff, one_plus_k_induced
+
+
+def _rebuild_hover_components(
+    delta_sigma_eff, one_plus_k_induced, apply_profile, utip_ms, rho
+):
+    area_m2 = _disc_area_total_m2(apply_profile)
+    weight_n = apply_profile["mass_kg"] * 9.81
+    p_profile_w = (delta_sigma_eff / 8.0) * rho * area_m2 * utip_ms**3
+    p_induced_w = one_plus_k_induced * weight_n**1.5 / math.sqrt(2.0 * rho * area_m2)
+    v0_ms = math.sqrt(weight_n / (2.0 * rho * area_m2))
+    return p_profile_w, p_induced_w, v0_ms
+
+
+def transfer_zeng_params_to_vehicle(
+    zeng_params, fit_profile, hover_power_vehicle_w, apply_profile, apply_utip_ms
+):
+    rho = fit_profile.get("rho", 1.225)
+    fit_dims = dict(fit_profile)
+    fit_dims["utip_ms"] = zeng_params["utip_ms"]
+    delta_sigma_eff, one_plus_k_induced = _decompose_hover_split_to_physical(
+        zeng_params["f0"], hover_power_vehicle_w, fit_dims, rho
+    )
+    cda_parasite_m2 = 2.0 * zeng_params["k_par"] * hover_power_vehicle_w / rho
+    p_profile_w, p_induced_w, v0_ms = _rebuild_hover_components(
+        delta_sigma_eff, one_plus_k_induced, apply_profile, apply_utip_ms, rho
+    )
+    hover_pred_w = p_profile_w + p_induced_w
+    return {
+        "v0_ms": v0_ms,
+        "utip_ms": apply_utip_ms,
+        "f0": p_profile_w / hover_pred_w,
+        "induced_fraction": p_induced_w / hover_pred_w,
+        "k_par": 0.5 * rho * cda_parasite_m2 / hover_pred_w,
+        "transfer": {
+            "delta_sigma_eff": delta_sigma_eff,
+            "one_plus_k_induced_eff": one_plus_k_induced,
+            "cda_parasite_m2": cda_parasite_m2,
+            "hover_power_pred_w": hover_pred_w,
+        },
+    }
+
+
+def transfer_faessler_params_to_vehicle(
+    faessler_params, fit_profile, hover_power_vehicle_w, apply_profile, apply_utip_ms
+):
+    rho = fit_profile.get("rho", 1.225)
+    fit_dims = dict(fit_profile)
+    fit_dims["utip_ms"] = faessler_params["utip_ms"]
+    delta_sigma_eff, one_plus_k_induced = _decompose_hover_split_to_physical(
+        faessler_params["f0"], hover_power_vehicle_w, fit_dims, rho
+    )
+    drag_scale = faessler_params.get("drag_scale", 1.0)
+    cda_body_m2 = (
+        2.0 * drag_scale * faessler_params["k_body"] * hover_power_vehicle_w / rho
+    )
+    lambda_vehicle_n_per_ms = (
+        drag_scale * faessler_params["k_rotor"] * hover_power_vehicle_w
+    )
+    p_profile_w, p_induced_w, v0_ms = _rebuild_hover_components(
+        delta_sigma_eff, one_plus_k_induced, apply_profile, apply_utip_ms, rho
+    )
+    hover_pred_w = p_profile_w + p_induced_w
+    fit_weight_n = fit_profile["mass_kg"] * 9.81
+    apply_weight_n = apply_profile["mass_kg"] * 9.81
+    # Rotor huzursuzluk suruklenmesi (lambda*v) itki/agirlikla olceklenir.
+    lambda_new_n_per_ms = lambda_vehicle_n_per_ms * apply_weight_n / fit_weight_n
+    return {
+        "v0_ms": v0_ms,
+        "utip_ms": apply_utip_ms,
+        "f0": p_profile_w / hover_pred_w,
+        "induced_fraction": p_induced_w / hover_pred_w,
+        "k_body": 0.5 * rho * cda_body_m2 / hover_pred_w,
+        "k_rotor": lambda_new_n_per_ms / hover_pred_w,
+        "drag_scale": 1.0,
+        "transfer": {
+            "delta_sigma_eff": delta_sigma_eff,
+            "one_plus_k_induced_eff": one_plus_k_induced,
+            "cda_body_m2": cda_body_m2,
+            "lambda_n_per_ms": lambda_new_n_per_ms,
+            "hover_power_pred_w": hover_pred_w,
+        },
+    }
+
+
+def transfer_kirschstein_params_to_vehicle(
+    kirschstein_params, hover_power_vehicle_w, apply_profile, apply_utip_ms
+):
+    kp = kirschstein_params
+    rho = kp.get("rho", 1.225)
+    p_hotel_w = kp.get("p_hotel_w", 0.0)
+    # 1) Firfir bazini arac-seviyesi tutarli hale getir: orijinal parametreler
+    #    tek-kol elektrik referansini (P_ref) arac-seviyesi profil gucuyle
+    #    karistirir; burada lift/N tam arac hover gucunden turetilir.
+    lift_power_per_newton = max(
+        0.0,
+        (hover_power_vehicle_w - kp["p_profile_hover_w"] - p_hotel_w) / kp["weight_n"],
+    )
+    base_fit = dict(kp)
+    base_fit["lift_power_per_newton"] = lift_power_per_newton
+    # 2) Duzeltme katsayilarini arac-seviyesi baza gore, orijinal (dondurulmus)
+    #    Firfir orani hedef alinarak yeniden fitle.
+    rows = []
+    for i in range(101):
+        v = 0.25 * i
+        target = power_ratio_kirschstein_all_data(v, kp)
+        base_ratio = power_kirschstein_component(v, base_fit) / hover_power_vehicle_w
+        rows.append(
+            (zeng_induced_ratio(v, kp["v0_ms"]) - 1.0, v**3, target - base_ratio, 1.0)
+        )
+    induced_relief_scale, extra_cubic_k = _fit_two_parameter_weighted(rows)
+
+    # 3) Yeni aracin geometrisiyle bilesenleri yeniden kur.
+    apply_radius_m = apply_profile["prop_diameter_inch"] * 0.0254 / 2.0
+    apply_weight_n = apply_profile["mass_kg"] * 9.81
+    apply_area_m2 = _disc_area_total_m2(apply_profile)
+    geometry_ratio = (
+        apply_profile["num_rotors"] * apply_radius_m * apply_utip_ms**3
+    ) / (kp["num_rotors"] * kp["radius_m"] * kp["utip_ms"] ** 3)
+    p_profile_new_w = kp["p_profile_hover_w"] * geometry_ratio
+    params_new = {
+        "rho": rho,
+        "mass_kg": apply_profile["mass_kg"],
+        "weight_n": apply_weight_n,
+        "num_rotors": apply_profile["num_rotors"],
+        "radius_m": apply_radius_m,
+        "utip_ms": apply_utip_ms,
+        "rotor_solidity_s": kp.get("rotor_solidity_s"),
+        "blade_profile_drag_delta": kp.get("blade_profile_drag_delta"),
+        "p_hotel_w": p_hotel_w,
+        "body_area_m2": kp.get("body_area_m2"),
+        "body_cda_fit_m2": kp["body_cda_fit_m2"],
+        "body_cd_fit": kp.get("body_cd_fit"),
+        "p_profile_hover_w": p_profile_new_w,
+        "lift_power_per_newton": lift_power_per_newton,
+    }
+    hover_reference_new_w = power_kirschstein_component(0.0, params_new)
+    cda_extra_m2 = 2.0 * extra_cubic_k * hover_power_vehicle_w / rho
+    params_new.update(
+        {
+            "hover_power_reference_w": hover_reference_new_w,
+            "v0_ms": math.sqrt(apply_weight_n / (2.0 * rho * apply_area_m2)),
+            "induced_relief_scale": induced_relief_scale,
+            "extra_cubic_k": 0.5 * rho * cda_extra_m2 / hover_reference_new_w,
+            "transfer": {
+                "lift_power_per_newton": lift_power_per_newton,
+                "p_profile_hover_new_w": p_profile_new_w,
+                "cda_extra_m2": cda_extra_m2,
+                "hover_power_pred_w": hover_reference_new_w,
+            },
+        }
+    )
+    return params_new
+
+
+def estimate_theoretical_utip_similarity(
+    apply_mass_kg,
+    apply_num_rotors,
+    apply_prop_diameter_inch,
+    fit_mass_kg,
+    fit_num_rotors,
+    fit_prop_diameter_inch,
+    fit_utip_ms,
+):
+    """Pervane benzerligiyle teorik hover Utip kestirimi.
+
+    Ayni pervane ailesi (T-MOTOR G28x9.2 / G29x9.5; pitch orani ~0.33) icin
+    itki katsayisi Ct sabit kabul edilir: T = Ct*rho*n^2*D^4. Fit aracinin
+    OLCULEN hover noktasi (rotor basina itki, Utip) capa alinir:
+        n ~ sqrt(T)/D^2   =>   Utip = pi*D*n ~ sqrt(T)/D
+        Utip_teorik = Utip_olculen * sqrt(T_yeni/T_fit) * (D_fit/D_yeni)
+    Hover itkisi = agirlik / rotor sayisi varsayilir (duz hover dengesi).
+    """
+    if apply_mass_kg <= 0 or fit_mass_kg <= 0:
+        raise ValueError("Utip kestirimi icin kutleler pozitif olmali.")
+    thrust_per_rotor_kgf = apply_mass_kg / apply_num_rotors
+    fit_thrust_per_rotor_kgf = fit_mass_kg / fit_num_rotors
+    utip_ms = (
+        fit_utip_ms
+        * math.sqrt(thrust_per_rotor_kgf / fit_thrust_per_rotor_kgf)
+        * (fit_prop_diameter_inch / apply_prop_diameter_inch)
+    )
+    rpm = utip_ms * 60.0 / (math.pi * apply_prop_diameter_inch * 0.0254)
+    return {
+        "utip_ms": utip_ms,
+        "rpm": rpm,
+        "thrust_per_rotor_g": thrust_per_rotor_kgf * 1000.0,
+        "fit_thrust_per_rotor_g": fit_thrust_per_rotor_kgf * 1000.0,
+        "prop_diameter_inch": apply_prop_diameter_inch,
+        "fit_utip_ms": fit_utip_ms,
+        "pct_diff_vs_fit": (utip_ms - fit_utip_ms) / fit_utip_ms * 100.0,
+    }
+
+
+def datasheet_rpm_from_thrust(prop_diameter_inch, thrust_g):
+    """KV190 datasheet yuk-testi tablosundan (28"/29") thrust -> mekanik RPM."""
+    table = U8LITE_KV190_THRUST_RPM_TABLES.get(round(float(prop_diameter_inch), 1))
+    if table is None:
+        raise ValueError(
+            f"KV190 datasheet RPM tablosu {prop_diameter_inch}\" pervane icin yok "
+            "(su an 28.0 ve 29.0 destekleniyor)."
+        )
+    thrusts = [row[0] for row in table]
+    rpms = [row[1] for row in table]
+    return interpolate(thrust_g, thrusts, rpms), (thrusts[0], thrusts[-1])
+
+
+def estimate_theoretical_utip_datasheet(
+    apply_mass_kg,
+    apply_num_rotors,
+    apply_prop_diameter_inch,
+    fit_mass_kg,
+    fit_num_rotors,
+    fit_prop_diameter_inch,
+    fit_utip_ms,
+):
+    """KV190 datasheet RPM egrisiyle teorik hover Utip (fit olcegine capali).
+
+    Girilen kutleden rotor basina hover itkisi bulunur, secilen pervanenin
+    (G28x9.2 / G29x9.5) datasheet thrust->RPM egrisinden mekanik RPM ve mutlak
+    datasheet Utip'i hesaplanir. Parser DATALINK_RPM_SCALE duzeltmesiyle mekanik
+    RPM olctugu icin datalink_scale ~1.0 beklenir (Firfir'de ~0.97); kucuk
+    datasheet/olcum farklari transfer oranini bozmasin diye kullanilan deger
+    yine de fit olcegine capalanir:
+      utip = fit_utip * (RPM_ds(T_yeni, D_yeni)*D_yeni) / (RPM_ds(T_fit, D_fit)*D_fit)
+    Boylece fit araci girildiginde birebir fit Utip'i geri doner ve transferin
+    Utip orani datasheet egrisinin gercek sekliyle olceklenir.
+    """
+    if apply_mass_kg <= 0 or fit_mass_kg <= 0:
+        raise ValueError("Utip kestirimi icin kutleler pozitif olmali.")
+    thrust_per_rotor_g = apply_mass_kg / apply_num_rotors * 1000.0
+    fit_thrust_per_rotor_g = fit_mass_kg / fit_num_rotors * 1000.0
+    rpm_datasheet, thrust_table_range_g = datasheet_rpm_from_thrust(
+        apply_prop_diameter_inch, thrust_per_rotor_g
+    )
+    fit_rpm_datasheet, _ = datasheet_rpm_from_thrust(
+        fit_prop_diameter_inch, fit_thrust_per_rotor_g
+    )
+    utip_datasheet_ms = tip_speed_from_rpm(apply_prop_diameter_inch, rpm_datasheet)
+    fit_utip_datasheet_ms = tip_speed_from_rpm(
+        fit_prop_diameter_inch, fit_rpm_datasheet
+    )
+    if fit_utip_datasheet_ms <= 0:
+        raise ValueError("Datasheet fit noktasi Utip'i hesaplanamadi.")
+    datalink_scale = fit_utip_ms / fit_utip_datasheet_ms
+    utip_ms = utip_datasheet_ms * datalink_scale
+    return {
+        "utip_ms": utip_ms,
+        "utip_datasheet_ms": utip_datasheet_ms,
+        "rpm_datasheet": rpm_datasheet,
+        "fit_utip_datasheet_ms": fit_utip_datasheet_ms,
+        "fit_rpm_datasheet": fit_rpm_datasheet,
+        "datalink_scale": datalink_scale,
+        "thrust_per_rotor_g": thrust_per_rotor_g,
+        "fit_thrust_per_rotor_g": fit_thrust_per_rotor_g,
+        "thrust_table_range_g": thrust_table_range_g,
+        "prop_diameter_inch": apply_prop_diameter_inch,
+        "fit_utip_ms": fit_utip_ms,
+        "pct_diff_vs_fit": (utip_ms - fit_utip_ms) / fit_utip_ms * 100.0,
+    }
+
+
+def build_transferred_model_suite(suite, apply_profile, apply_utip_ms=None):
+    """FAZ-4: Firfir fitini girilen araca fiziksel olarak tasir.
+
+    Ozdeslik garantisi: apply_profile fit araciyla ayni kutle/rotor/pervane ve
+    Utip'e sahipse orijinal egriler geri gelir (Zeng/Faessler analitik olarak
+    birebir, Kirschstein kucuk bir yeniden-fit kalintisiyla).
+
+    Not: Batarya kapasitesi P/Ph SEKLINI etkilemez; batarya degisimi kutleyi
+    degistiriyorsa yeni TOPLAM kutle apply_profile'a girilmelidir.
+    """
+    fit_profile = suite.get("model_profile") or {}
+    model_params = suite.get("model_params", {})
+    power_reference_w = suite.get("power_reference_w")
+    if not power_reference_w:
+        raise ValueError("Transfer icin fit hover referansi (power_reference_w) yok.")
+    arms = suite.get("battery_parallel_arms") or 1
+    hover_power_vehicle_w = power_reference_w * arms
+    fit_utip_ms = suite.get("utip_ms") or fit_profile.get("utip_ms")
+    utip_ms = apply_utip_ms or apply_profile.get("utip_ms") or fit_utip_ms
+    if not utip_ms or utip_ms <= 0:
+        raise ValueError("Transfer icin gecerli bir Utip gerekli.")
+
+    model_functions = {}
+    transferred_params = {}
+    zeng_source = model_params.get("zeng_datalink_fit")
+    if zeng_source:
+        params = transfer_zeng_params_to_vehicle(
+            zeng_source, fit_profile, hover_power_vehicle_w, apply_profile, utip_ms
+        )
+        model_functions["zeng_datalink_fit"] = (
+            lambda v, p=params: power_ratio_bauersfeld_anchored_zeng(v, p)
+        )
+        transferred_params["zeng_datalink_fit"] = params
+    faessler_source = model_params.get("faessler_datalink_fit")
+    if faessler_source:
+        params = transfer_faessler_params_to_vehicle(
+            faessler_source, fit_profile, hover_power_vehicle_w, apply_profile, utip_ms
+        )
+        model_functions["faessler_datalink_fit"] = (
+            lambda v, p=params: power_ratio_faessler_drag_constrained_zeng(v, p)
+        )
+        transferred_params["faessler_datalink_fit"] = params
+    kirschstein_source = model_params.get("kirschstein_datalink_fit")
+    if kirschstein_source:
+        params = transfer_kirschstein_params_to_vehicle(
+            kirschstein_source, hover_power_vehicle_w, apply_profile, utip_ms
+        )
+        model_functions["kirschstein_datalink_fit"] = (
+            lambda v, p=params: power_ratio_kirschstein_all_data(v, p)
+        )
+        transferred_params["kirschstein_datalink_fit"] = params
+
+    if not model_functions:
+        raise ValueError(
+            "Transfer icin fit parametreleri (model_params) bulunamadi; "
+            "suite gercek DataLink fitinden gelmeli."
+        )
+
+    return {
+        "model_functions": model_functions,
+        "model_params": transferred_params,
+        "apply_profile": apply_profile,
+        "apply_utip_ms": utip_ms,
+        "fit_utip_ms": fit_utip_ms,
+        "fit_hover_power_vehicle_w": hover_power_vehicle_w,
+        "battery_parallel_arms": arms,
+    }
+
+
+def print_transfer_summary(transfer):
+    apply_profile = transfer.get("apply_profile", {})
+    print("\n--- FIZIKSEL PARAMETRE TRANSFERI (Faz 4) ---")
+    print(
+        "  Oran egrileri dondurulmus Firfir sekli degil; fitten cozulen boyutsuz "
+        "katsayilar girilen aracin fizigiyle yeniden kuruldu."
+    )
+    print(
+        f"  Uygulanan arac: {apply_profile.get('vehicle_name', '?')}, "
+        f"{apply_profile.get('mass_kg', 0.0):.2f} kg, "
+        f"{apply_profile.get('num_rotors', 0)} rotor x "
+        f"{apply_profile.get('prop_diameter_inch', 0.0):.1f}\" pervane, "
+        f"Utip={transfer.get('apply_utip_ms', 0.0):.1f} m/s"
+    )
+    for name, params in transfer.get("model_params", {}).items():
+        info = params.get("transfer", {})
+        line = (
+            f"  {name}: v0={params.get('v0_ms', 0.0):.2f} m/s, "
+            f"P_hover(pred)={info.get('hover_power_pred_w', 0.0):.0f} W"
+        )
+        if "cda_parasite_m2" in info:
+            line += (
+                f", delta*sigma={info['delta_sigma_eff']:.5f}, "
+                f"1+k_ind={info['one_plus_k_induced_eff']:.3f}, "
+                f"CdA={info['cda_parasite_m2']:.4f} m2"
+            )
+        elif "cda_body_m2" in info:
+            line += (
+                f", CdA_body={info['cda_body_m2']:.4f} m2, "
+                f"lambda={info['lambda_n_per_ms']:.3f} N/(m/s)"
+            )
+        elif "lift_power_per_newton" in info:
+            line += (
+                f", lift/N={info['lift_power_per_newton']:.3f} W/N, "
+                f"P_profil={info['p_profile_hover_new_w']:.0f} W"
+            )
+        print(line)
+    print(
+        "  Not: P_hover(pred) capraz kontroldur; mutlak sure/menzil yine girilen "
+        "hover gucu ve batarya ile hesaplanir."
+    )
+
+
 def build_july3_firfir_battery_basis():
     # Bu basis, sensorun olctugu TEK KOLA (6S1P) karsilik gelir; olculen hover gucu
     # (~758 W) da tek koldur, bu yuzden ikisinin orani = 40 dk baseline dogru cikar.
@@ -3590,9 +4093,11 @@ def datalink_selection_slug(selected_models):
 
 
 def datalink_graph_output_paths(selected_models):
+    # Empirical interpolation grafigi bilincli olarak burada YOK: o grafik
+    # yalnizca menu-5 ham veri gorselleyicisinde uretilir
+    # (raw_datalink_empirical_interpolation.png).
     slug = datalink_selection_slug(selected_models)
     return {
-        "empirical": f"datalink_{slug}_empirical_interpolation.png",
         "power": f"datalink_{slug}_power_ratio.png",
         "range": f"datalink_{slug}_range_time.png",
     }
@@ -3893,131 +4398,6 @@ def print_datalink_model_descriptions():
     print("  Bauersfeld yalnızca referans marker'dır; fit hedefi değildir.")
 
 
-def run_custom_speed_models(
-    speeds,
-    profile,
-    model_choice,
-    sonuc,
-    hover_power_w,
-    battery_wh,
-    correction_factor,
-    make_graph,
-    datalink_log_root=None,
-    datalink_date_hint=DATALINK_MEASURED_CURVE_DATE_HINT,
-):
-    v_endurance = sonuc["optimal_endurance_speed_ms"]
-    v_range = sonuc["optimal_speed_ms"]
-    vi_h = sonuc["vi_h"]
-
-    selected = parse_datalink_model_selection(model_choice)
-    suite = build_datalink_fitted_model_suite(
-        profile,
-        sonuc,
-        hover_power_w,
-        battery_wh,
-        correction_factor,
-        log_root=datalink_log_root,
-        date_hint=datalink_date_hint,
-    )
-    model_functions = suite["model_functions"]
-    graph_models = {
-        name: model_functions[name] for name in selected if name in model_functions
-    }
-    fit_hover_power_w = suite.get("power_reference_w") or hover_power_w
-    empirical_curve = suite.get("empirical_curve", {})
-    battery_basis = suite.get("battery_basis")
-    bauersfeld_points = build_bauersfeld_reference_points(v_endurance, v_range)
-
-    print_datalink_fit_suite_summary(suite)
-    print("\nSeçilen DataLink-fitted modeller: " + ", ".join(selected))
-
-    print("\nDataLink empirical interpolation kontrolu:")
-    for speed in speeds:
-        evaluation = evaluate_empirical_datalink_power_ratio(empirical_curve, speed)
-        if evaluation["available"]:
-            row = calculate_flight_for_speed(
-                speed,
-                evaluation["power_ratio"],
-                fit_hover_power_w,
-                battery_wh,
-                correction_factor,
-                battery_basis=battery_basis,
-            )
-            print(
-                f"  v={speed:.2f} m/s: P/Ph={evaluation['power_ratio']:.4f} "
-                f"({evaluation['basis']}), P={row['power_w']:.1f} W, "
-                f"%20 sure={row['time_20_min']:.1f} dk, "
-                f"%20 menzil={row['range_20_km']:.2f} km"
-            )
-        else:
-            print(
-                f"  v={speed:.2f} m/s: measured interpolation disi "
-                f"({evaluation.get('min_speed_ms'):.2f}-"
-                f"{evaluation.get('max_speed_ms'):.2f} m/s); model extrapolation kullanilir."
-            )
-
-    for model_name in selected:
-        if model_name not in model_functions:
-            continue
-        rows = [
-            calculate_flight_for_speed(
-                speed,
-                model_functions[model_name](speed),
-                fit_hover_power_w,
-                battery_wh,
-                correction_factor,
-                battery_basis=battery_basis,
-            )
-            for speed in speeds
-        ]
-        print_speed_table(model_name, rows)
-
-    report_path = write_datalink_fit_method_report(suite, selected)
-
-    graph_paths = {}
-    if make_graph:
-        output_paths = datalink_graph_output_paths(selected)
-        try:
-            graph_paths["empirical"] = plot_datalink_empirical_interpolation(
-                empirical_curve,
-                output_paths["empirical"],
-                bauersfeld_points=bauersfeld_points,
-            )
-            graph_paths["power"] = plot_datalink_power_ratio_comparison(
-                graph_models,
-                empirical_curve,
-                bauersfeld_points,
-                output_paths["power"],
-            )
-            graph_paths["range"] = plot_datalink_range_time_comparison(
-                graph_models,
-                empirical_curve,
-                bauersfeld_points,
-                fit_hover_power_w,
-                battery_wh,
-                correction_factor,
-                output_paths["range"],
-                battery_basis=battery_basis,
-            )
-            print("\nGrafik ciktilari:")
-            for path in graph_paths.values():
-                print(f"* {path}")
-            import matplotlib.pyplot as plt
-
-            print("plt.show() cagriliyor.")
-            plt.show()
-        except Exception as exc:
-            print(f"Grafik olusturulamadi: {exc}")
-
-    print(f"\nFit metodu raporu: {report_path}")
-    return {
-        "selected_models": selected,
-        "suite": suite,
-        "graph_paths": graph_paths,
-        "report_path": report_path,
-    }
-
-
 def run_preset_fit_apply_to_vehicle(
     speeds,
     fit_profile,
@@ -4030,12 +4410,17 @@ def run_preset_fit_apply_to_vehicle(
     datalink_log_root=None,
     datalink_date_hint=DATALINK_MEASURED_CURVE_DATE_HINT,
     apply_sonuc=None,
+    apply_profile=None,
+    apply_utip_ms=None,
+    apply_utip_mode=None,
 ):
-    # Model (P/Ph oran egrisi) HER ZAMAN fit_profile uzerinden, Firfir DataLink
-    # verisiyle tune edilir -- bu, tune edilmis normalize aerodinamik imza (sekil).
-    # ANA SONUC (mutlak guc/sure/menzil) ise kullanicinin girdigi aracin KENDI hover
-    # gucu + bataryasi ile hesaplanir; boylece farkli arac girisleri farkli grafik
-    # uretir. Firfir July3 calibrated basis yalnizca "tune kaynagi" bilgisi olarak
+    # Model fiti HER ZAMAN fit_profile uzerinden, Firfir DataLink verisiyle
+    # yapilir. apply_profile verilirse (Faz-4) fitten cozulen boyutsuz aero
+    # katsayilari girilen aracin fizigiyle yeniden kurulur ve oran egrileri
+    # araca duyarli hale gelir; verilmezse eski davranis (dondurulmus Firfir
+    # sekli) korunur. ANA SONUC (mutlak guc/sure/menzil) her iki durumda da
+    # kullanicinin girdigi aracin KENDI hover gucu + bataryasi ile hesaplanir.
+    # Firfir July3 calibrated basis yalnizca "tune kaynagi" bilgisi olarak
     # gosterilir (calibrated_* degiskenleri, sonuc degil).
     apply_sonuc = apply_sonuc or fit_sonuc
     v_endurance = apply_sonuc["optimal_endurance_speed_ms"]
@@ -4052,6 +4437,100 @@ def run_preset_fit_apply_to_vehicle(
         date_hint=datalink_date_hint,
     )
     model_functions = suite["model_functions"]
+    transfer = None
+    if apply_profile and apply_utip_mode == "theoretical_datasheet":
+        # Secenek: Utip'i KV190 datasheet yuk-testi RPM egrisinden (G28x9.2 /
+        # G29x9.5, girilen pervaneye gore), girilen kutle icin turet.
+        fit_measured_utip = suite.get("utip_ms") or fit_profile.get("utip_ms")
+        apply_prop_inch = apply_profile.get("prop_diameter_inch", 29.0)
+        theo = None
+        try:
+            theo = estimate_theoretical_utip_datasheet(
+                apply_profile["mass_kg"],
+                apply_profile["num_rotors"],
+                apply_prop_inch,
+                fit_profile["mass_kg"],
+                fit_profile["num_rotors"],
+                fit_profile["prop_diameter_inch"],
+                fit_measured_utip,
+            )
+        except (KeyError, TypeError, ValueError, ZeroDivisionError) as exc:
+            print(
+                f"UYARI: Datasheet Utip hesaplanamadi ({exc}); pervane "
+                "benzerligi fallback'i deneniyor."
+            )
+            try:
+                theo = estimate_theoretical_utip_similarity(
+                    apply_profile["mass_kg"],
+                    apply_profile["num_rotors"],
+                    apply_prop_inch,
+                    fit_profile["mass_kg"],
+                    fit_profile["num_rotors"],
+                    fit_profile["prop_diameter_inch"],
+                    fit_measured_utip,
+                )
+            except (KeyError, TypeError, ValueError, ZeroDivisionError) as exc2:
+                print(
+                    f"UYARI: Teorik Utip hesaplanamadi ({exc2}); fit aracinin "
+                    "olculen Utip'i kullanilacak."
+                )
+        if theo:
+            apply_utip_ms = theo["utip_ms"]
+            print(
+                "\n--- TEORIK UTIP (U8 Lite KV190 datasheet, "
+                f"{apply_prop_inch:.0f}\" pervane) ---"
+            )
+            print(
+                f"  Rotor basina hover itkisi: {theo['thrust_per_rotor_g']:.0f} g "
+                f"(fit araci: {theo['fit_thrust_per_rotor_g']:.0f} g)"
+            )
+            if "rpm_datasheet" in theo:
+                print(
+                    f"  Datasheet mekanik RPM: {theo['rpm_datasheet']:.0f} "
+                    f"-> mutlak Utip {theo['utip_datasheet_ms']:.1f} m/s"
+                )
+            print(
+                f"  Kullanilan (fit olcegine capali) Utip = {theo['utip_ms']:.1f} m/s"
+            )
+            print(
+                f"  Firfir'in gercek olcumune ({theo['fit_utip_ms']:.1f} m/s, "
+                f"{fit_profile['prop_diameter_inch']:.0f}\" @ "
+                f"{fit_profile['mass_kg']:.1f} kg) gore fark: "
+                f"%{theo['pct_diff_vs_fit']:+.1f}"
+            )
+            table_range = theo.get("thrust_table_range_g")
+            if table_range and not (
+                table_range[0] <= theo["thrust_per_rotor_g"] <= table_range[1]
+            ):
+                print(
+                    "  UYARI: rotor basina itki datasheet test araliginin "
+                    f"({table_range[0]:.0f}-{table_range[1]:.0f} g) disinda; "
+                    "RPM uc degerde sabitlendi."
+                )
+            datalink_scale = theo.get("datalink_scale")
+            if datalink_scale and not (0.8 <= datalink_scale <= 1.25):
+                print(
+                    "  UYARI: DataLink Utip'i, datasheet mekanik RPM'inin "
+                    f"{datalink_scale:.2f} kati. DATALINK_RPM_SCALE duzeltmesi "
+                    "sonrasi bu oran ~1.0 olmali; buyuk sapma fit aracinin "
+                    "kutle/pervane girdilerinin veya parser olceginin tutarsiz "
+                    "oldugunu gosterir. Datasheet beklentisi: "
+                    f"~{theo['fit_rpm_datasheet']:.0f} RPM, "
+                    f"Utip ~{theo['fit_utip_datasheet_ms']:.1f} m/s. Teorik Utip "
+                    "fit olcegine capalanmaya devam ediyor."
+                )
+    if apply_profile:
+        try:
+            transfer = build_transferred_model_suite(
+                suite, apply_profile, apply_utip_ms=apply_utip_ms
+            )
+        except (KeyError, ValueError, ZeroDivisionError) as exc:
+            print(
+                f"UYARI: Fiziksel parametre transferi kurulamadi ({exc}); "
+                "Firfir'e dondurulmus oran egrileri kullanilacak."
+            )
+        else:
+            model_functions = transfer["model_functions"]
     graph_models = {
         name: model_functions[name] for name in selected if name in model_functions
     }
@@ -4115,6 +4594,8 @@ def run_preset_fit_apply_to_vehicle(
     }
     bauersfeld_points = build_bauersfeld_reference_points(v_endurance, v_range)
 
+    print_datalink_fit_suite_summary(suite)
+
     # --- Modelin tune edildigi kaynak (sadece bilgi, sonuc degil) ---
     print("\n--- MODEL TUNE KAYNAGI (Firfir DataLink) ---")
     print(
@@ -4131,6 +4612,12 @@ def run_preset_fit_apply_to_vehicle(
         "  Ana sure/menzil sonucu girilen batarya ve DataLink gercek/teorik "
         f"hover olcegi ({hover_scale:.3f}) ile hesaplanir."
     )
+    if transfer:
+        print_transfer_summary(transfer)
+        print(
+            "  Not: Empirical interpolation egrisi fit aracina (Firfir) aittir; "
+            "transfer aktifken model egrileri bu noktalardan sapabilir (beklenen)."
+        )
 
     result_usable_wh = result_battery_basis["usable_energy_wh"]
     result_nominal_wh = result_battery_basis.get(
@@ -4178,11 +4665,19 @@ def run_preset_fit_apply_to_vehicle(
                 f"%20 menzil={row['range_20_km']:.2f} km"
             )
         else:
-            print(
-                f"  v={speed:.2f} m/s: measured interpolation disi "
-                f"({evaluation.get('min_speed_ms'):.2f}-"
-                f"{evaluation.get('max_speed_ms'):.2f} m/s); model extrapolation kullanilir."
-            )
+            min_speed_ms = evaluation.get("min_speed_ms")
+            max_speed_ms = evaluation.get("max_speed_ms")
+            if min_speed_ms is not None and max_speed_ms is not None:
+                print(
+                    f"  v={speed:.2f} m/s: measured interpolation disi "
+                    f"({min_speed_ms:.2f}-{max_speed_ms:.2f} m/s); "
+                    "model extrapolation kullanilir."
+                )
+            else:
+                print(
+                    f"  v={speed:.2f} m/s: measured interpolation verisi yok; "
+                    "model extrapolation kullanilir."
+                )
 
     for model_name in selected:
         if model_name not in model_functions:
@@ -4210,11 +4705,6 @@ def run_preset_fit_apply_to_vehicle(
     if make_graph:
         output_paths = datalink_graph_output_paths(selected)
         try:
-            graph_paths["empirical"] = plot_datalink_empirical_interpolation(
-                empirical_curve,
-                output_paths["empirical"],
-                bauersfeld_points=bauersfeld_points,
-            )
             graph_paths["power"] = plot_datalink_power_ratio_comparison(
                 graph_models,
                 empirical_curve,
@@ -4245,6 +4735,7 @@ def run_preset_fit_apply_to_vehicle(
     return {
         "selected_models": selected,
         "suite": suite,
+        "transfer": transfer,
         "result_range_time_basis": result_range_time_basis,
         "graph_paths": graph_paths,
         "report_path": report_path,
@@ -4270,9 +4761,17 @@ def run_datalink_raw_data_viewer(log_root, date_hint):
 
     print("\n--- DataLink Ham Veri Görselleyici ---")
     try:
+        # Analiz sonuc["vi_h"] bekler; preset fiziginden hover induklenen hizi
+        # hesapla (eski kod bos dict geciriyordu -> KeyError).
+        preset = dict(FIRFIR_SPEED_PRESET)
+        vi_h = math.sqrt(
+            preset["mass_kg"]
+            * 9.81
+            / (2.0 * preset.get("rho", 1.225) * _disc_area_total_m2(preset))
+        )
         result = run_datalink_measured_curve_analysis(
-            FIRFIR_SPEED_PRESET,
-            {},
+            preset,
+            {"vi_h": vi_h},
             1000.0,
             1000.0,
             1.0,
@@ -4895,7 +5394,7 @@ def drone_simulasyon():
                 )
                 print("1) Fırfır preset")
                 print("   12.4 kg, 4 rotor, U8 Lite KV190 6S + T-MOTOR G28x9.2 CF.")
-                print("   Utip DataLink RPM'den hesaplanır; fallback ~167.6 m/s.")
+                print("   Utip DataLink RPM'den hesaplanır; fallback ~79.8 m/s.")
                 print(
                     "2) Mevcut girişlerden manual (girdiğiniz araç log verisini de üretmişse kullanın)"
                 )
@@ -4953,6 +5452,42 @@ def drone_simulasyon():
                 )
                 make_graph = graph_raw == "e"
 
+                print(
+                    "\nFiziksel parametre transferi: fitten çözülen boyutsuz aero "
+                    "katsayıları girilen aracın kütle/pervane/rotor değerleriyle "
+                    "yeniden kurulur (eğri şekli araca duyarlı olur)."
+                )
+                transfer_raw = (
+                    input("Transfer uygulansın mı? (e/h) [e]: ").strip().lower()
+                )
+                apply_profile = None
+                apply_utip_ms = None
+                apply_utip_mode = None
+                if transfer_raw != "h":
+                    apply_profile = {
+                        "vehicle_name": "Girilen arac",
+                        "mass_kg": yeni_agirlik / 1000.0,
+                        "num_rotors": motor_sayisi,
+                        "prop_diameter_inch": secilen_prop_inc,
+                        "rho": 1.225,
+                    }
+                    print("\nGirilen araç için Utip kaynağı:")
+                    print(
+                        "1) Fit aracıyla aynı (Fırfır DataLink ölçümü, "
+                        "28\" @ 12.4 kg)"
+                    )
+                    print(
+                        "2) Teorik: KV190 datasheet RPM eğrisinden hesapla "
+                        "(girilen pervaneye göre G28x9.2 / G29x9.5, girilen "
+                        "kütleyle; Fırfır ölçümüne göre % fark raporlanır)"
+                    )
+                    print("3) Elle gir (m/s)")
+                    utip_secim = input("Utip seçimi (1/2/3) [1]: ").strip() or "1"
+                    if utip_secim == "2":
+                        apply_utip_mode = "theoretical_datasheet"
+                    elif utip_secim == "3":
+                        apply_utip_ms = float(input("Utip m/s: ").strip())
+
                 run_preset_fit_apply_to_vehicle(
                     speeds,
                     fit_profile,
@@ -4965,6 +5500,9 @@ def drone_simulasyon():
                     datalink_log_root=datalink_log_root,
                     datalink_date_hint=datalink_date_hint,
                     apply_sonuc=sonuc,
+                    apply_profile=apply_profile,
+                    apply_utip_ms=apply_utip_ms,
+                    apply_utip_mode=apply_utip_mode,
                 )
 
                 print("\nSonraki adım:")
@@ -4987,7 +5525,10 @@ def drone_simulasyon():
                 date_hint = input("DataLink tarih hint'i (YYMMDD) [260703]: ").strip()
 
                 if not log_root:
-                    log_root = "Datalink Data From my Retarded Friend/datalink/3 Temmuz Tüm Test Logları"
+                    # Otomatik: find_measured_curve_log_root '3 Temmuz*'
+                    # klasorunu bulur (eski sabit yol var olmayan bir dizine
+                    # isaret ediyordu).
+                    log_root = None
                 if not date_hint:
                     date_hint = "260703"
 
