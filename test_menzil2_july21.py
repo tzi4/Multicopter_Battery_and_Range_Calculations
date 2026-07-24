@@ -115,24 +115,29 @@ def test_july21_validation_reproduces_reference_high_speed_points(validation):
     # Referans: duzeltilip birlestirilen ornek ~30782.
     assert meta["joined_sample_count"] == pytest.approx(30782, abs=200)
 
-    row_16 = _train_row(validation, 16.908)
-    assert row_16["measured_vehicle_power_w"] == pytest.approx(1866.164, abs=3.0)
-    assert row_16["zeng_datalink_fit_residual_percent"] == pytest.approx(0.272, abs=0.3)
+    # Kararli-hal kapisi (|accel| <= 1.0 m/s2) sonrasi altin degerler: seyir
+    # kutulari yalniz kararli ornekleri tasidigindan medyan biraz duser, ama
+    # iyi orneklenen 17 m/s seyri hala fit'e ~%1-2 icinde oturur.
+    row_16 = _train_row(validation, 16.915)
+    assert row_16["sample_count"] > 3000  # iyi orneklenen kararli seyir
+    assert row_16["measured_vehicle_power_w"] == pytest.approx(1848.269, abs=3.0)
+    assert row_16["zeng_datalink_fit_residual_percent"] == pytest.approx(-0.719, abs=0.3)
     assert row_16["faessler_datalink_fit_residual_percent"] == pytest.approx(
-        1.278, abs=0.3
+        0.279, abs=0.3
     )
     assert row_16["kirschstein_datalink_fit_residual_percent"] == pytest.approx(
-        -0.887, abs=0.3
+        -1.869, abs=0.3
     )
 
-    row_17 = _train_row(validation, 17.077)
-    assert row_17["measured_vehicle_power_w"] == pytest.approx(1886.922, abs=3.0)
-    assert row_17["zeng_datalink_fit_residual_percent"] == pytest.approx(0.611, abs=0.3)
+    row_17 = _train_row(validation, 17.075)
+    assert row_17["sample_count"] > 3000
+    assert row_17["measured_vehicle_power_w"] == pytest.approx(1832.384, abs=3.0)
+    assert row_17["zeng_datalink_fit_residual_percent"] == pytest.approx(-2.285, abs=0.3)
     assert row_17["faessler_datalink_fit_residual_percent"] == pytest.approx(
-        1.682, abs=0.3
+        -1.246, abs=0.3
     )
     assert row_17["kirschstein_datalink_fit_residual_percent"] == pytest.approx(
-        -0.621, abs=0.3
+        -3.480, abs=0.3
     )
 
 
@@ -148,8 +153,9 @@ def test_july21_clock_correction_matters(monkeypatch, july3_suite):
     )
 
     def high_speed_zeng_abs_residuals(result):
-        # Devir notu: yalniz yuksek-hiz (>=16 m/s) duz-ucus kutulari fit'e ~%2
-        # icinde oturur; dusuk/orta hizda gorev geometrisi cezasi vardir.
+        # Kararli-hal kapisi sonrasi yalniz yuksek-hiz (>=16 m/s) iyi orneklenen
+        # seyir kutulari fit'e ~%2-3 icinde oturur; dusuk/orta hizda gorev
+        # geometrisi cezasi vardir.
         return [
             abs(row["zeng_datalink_fit_residual_percent"])
             for row in result["validation_rows"]
@@ -159,11 +165,35 @@ def test_july21_clock_correction_matters(monkeypatch, july3_suite):
 
     corrected_res = high_speed_zeng_abs_residuals(corrected)
     shifted_res = high_speed_zeng_abs_residuals(shifted)
-    assert corrected_res and max(corrected_res) < 2.0
+    assert corrected_res and max(corrected_res) < 3.5
     # Ofset kaldirilinca ayni yuksek-hiz kutulari fiziksel olarak yanlis anlarla
     # eslesir ve residual belirgin buyur.
     assert shifted_res
     assert max(shifted_res) > max(corrected_res)
+
+
+# Kararli-hal kapisi: dogrulama yalniz ilk-10-tur + dusuk-ivme; mudahale yok.
+def test_validation_uses_only_steady_state_points(validation):
+    # Pilot mudahalesi sonrasi faz dogrulamaya HIC girmez.
+    phases = {row["phase"] for row in validation["validation_rows"]}
+    assert phases == {"ilk_10_kesintisiz_tur"}
+    assert "pilot_mudahalesi_sonrasi" not in validation["residual_summary"]
+    assert menzil2.JULY21_VALIDATION_PHASES == ("ilk_10_kesintisiz_tur",)
+    assert menzil2.JULY21_STEADY_MAX_ACCEL_MS2 == pytest.approx(1.0)
+    # Kararli kapi tum ornekleri kabul eden hali daha az kutu birakir.
+    steady = menzil2.build_july21_validation_observations(
+        validation["joined_samples"], "ilk_10_kesintisiz_tur",
+        validation["power_reference_w"],
+    )
+    all_pts = menzil2.build_datalink_speed_observations(
+        [r for r in validation["joined_samples"]
+         if r.get("validation_phase") == "ilk_10_kesintisiz_tur"
+         and 2.0 <= r.get("speed_ms", -1) <= 20.0],
+        min_speed_ms=2.0, max_speed_ms=20.0, bin_width_ms=1.0, min_samples=80,
+        power_reference_w=validation["power_reference_w"], stable_only=True,
+        min_stable_fraction=0.5,
+    )
+    assert len(steady) < len(all_pts)
 
 
 # 7) + 8) Birlesik fit: post-mudahale dislanir, 28"/29" metadatasi korunur.

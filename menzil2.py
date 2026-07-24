@@ -955,7 +955,15 @@ JULY21_VALIDATION_MIN_SPEED_MS = 2.0
 JULY21_VALIDATION_MAX_SPEED_MS = 20.0
 JULY21_VALIDATION_BIN_WIDTH_MS = 1.0
 JULY21_VALIDATION_MIN_SAMPLES = 80
-JULY21_VALIDATION_PHASES = ("ilk_10_kesintisiz_tur", "pilot_mudahalesi_sonrasi")
+# "Guvenilir" = kararli-hal kapisi. Fit yalniz kararli duz ucus P(v) ogrenir;
+# gecis/donus anlari (yuksek ivme, yuksek burun acisi) ayni hizda fiziksel
+# olarak daha fazla guc ceker ve fit'le kiyaslanamaz (elmayla-armut). Fizik
+# analizi: kararli seyir ~0.5 m/s2, gecis kutulari ~1.5-2.1 m/s2 ivme tasir.
+# Bu esik altindaki ornekler kararli kabul edilir; doğrulama ve birlesik fit
+# egitimi yalniz bunlari kullanir.
+JULY21_STEADY_MAX_ACCEL_MS2 = 1.0
+# Pilot mudahalesi sonrasi ve gorev-disi ornekler dogrulamaya hic girmez.
+JULY21_VALIDATION_PHASES = ("ilk_10_kesintisiz_tur",)
 JULY21_TRAIN_PHASE = "ilk_10_kesintisiz_tur"
 JULY21_VALIDATION_RATIO_OUTPUT_PATH = "july21_validation_power_ratio.png"
 JULY21_VALIDATION_POWER_OUTPUT_PATH = "july21_validation_vehicle_power.png"
@@ -970,8 +978,11 @@ JULY21_MODEL_COLORS = {
     "kirschstein_datalink_fit": "#9467bd",
 }
 JULY21_PHASE_PLOT_STYLE = {
-    "ilk_10_kesintisiz_tur": ("#e67e22", "D", "21 Temmuz - ilk 10 kesintisiz tur"),
-    "pilot_mudahalesi_sonrasi": ("#c0392b", "X", "21 Temmuz - mudahale sonrasi"),
+    "ilk_10_kesintisiz_tur": (
+        "#e67e22",
+        "D",
+        "21 Temmuz - ilk 10 kesintisiz tur (kararli-hal)",
+    ),
 }
 JULY21_COMBINED_RATIO_OUTPUT_PATH = "combined_july3_july21_power_ratio.png"
 JULY21_COMBINED_POWER_OUTPUT_PATH = "combined_july3_july21_vehicle_power.png"
@@ -2956,7 +2967,12 @@ def build_july21_joined_samples(power_reference_w, log_root=None):
 
 def build_july21_validation_observations(samples, phase, power_reference_w):
     """Tek faza ait 21 Temmuz orneklerini 3 Temmuz'la ayni hiz-kutusu
-    mantigiyla (build_datalink_speed_observations) gozleme indirger."""
+    mantigiyla (build_datalink_speed_observations) gozleme indirger.
+
+    KARARLI-HAL kapisi: yalniz |accel| <= JULY21_STEADY_MAX_ACCEL_MS2 olan
+    ornekler alinir. Gecis/donus anlari (yuksek ivme) fit'in temsil ettigi
+    kararli duz ucus rejiminde degildir; bunlari katmak elmayla-armut
+    kiyaslamasidir. Hem dogrulama hem birlesik fit egitimi bu kapiyi kullanir."""
     selected = [
         row
         for row in samples
@@ -2964,6 +2980,7 @@ def build_july21_validation_observations(samples, phase, power_reference_w):
         and JULY21_VALIDATION_MIN_SPEED_MS
         <= row.get("speed_ms", -1.0)
         <= JULY21_VALIDATION_MAX_SPEED_MS
+        and abs(row.get("accel_ms2", 0.0)) <= JULY21_STEADY_MAX_ACCEL_MS2
     ]
     return build_datalink_speed_observations(
         selected,
