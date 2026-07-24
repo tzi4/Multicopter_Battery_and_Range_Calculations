@@ -932,6 +932,48 @@ DATALINK_DATASHEET_UTIP_RANGE_MS = (57.0, 110.0)
 DATALINK_FIRFIR_LAMBDA_ACCEPTANCE_N_PER_MS = (0.3, 3.5)
 DATALINK_BODY_CD_MAX = 5.0
 
+# --- 21 Temmuz (harici dogrulama / birlesik fit) ---
+# 21 Temmuz uzun ucusu 3 Temmuz'un eklendigi gibi (find/parse/join/fit ayni
+# menzil2 fonksiyonlariyla) ayri bir veri kaynagi olarak eklenir. Varsayilan rol
+# DIS DOGRULAMA'dir: 3 Temmuz fiti dondurulur, 21 Temmuz noktalari fitin uzerine
+# cizilir; fit katsayilari degismez. Kaynak devir notu:
+# "21 temmuz Tum Test Loglari/MENZIL2_21_TEMMUZ_ENTEGRASYON_DEVIR_NOTU.md".
+JULY21_LOG_ROOT_PREFIX = "21 temmuz"
+JULY21_DATALINK_SESSION_NAME = "UART-260721-103715"
+JULY21_BIN_GLOB = "*11-56-15.bin"
+# KRITIK "veri kaymasi": uzun ucusta DataLink bilgisayar saati autopilot GPS
+# saatinden 56.18 s ILERIDE (CTUN.ThO ile toplam ESC akiminin capraz
+# korelasyonu). Duzeltilmeden zaman eslestirmesi fiziksel olarak yanlis anlari
+# birlestirir; yalnizca en-yakin-timestamp kontrolu yeterli DEGILDIR.
+JULY21_DATALINK_CLOCK_AHEAD_S = 56.18
+# 21 Temmuz pervanesi 28"; 3 Temmuz fit profilinin 29" metadatasi 21 Temmuz
+# ornekleri uzerine yazilmamali (oturum bazinda ayri tutulur).
+JULY21_PROP_DIAMETER_INCH = 28.0
+# Kesintisiz gorev turu imzasi: MISE CNum sirasi [2,3,4,5]. Uzun ucusta 10 tane.
+JULY21_UNINTERRUPTED_LAP_ITEMS = [2, 3, 4, 5]
+JULY21_VALIDATION_MIN_SPEED_MS = 2.0
+JULY21_VALIDATION_MAX_SPEED_MS = 20.0
+JULY21_VALIDATION_BIN_WIDTH_MS = 1.0
+JULY21_VALIDATION_MIN_SAMPLES = 80
+JULY21_VALIDATION_PHASES = ("ilk_10_kesintisiz_tur", "pilot_mudahalesi_sonrasi")
+JULY21_TRAIN_PHASE = "ilk_10_kesintisiz_tur"
+JULY21_VALIDATION_RATIO_OUTPUT_PATH = "july21_validation_power_ratio.png"
+JULY21_VALIDATION_POWER_OUTPUT_PATH = "july21_validation_vehicle_power.png"
+JULY21_MODEL_LABELS = {
+    "zeng_datalink_fit": "Zeng - 3 Temmuz fit",
+    "faessler_datalink_fit": "Faessler - 3 Temmuz fit",
+    "kirschstein_datalink_fit": "Kirschstein - 3 Temmuz fit",
+}
+JULY21_MODEL_COLORS = {
+    "zeng_datalink_fit": "#1f77b4",
+    "faessler_datalink_fit": "#2ca02c",
+    "kirschstein_datalink_fit": "#9467bd",
+}
+JULY21_PHASE_PLOT_STYLE = {
+    "ilk_10_kesintisiz_tur": ("#e67e22", "D", "21 Temmuz - ilk 10 kesintisiz tur"),
+    "pilot_mudahalesi_sonrasi": ("#c0392b", "X", "21 Temmuz - mudahale sonrasi"),
+}
+
 
 FIRFIR_BATTERY_CELLS = 6
 FIRFIR_BATTERY_MEASURED_USABLE_AH = 25.2
@@ -2561,6 +2603,663 @@ def build_datalink_fitted_model_suite(
         "range_time_basis": range_time_basis,
         "sync_report": result.get("sync_report", []),
     }
+
+
+# =====================================================================
+# 21 Temmuz veri kaynagi (3 Temmuz'un eklendigi gibi; port loader'lar).
+# analyze_july21_anomaly.py mantigi menzil2'ye tasindi; helper scriptlere
+# import bagimliligi yoktur. Ayni parse/join/fit fonksiyonlari kullanilir.
+# =====================================================================
+
+
+def find_july21_log_root(log_root=None):
+    """3 Temmuz'un find_measured_curve_log_root muadili. '21 temmuz' klasoru."""
+    if log_root:
+        path = Path(log_root)
+        if path.is_dir():
+            return path
+        raise FileNotFoundError(f"21 Temmuz log klasoru bulunamadi: {log_root}")
+    base_dir = Path(__file__).resolve().parent
+    for child in sorted(base_dir.iterdir()):
+        if child.is_dir() and child.name.lower().startswith(JULY21_LOG_ROOT_PREFIX):
+            return child
+    raise FileNotFoundError("21 Temmuz log klasoru bulunamadi.")
+
+
+def find_july21_bin_path(log_root):
+    """Uzun ucus BIN'i; .bin/.BIN platformdan bagimsiz bulunur."""
+    log_root = Path(log_root)
+    matches = sorted(log_root.glob(JULY21_BIN_GLOB))
+    if not matches:
+        matches = sorted(
+            path
+            for path in log_root.glob("*11-56-15.*")
+            if path.suffix.lower() == ".bin"
+        )
+    if not matches:
+        raise FileNotFoundError(
+            f"21 Temmuz uzun ucus BIN dosyasi bulunamadi ({JULY21_BIN_GLOB})."
+        )
+    return matches[0]
+
+
+def find_july21_datalink_session(log_root):
+    """UART oturumu log kokunde DOGRUDAN bulunur (3 Temmuz'daki Datalink/ alt
+    klasor duzeninden farkli)."""
+    log_root = Path(log_root)
+    session = log_root / JULY21_DATALINK_SESSION_NAME
+    if not session.is_dir():
+        raise FileNotFoundError(f"21 Temmuz DataLink oturumu bulunamadi: {session}")
+    return session
+
+
+def _read_july21_ardupilot_series(bin_path):
+    """analyze_july21_anomaly.read_log portu (yalniz ARM/MISE + zaman span)."""
+    from pymavlink import mavutil
+
+    span = read_ardupilot_bin_time_span(bin_path)
+    series = {"ARM": [], "MISE": []}
+    log = mavutil.mavlink_connection(str(bin_path), robust_parsing=True)
+    while True:
+        msg = log.recv_match(type=["ARM", "MISE"], blocking=False)
+        if msg is None:
+            break
+        data = msg.to_dict()
+        if "TimeUS" in data:
+            data["t"] = data["TimeUS"] / 1e6
+        series[msg.get_type()].append(data)
+    return span, series
+
+
+def _read_july21_datalink_samples(
+    session_dir, prop_diameter_inch=JULY21_PROP_DIAMETER_INCH
+):
+    """analyze_july21_anomaly.read_datalink portu. 21 Temmuz pervanesi 28"."""
+    session_dir = Path(session_dir)
+    samples = []
+    file_stats = []
+    for path in sorted(session_dir.glob("*.udat")):
+        parsed = parse_datalink_udat_file(
+            path,
+            prop_diameter_inch=prop_diameter_inch,
+            timestamp_mode="filename_trt",
+        )
+        file_stats.append(
+            {
+                "file": path.name,
+                "raw_records": parsed.get("raw_record_count", 0),
+                "valid_records": parsed.get("record_count", 0),
+                "sample_rate_hz": parsed.get("sample_rate_hz"),
+                "voltage_median_v": parsed.get("voltage_median_v"),
+                "power_median_w": parsed.get("power_median_w"),
+                "rpm_median": parsed.get("rpm_median"),
+            }
+        )
+        samples.extend(
+            sample
+            for sample in parsed.get("samples", [])
+            if sample.get("timestamp_utc")
+        )
+    samples.sort(key=lambda row: row["timestamp_utc"])
+    return samples, file_stats
+
+
+def _identify_july21_long_flight(series):
+    """En uzun ARM->DISARM penceresi (analyze_july21_anomaly.identify_long_flight)."""
+    windows = []
+    start = None
+    for row in series.get("ARM", []):
+        if row.get("ArmState") == 1:
+            start = row["t"]
+        elif row.get("ArmState") == 0 and start is not None:
+            windows.append((start, row["t"]))
+            start = None
+    if not windows:
+        raise RuntimeError("21 Temmuz ARM/DISARM penceresi bulunamadi.")
+    return max(windows, key=lambda pair: pair[1] - pair[0])
+
+
+def _build_july21_laps(series, flight_start, flight_end):
+    """MISE CNum'a gore gorev turlari (analyze_july21_anomaly.build_laps)."""
+    mise = [
+        row
+        for row in series.get("MISE", [])
+        if flight_start <= row["t"] <= flight_end
+    ]
+    starts = []
+    for idx, row in enumerate(mise):
+        if row.get("CNum") != 2:
+            continue
+        if not starts:
+            starts.append(row)
+            continue
+        prev = mise[idx - 1] if idx else None
+        if prev and prev.get("CNum") == 5 and row["t"] - prev["t"] < 25.0:
+            starts.append(row)
+    laps = []
+    for idx, start in enumerate(starts):
+        end_t = starts[idx + 1]["t"] if idx + 1 < len(starts) else flight_end
+        events = [row for row in mise if start["t"] <= row["t"] < end_t]
+        laps.append(
+            {
+                "lap": idx + 1,
+                "start_t": start["t"],
+                "end_t": end_t,
+                "mission_items": [row.get("CNum") for row in events],
+            }
+        )
+    return laps
+
+
+def _july21_log_time_to_utc(span, time_s):
+    return span["first_utc"] + timedelta(seconds=time_s - span["first_timeus_s"])
+
+
+def build_july21_joined_samples(power_reference_w, log_root=None):
+    """21 Temmuz uzun ucusunu 3 Temmuz tek-kol hover referansiyla oranlanmis,
+    saat-duzeltmesi uygulanmis, faz etiketli birlesik ornekler olarak dondurur.
+
+    56.18 s DataLink saat duzeltmesi burada uygulanir; 10 kesintisiz tur
+    bulunamazsa sessiz fallback yerine anlasilir hata verilir (devir notu)."""
+    log_root = find_july21_log_root(log_root)
+    bin_path = find_july21_bin_path(log_root)
+    session_dir = find_july21_datalink_session(log_root)
+
+    span, series = _read_july21_ardupilot_series(bin_path)
+    flight_start, flight_end = _identify_july21_long_flight(series)
+    laps = _build_july21_laps(series, flight_start, flight_end)
+    uninterrupted = [
+        lap for lap in laps if lap["mission_items"] == JULY21_UNINTERRUPTED_LAP_ITEMS
+    ]
+    if len(uninterrupted) != 10:
+        raise RuntimeError(
+            f"21 Temmuz: beklenen 10 kesintisiz tur yerine {len(uninterrupted)} bulundu"
+        )
+
+    clean_start_utc = _july21_log_time_to_utc(span, uninterrupted[0]["start_t"])
+    clean_end_utc = _july21_log_time_to_utc(span, uninterrupted[-1]["end_t"])
+    flight_start_utc = _july21_log_time_to_utc(span, flight_start)
+    flight_end_utc = _july21_log_time_to_utc(span, flight_end)
+
+    datalink_raw, file_stats = _read_july21_datalink_samples(session_dir)
+    datalink_corrected = []
+    for row in datalink_raw:
+        item = dict(row)
+        item["timestamp_utc"] = row["timestamp_utc"] - timedelta(
+            seconds=JULY21_DATALINK_CLOCK_AHEAD_S
+        )
+        datalink_corrected.append(item)
+    datalink_corrected.sort(key=lambda row: row["timestamp_utc"])
+
+    flight_samples = read_ardupilot_flight_samples(
+        bin_path, start_utc=flight_start_utc, end_utc=flight_end_utc
+    )
+    joined = join_datalink_and_flight_samples(
+        datalink_corrected, flight_samples, power_reference_w, max_dt_s=0.35
+    )
+    joined = annotate_joined_sample_stability(joined)
+    for row in joined:
+        if clean_start_utc <= row["timestamp_utc"] <= clean_end_utc:
+            row["validation_phase"] = "ilk_10_kesintisiz_tur"
+        elif clean_end_utc < row["timestamp_utc"] <= flight_end_utc:
+            row["validation_phase"] = "pilot_mudahalesi_sonrasi"
+        else:
+            row["validation_phase"] = "gorev_disi"
+
+    metadata = {
+        "log_root": log_root,
+        "bin": bin_path.name,
+        "datalink_session": session_dir.name,
+        "clock_correction_s": -JULY21_DATALINK_CLOCK_AHEAD_S,
+        "prop_diameter_inch": JULY21_PROP_DIAMETER_INCH,
+        "file_stats": file_stats,
+        "flight_start_utc": flight_start_utc,
+        "flight_end_utc": flight_end_utc,
+        "clean_start_utc": clean_start_utc,
+        "clean_end_utc": clean_end_utc,
+        "uninterrupted_lap_count": len(uninterrupted),
+        "joined_sample_count": len(joined),
+    }
+    return joined, metadata
+
+
+def build_july21_validation_observations(samples, phase, power_reference_w):
+    """Tek faza ait 21 Temmuz orneklerini 3 Temmuz'la ayni hiz-kutusu
+    mantigiyla (build_datalink_speed_observations) gozleme indirger."""
+    selected = [
+        row
+        for row in samples
+        if row.get("validation_phase") == phase
+        and JULY21_VALIDATION_MIN_SPEED_MS
+        <= row.get("speed_ms", -1.0)
+        <= JULY21_VALIDATION_MAX_SPEED_MS
+    ]
+    return build_datalink_speed_observations(
+        selected,
+        min_speed_ms=JULY21_VALIDATION_MIN_SPEED_MS,
+        max_speed_ms=JULY21_VALIDATION_MAX_SPEED_MS,
+        bin_width_ms=JULY21_VALIDATION_BIN_WIDTH_MS,
+        min_samples=JULY21_VALIDATION_MIN_SAMPLES,
+        power_reference_w=power_reference_w,
+        stable_only=True,
+        min_stable_fraction=0.5,
+        extrapolation_start_ms=None,
+    )
+
+
+def build_july21_validation_rows(
+    observations_by_phase, model_functions, vehicle_hover_power_w
+):
+    rows = []
+    for phase, observations in observations_by_phase.items():
+        for obs in observations:
+            row = {
+                "phase": phase,
+                "speed_ms": obs["speed_ms"],
+                "sample_count": obs["sample_count"],
+                "stable_fraction": obs["stable_fraction"],
+                "measured_ratio": obs["power_ratio"],
+                "measured_single_arm_power_w": obs["power_w"],
+            }
+            if vehicle_hover_power_w:
+                row["measured_vehicle_power_w"] = (
+                    obs["power_ratio"] * vehicle_hover_power_w
+                )
+            for name, model_fn in model_functions.items():
+                predicted_ratio = model_fn(obs["speed_ms"])
+                row[f"{name}_predicted_ratio"] = predicted_ratio
+                if vehicle_hover_power_w:
+                    row[f"{name}_predicted_vehicle_power_w"] = (
+                        predicted_ratio * vehicle_hover_power_w
+                    )
+                row[f"{name}_residual_percent"] = 100.0 * (
+                    obs["power_ratio"] / predicted_ratio - 1.0
+                )
+            rows.append(row)
+    return rows
+
+
+def _summarize_july21_residuals(rows, model_names):
+    import statistics
+
+    result = {}
+    for phase in sorted({row["phase"] for row in rows}):
+        phase_rows = [row for row in rows if row["phase"] == phase]
+        if not phase_rows:
+            continue
+        result[phase] = {
+            "bin_count": len(phase_rows),
+            "speed_min_ms": min(row["speed_ms"] for row in phase_rows),
+            "speed_max_ms": max(row["speed_ms"] for row in phase_rows),
+            "models": {},
+        }
+        for name in model_names:
+            residuals = [row[f"{name}_residual_percent"] for row in phase_rows]
+            result[phase]["models"][name] = {
+                "median_residual_percent": statistics.median(residuals),
+                "mean_absolute_residual_percent": statistics.fmean(
+                    abs(value) for value in residuals
+                ),
+                "max_absolute_residual_percent": max(
+                    abs(value) for value in residuals
+                ),
+            }
+    return result
+
+
+def _july21_raw_plot_samples(samples, phase, stride=20):
+    selected = [
+        row
+        for row in samples
+        if row.get("validation_phase") == phase
+        and row.get("stable")
+        and JULY21_VALIDATION_MIN_SPEED_MS
+        <= row.get("speed_ms", -1.0)
+        <= JULY21_VALIDATION_MAX_SPEED_MS
+        and 0.2 <= row.get("power_ratio", -1.0) <= 3.5
+    ]
+    return selected[::stride]
+
+
+def plot_july21_validation_ratio(
+    fit_suite, samples, observations_by_phase, output_path
+):
+    import matplotlib.pyplot as plt
+
+    speeds = [value / 10.0 for value in range(20, 201)]
+    fig, ax = plt.subplots(figsize=(12.5, 7.2))
+    for name, model_fn in fit_suite.get("model_functions", {}).items():
+        ax.plot(
+            speeds,
+            [model_fn(speed) for speed in speeds],
+            color=JULY21_MODEL_COLORS.get(name, "#333333"),
+            linewidth=2.0,
+            label=JULY21_MODEL_LABELS.get(name, name),
+        )
+    july3_obs = fit_suite.get("observations", [])
+    ax.scatter(
+        [row["speed_ms"] for row in july3_obs],
+        [row["power_ratio"] for row in july3_obs],
+        marker="o",
+        s=50,
+        facecolor="black",
+        edgecolor="white",
+        linewidth=0.7,
+        zorder=6,
+        label="3 Temmuz fit noktalari",
+    )
+    for phase, (color, marker, label) in JULY21_PHASE_PLOT_STYLE.items():
+        raw = _july21_raw_plot_samples(samples, phase)
+        ax.scatter(
+            [row["speed_ms"] for row in raw],
+            [row["power_ratio"] for row in raw],
+            s=9,
+            color=color,
+            alpha=0.10,
+            linewidth=0,
+            zorder=2,
+        )
+        observations = observations_by_phase.get(phase, [])
+        ax.scatter(
+            [row["speed_ms"] for row in observations],
+            [row["power_ratio"] for row in observations],
+            marker=marker,
+            s=72,
+            facecolor=color,
+            edgecolor="white",
+            linewidth=0.8,
+            zorder=7,
+            label=label,
+        )
+    ax.axvline(
+        12.5,
+        color="#777777",
+        linestyle=":",
+        linewidth=1.2,
+        label="3 Temmuz olcum ust bolgesi",
+    )
+    ax.set_title("3 Temmuz menzil2 fitleri uzerinde 21 Temmuz dogrulama noktalari")
+    ax.set_xlabel("Yer hizi (m/s)")
+    ax.set_ylabel("P / P_hover")
+    ax.set_xlim(2.0, 20.0)
+    ax.grid(True, alpha=0.25)
+    ax.legend(fontsize=8.5, ncol=2)
+    fig.tight_layout()
+    fig.savefig(output_path, dpi=190)
+    plt.close(fig)
+    return Path(output_path).resolve()
+
+
+def plot_july21_validation_vehicle_power(
+    fit_suite, observations_by_phase, vehicle_hover_power_w, output_path
+):
+    import matplotlib.pyplot as plt
+
+    speeds = [value / 10.0 for value in range(20, 201)]
+    fig, ax = plt.subplots(figsize=(12.5, 7.2))
+    for name, model_fn in fit_suite.get("model_functions", {}).items():
+        ax.plot(
+            speeds,
+            [model_fn(speed) * vehicle_hover_power_w for speed in speeds],
+            color=JULY21_MODEL_COLORS.get(name, "#333333"),
+            linewidth=2.0,
+            label=JULY21_MODEL_LABELS.get(name, name),
+        )
+    july3_obs = fit_suite.get("observations", [])
+    ax.scatter(
+        [row["speed_ms"] for row in july3_obs],
+        [row["power_ratio"] * vehicle_hover_power_w for row in july3_obs],
+        marker="o",
+        s=50,
+        facecolor="black",
+        edgecolor="white",
+        linewidth=0.7,
+        zorder=6,
+        label="3 Temmuz fit noktalari",
+    )
+    for phase, (color, marker, label) in JULY21_PHASE_PLOT_STYLE.items():
+        observations = observations_by_phase.get(phase, [])
+        ax.scatter(
+            [row["speed_ms"] for row in observations],
+            [row["power_ratio"] * vehicle_hover_power_w for row in observations],
+            marker=marker,
+            s=72,
+            facecolor=color,
+            edgecolor="white",
+            linewidth=0.8,
+            zorder=7,
+            label=label,
+        )
+    ax.axvline(12.5, color="#777777", linestyle=":", linewidth=1.2)
+    ax.set_title("3 Temmuz fitleri ve 21 Temmuz olculen arac gucu")
+    ax.set_xlabel("Yer hizi (m/s)")
+    ax.set_ylabel("Arac gucu (W, 6S2P esdegeri)")
+    ax.set_xlim(2.0, 20.0)
+    ax.grid(True, alpha=0.25)
+    ax.legend(fontsize=8.5, ncol=2)
+    fig.tight_layout()
+    fig.savefig(output_path, dpi=190)
+    plt.close(fig)
+    return Path(output_path).resolve()
+
+
+def run_july21_validation_against_july3(fit_suite, log_root=None, make_graph=True):
+    """DONDURULMUS 3 Temmuz fitine karsi 21 Temmuz dis dogrulamasi.
+    Fit katsayilari DEGISMEZ; yalnizca residual/grafik uretir."""
+    power_reference_w = fit_suite.get("power_reference_w")
+    vehicle_hover_power_w = fit_suite.get("vehicle_measured_hover_power_w")
+    model_functions = fit_suite.get("model_functions", {})
+    if not power_reference_w:
+        raise RuntimeError("3 Temmuz hover guc referansi yok; dogrulama yapilamaz.")
+    if not model_functions:
+        raise RuntimeError("3 Temmuz fit modelleri yok; dogrulama yapilamaz.")
+
+    samples, metadata = build_july21_joined_samples(
+        power_reference_w, log_root=log_root
+    )
+    observations_by_phase = {
+        phase: build_july21_validation_observations(samples, phase, power_reference_w)
+        for phase in JULY21_VALIDATION_PHASES
+    }
+    rows = build_july21_validation_rows(
+        observations_by_phase, model_functions, vehicle_hover_power_w
+    )
+    residual_summary = _summarize_july21_residuals(rows, list(model_functions))
+
+    graph_paths = {}
+    if make_graph:
+        graph_paths["power_ratio"] = plot_july21_validation_ratio(
+            fit_suite,
+            samples,
+            observations_by_phase,
+            output_path=JULY21_VALIDATION_RATIO_OUTPUT_PATH,
+        )
+        if vehicle_hover_power_w:
+            graph_paths["vehicle_power"] = plot_july21_validation_vehicle_power(
+                fit_suite,
+                observations_by_phase,
+                vehicle_hover_power_w,
+                output_path=JULY21_VALIDATION_POWER_OUTPUT_PATH,
+            )
+
+    return {
+        "mode": "july21_validation_vs_july3_fit",
+        "metadata": metadata,
+        "power_reference_w": power_reference_w,
+        "vehicle_measured_hover_power_w": vehicle_hover_power_w,
+        "observations_by_phase": observations_by_phase,
+        "validation_rows": rows,
+        "residual_summary": residual_summary,
+        "joined_samples": samples,
+        "graph_paths": graph_paths,
+    }
+
+
+def build_combined_july3_july21_fit_suite(
+    profile,
+    sonuc,
+    hover_power_w,
+    battery_wh,
+    correction_factor,
+    july3_log_root=None,
+    july3_date_hint=DATALINK_MEASURED_CURVE_DATE_HINT,
+    july21_log_root=None,
+):
+    """3 Temmuz + 21 Temmuz(yalniz ilk 10 kesintisiz tur) birlesik fiti.
+
+    21 Temmuz ornekleri ONCE hiz-kutusu medyanlarina indirgenir
+    (build_datalink_speed_observations), boylece uzun ucusun ham ornek sayisi
+    3 Temmuz'u ezemez. Pilot-mudahalesi sonrasi ve gorev-disi ornekler
+    EGITIME ALINMAZ (devir notu QC). Fit yine 2-serbest-parametre audit'inden
+    gecer."""
+    july3_suite = build_datalink_fitted_model_suite(
+        profile,
+        sonuc,
+        hover_power_w,
+        battery_wh,
+        correction_factor,
+        log_root=july3_log_root,
+        date_hint=july3_date_hint,
+    )
+    power_reference_w = july3_suite.get("power_reference_w")
+    if not power_reference_w:
+        raise RuntimeError("3 Temmuz hover guc referansi yok; birlesik fit yapilamaz.")
+
+    july3_obs = [dict(obs) for obs in july3_suite.get("observations", [])]
+    for obs in july3_obs:
+        obs.setdefault("flight_source", "2026-07-03")
+
+    samples, july21_meta = build_july21_joined_samples(
+        power_reference_w, log_root=july21_log_root
+    )
+    july21_train_obs = build_july21_validation_observations(
+        samples, JULY21_TRAIN_PHASE, power_reference_w
+    )
+    for obs in july21_train_obs:
+        obs["flight_source"] = "2026-07-21"
+        obs["validation_phase"] = JULY21_TRAIN_PHASE
+
+    combined_obs = july3_obs + july21_train_obs
+    combined_obs.sort(key=lambda obs: obs["speed_ms"])
+
+    model_profile = july3_suite.get("model_profile", profile)
+    model_fit = build_measured_curve_model_fit(
+        model_profile, sonuc, power_reference_w, combined_obs
+    )
+    measured_params = {
+        "zeng_measured_fit": model_fit["zeng_params"],
+        "faessler_measured_fit": model_fit["faessler_params"],
+        "kirschstein_measured_fit": model_fit["kirschstein_params"],
+    }
+    model_functions = {}
+    model_params = {}
+    model_audit = {}
+    for measured_name, public_name in DATALINK_MEASURED_MODEL_NAME_MAP.items():
+        if measured_name in model_fit["model_functions"]:
+            model_functions[public_name] = model_fit["model_functions"][measured_name]
+        if measured_name in measured_params:
+            params = dict(measured_params[measured_name])
+            params["public_model_name"] = public_name
+            params["source_model_name"] = measured_name
+            model_params[public_name] = params
+        audit = model_fit.get("fit_audit", {}).get("models", {}).get(measured_name)
+        if audit:
+            model_audit[public_name] = audit
+
+    return {
+        "mode": "combined_july3_july21_fit",
+        "july3_suite": july3_suite,
+        "power_reference_w": power_reference_w,
+        "vehicle_measured_hover_power_w": july3_suite.get(
+            "vehicle_measured_hover_power_w"
+        ),
+        "observations": combined_obs,
+        "july3_observation_count": len(july3_obs),
+        "july21_train_observation_count": len(july21_train_obs),
+        "model_functions": model_functions,
+        "model_params": model_params,
+        "model_audit": model_audit,
+        "model_fit_residuals": model_fit["model_fit_residuals"],
+        "fit_audit": model_fit["fit_audit"],
+        "model_profile": model_fit["profile"],
+        "july21_metadata": july21_meta,
+        "excluded_phases": ["pilot_mudahalesi_sonrasi", "gorev_disi"],
+    }
+
+
+def print_july21_validation_summary(result):
+    meta = result.get("metadata", {})
+    print("\n21 Temmuz dis dogrulama (3 Temmuz fiti DONDURULDU):")
+    print(f"  BIN: {meta.get('bin')}  |  DataLink oturumu: {meta.get('datalink_session')}")
+    print(
+        f"  Saat duzeltmesi: {meta.get('clock_correction_s')} s "
+        f"(DataLink saati {JULY21_DATALINK_CLOCK_AHEAD_S} s ileriydi)"
+    )
+    print(
+        f"  Pervane: {meta.get('prop_diameter_inch')}\"  |  "
+        f"Birlesen ornek: {meta.get('joined_sample_count')}  |  "
+        f"Kesintisiz tur: {meta.get('uninterrupted_lap_count')}"
+    )
+    if result.get("vehicle_measured_hover_power_w"):
+        print(
+            f"  Arac hover (6S2P esdeger): "
+            f"{result['vehicle_measured_hover_power_w']:.1f} W  [tek kol x"
+            f"{FIRFIR_BATTERY_PARALLEL_ARMS}]"
+        )
+    for row in result.get("validation_rows", []):
+        if row["phase"] != JULY21_TRAIN_PHASE:
+            continue
+        parts = [f"  v={row['speed_ms']:.3f} m/s"]
+        if "measured_vehicle_power_w" in row:
+            parts.append(f"olculen={row['measured_vehicle_power_w']:.1f} W")
+        for name in result.get("residual_summary", {}).get(
+            JULY21_TRAIN_PHASE, {}
+        ).get("models", {}):
+            parts.append(f"{name}:{row[f'{name}_residual_percent']:+.3f}%")
+        print("  ".join(parts))
+    for phase, summary in result.get("residual_summary", {}).items():
+        print(f"  [{phase}] {summary['bin_count']} kutu, "
+              f"{summary['speed_min_ms']:.1f}-{summary['speed_max_ms']:.1f} m/s")
+        for name, stats in summary["models"].items():
+            print(
+                f"    {name}: medyan {stats['median_residual_percent']:+.2f}% | "
+                f"MAE {stats['mean_absolute_residual_percent']:.2f}% | "
+                f"maks {stats['max_absolute_residual_percent']:.2f}%"
+            )
+    for key, path in result.get("graph_paths", {}).items():
+        print(f"  grafik[{key}]: {path}")
+    print("  NOT: 21 Temmuz noktalari fit katsayilarini DEGISTIRMEZ (dis dogrulama).")
+
+
+def print_combined_fit_summary(result):
+    print("\n3 + 21 Temmuz BIRLESIK fit:")
+    print(
+        f"  Gozlem: 3 Temmuz {result.get('july3_observation_count')} + "
+        f"21 Temmuz(ilk 10 tur) {result.get('july21_train_observation_count')} kutu"
+    )
+    print(f"  Dislanan fazlar: {', '.join(result.get('excluded_phases', []))}")
+    print(f"  P_hover(3 Temmuz tek kol)={result.get('power_reference_w', 0.0):.1f} W")
+    for name, params in result.get("model_params", {}).items():
+        scalars = {
+            key: (round(value, 6) if isinstance(value, float) else value)
+            for key, value in params.items()
+            if isinstance(value, (int, float, str, bool))
+        }
+        print(f"  {name}: {scalars}")
+    residuals = result.get("model_fit_residuals", {})
+    for name, rows in residuals.items():
+        abs_res = [
+            abs(row.get("error", 0.0)) for row in rows if isinstance(row, dict)
+        ]
+        if abs_res:
+            print(
+                f"  {name} residual: MAE={sum(abs_res) / len(abs_res):.4f} "
+                f"maks={max(abs_res):.4f} (P/Ph orani, {len(abs_res)} kutu)"
+            )
+    audit_models = result.get("fit_audit", {}).get("models", {})
+    for name, audit in audit_models.items():
+        if isinstance(audit, dict) and "status" in audit:
+            print(f"  audit[{name}]: {audit['status']}")
 
 
 def print_datalink_fit_suite_summary(suite):
@@ -4744,7 +5443,7 @@ def run_preset_fit_apply_to_vehicle(
 
 def calculate_real_energy_wh(total_cells, capacity_mah, battery_type="lihv"):
     if battery_type == "lihv":
-        nominal_voltage = 3.7 * (7.0 / 6.0)
+        nominal_voltage = 3.996
     elif battery_type == "lipo":
         # LiPo ile LiHV arasında 7/6 kat fark varsayımı
         nominal_voltage = 3.7
@@ -5369,6 +6068,7 @@ def drone_simulasyon():
         print(
             "   (5)     Sadece DataLink ham verilerini (log) ve batarya grafiğini göster"
         )
+        print("   (6)     21 Temmuz doğrulama / birleşik fit")
         print("   (q)     Çıkış")
 
         son_secim = input("Seçiminiz: ").strip().lower()
@@ -5516,6 +6216,85 @@ def drone_simulasyon():
                 print("Lütfen geçerli sayısal değerler giriniz!")
             except Exception as exc:
                 print(f"Preset fit + uygulama analizi çalıştırılamadı: {exc}")
+
+        elif son_secim == "6":
+            try:
+                print("\n--- 21 TEMMUZ DOĞRULAMA / BİRLEŞİK FİT ---")
+                print("1) 3 Temmuz fitine karşı dış doğrulama [varsayılan]")
+                print("   3 Temmuz fiti dondurulur; 21 Temmuz noktaları üzerine çizilir.")
+                print("2) 3 + 21 Temmuz birleşik fit")
+                print("   Yalnız 21 Temmuz ilk 10 kesintisiz tur eğitime katılır.")
+                july21_mode = input("Seçim (1/2) [1]: ").strip() or "1"
+                if july21_mode not in {"1", "2"}:
+                    july21_mode = "1"
+
+                # 3 Temmuz fitini seçenek 3 ile birebir aynı Fırfır preset akışıyla kur.
+                fit_profile = build_speed_model_profile(
+                    "1",
+                    yeni_agirlik / 1000.0,
+                    motor_sayisi,
+                    secilen_prop_inc,
+                    drag_area,
+                    require_theoretical=False,
+                )
+                fit_drag_area_cm2 = (
+                    fit_profile.get("body_area_m2", drag_area / 10000.0) * 10000.0
+                )
+                fit_sonuc = BauersfeldMenzilHesaplayici(
+                    hover_power_w=yeni_total_power,
+                    correction_factor=correction_factor,
+                    battery_wh=yeni_enerji,
+                    total_mass_kg=fit_profile["mass_kg"],
+                    drag_area_cm2=fit_drag_area_cm2,
+                    prop_diameter_inch=fit_profile["prop_diameter_inch"],
+                    num_rotors=fit_profile["num_rotors"],
+                ).solve()
+
+                july21_root_raw = input(
+                    "21 Temmuz log klasörü [otomatik: 21 temmuz Tüm Test Logları]: "
+                ).strip()
+                july21_log_root = Path(july21_root_raw) if july21_root_raw else None
+
+                if july21_mode == "2":
+                    combined = build_combined_july3_july21_fit_suite(
+                        fit_profile,
+                        fit_sonuc,
+                        yeni_total_power,
+                        yeni_enerji,
+                        correction_factor,
+                        july21_log_root=july21_log_root,
+                    )
+                    print_combined_fit_summary(combined)
+                else:
+                    graph_raw = (
+                        input("Grafik oluşturulsun mu? (e/h) [e]: ").strip().lower()
+                    )
+                    make_graph = graph_raw != "h"
+                    fit_suite = build_datalink_fitted_model_suite(
+                        fit_profile,
+                        fit_sonuc,
+                        yeni_total_power,
+                        yeni_enerji,
+                        correction_factor,
+                    )
+                    validation = run_july21_validation_against_july3(
+                        fit_suite,
+                        log_root=july21_log_root,
+                        make_graph=make_graph,
+                    )
+                    print_july21_validation_summary(validation)
+
+                print("\nSonraki adım:")
+                print("   [Enter / 1] Ana menüye dön")
+                print("   (q / 2)     Çıkış")
+                sonraki_adim = input("Seçiminiz: ").strip().lower()
+                if sonraki_adim in {"q", "2", "c", "ç", "exit"}:
+                    break
+
+            except ValueError:
+                print("Lütfen geçerli sayısal değerler giriniz!")
+            except Exception as exc:
+                print(f"21 Temmuz analizi çalıştırılamadı: {exc}")
 
         elif son_secim == "5":
             try:
