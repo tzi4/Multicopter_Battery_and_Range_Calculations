@@ -973,6 +973,15 @@ JULY21_PHASE_PLOT_STYLE = {
     "ilk_10_kesintisiz_tur": ("#e67e22", "D", "21 Temmuz - ilk 10 kesintisiz tur"),
     "pilot_mudahalesi_sonrasi": ("#c0392b", "X", "21 Temmuz - mudahale sonrasi"),
 }
+JULY21_COMBINED_RATIO_OUTPUT_PATH = "combined_july3_july21_power_ratio.png"
+JULY21_COMBINED_POWER_OUTPUT_PATH = "combined_july3_july21_vehicle_power.png"
+# Oturuma ozel DataLink saat duzeltmesi (saniye, DataLink zamanina EKLENIR).
+# Genel July3-tarzi pipeline (menu-3 elle giris / menu-5 ham veri) 21 Temmuz
+# oturumunu islerken de 56.18 s kaymasi duzeltilmis olur; July3 oturumlari
+# haritada olmadigi icin davranislari degismez.
+DATALINK_SESSION_CLOCK_CORRECTION_S = {
+    JULY21_DATALINK_SESSION_NAME: -JULY21_DATALINK_CLOCK_AHEAD_S,
+}
 
 
 FIRFIR_BATTERY_CELLS = 6
@@ -1375,6 +1384,118 @@ def find_datalink_session_dirs(root=None):
     return sessions
 
 
+def resolve_datalink_session_root(log_root):
+    """UART oturum klasorlerinin bulundugu koku dondurur.
+
+    3 Temmuz duzeni: root/Datalink/UART-*  |  21 Temmuz duzeni: root/UART-*.
+    Once Datalink/ alt klasoru denenir; yoksa (veya UART icermiyorsa) kok."""
+    log_root = Path(log_root)
+    datalink_sub = log_root / "Datalink"
+    if datalink_sub.is_dir() and any(
+        child.is_dir() and child.name.startswith("UART-")
+        for child in datalink_sub.iterdir()
+    ):
+        return datalink_sub
+    return log_root
+
+
+def _session_date_hints(session_root):
+    hints = set()
+    if not Path(session_root).is_dir():
+        return []
+    for child in Path(session_root).iterdir():
+        if not child.is_dir():
+            continue
+        match = re.match(r"UART-(\d{6})-", child.name)
+        if match:
+            hints.add(match.group(1))
+    return sorted(hints)
+
+
+def discover_datalink_log_roots():
+    """Kullanicinin klasor adi/tarih ezberlemesine gerek kalmasin diye repo
+    kokundeki log klasorlerini ve icerdikleri UART tarih hint'lerini tarar."""
+    base_dir = Path(__file__).resolve().parent
+    candidates = []
+    for child in sorted(base_dir.iterdir()):
+        if child.is_dir() and "temmuz" in child.name.lower():
+            candidates.append(child)
+    for candidate in FIRFIR_DATALINK_ROOT_CANDIDATES:
+        path = Path(candidate)
+        if not path.is_absolute():
+            path = base_dir / path
+        if path.is_dir():
+            candidates.append(path)
+    entries = []
+    for root in candidates:
+        hints = _session_date_hints(resolve_datalink_session_root(root))
+        if hints:
+            has_bin = any(
+                path.suffix.lower() == ".bin" for path in root.iterdir()
+            )
+            entries.append(
+                {
+                    "path": root,
+                    "label": root.name if root.parent == base_dir else str(
+                        root.relative_to(base_dir)
+                    ),
+                    "date_hints": hints,
+                    "has_bin": has_bin,
+                }
+            )
+    # Kalibrasyon varsayilani '3 Temmuz*' listede hep 1 numara olsun
+    # (alfabetik sirada '21 temmuz' one gecerdi).
+    entries.sort(
+        key=lambda entry: (not entry["label"].lower().startswith("3 temmuz"),
+                           entry["label"].lower())
+    )
+    return entries
+
+
+def prompt_datalink_root_and_hint(default_hint=DATALINK_MEASURED_CURVE_DATE_HINT):
+    """Kesfedilen log klasorlerini numarali listeler; kullanici klasor adi /
+    tarih hint'i ezberlemek zorunda kalmaz. 'e' ile eski elle giris korunur."""
+    entries = [
+        entry for entry in discover_datalink_log_roots() if entry.get("has_bin")
+    ]
+    print("\nDataLink/log klasörü:")
+    for idx, entry in enumerate(entries, 1):
+        default_marker = " [varsayılan]" if idx == 1 else ""
+        print(
+            f"{idx}) {entry['label']} "
+            f"(tarih: {', '.join(entry['date_hints'])}){default_marker}"
+        )
+    print("e) Elle klasör/tarih gir")
+    default_choice = "1" if entries else "e"
+    raw = input(f"Seçim [{default_choice}]: ").strip().lower() or default_choice
+    if raw == "e" or not entries:
+        root_raw = input(
+            "Klasör yolu [otomatik: 3 Temmuz Tüm Test Logları]: "
+        ).strip()
+        log_root = Path(root_raw) if root_raw else None
+        hint_raw = input(f"Tarih hint'i (YYMMDD) [{default_hint}]: ").strip()
+        return log_root, normalize_datalink_date_hint(hint_raw) or default_hint
+    try:
+        idx = int(raw)
+    except ValueError:
+        idx = 1
+    entry = entries[min(max(idx, 1), len(entries)) - 1]
+    hints = entry["date_hints"]
+    if len(hints) > 1:
+        print("Tarih:")
+        for h_idx, hint in enumerate(hints, 1):
+            print(f"{h_idx}) {hint}")
+        hint_raw = input("Seçim [1]: ").strip()
+        try:
+            h_idx = int(hint_raw) if hint_raw else 1
+        except ValueError:
+            h_idx = 1
+        hint = hints[min(max(h_idx, 1), len(hints)) - 1]
+    else:
+        hint = hints[0]
+    return entry["path"], hint
+
+
 def normalize_datalink_date_hint(value):
     if not value:
         return None
@@ -1531,6 +1652,14 @@ def _parse_datalink_session_samples(session, timestamp_mode, prop_diameter_inch)
         samples.extend(
             sample for sample in parsed["samples"] if sample.get("timestamp_utc")
         )
+    # Oturuma ozel saat duzeltmesi (orn. 21 Temmuz DataLink saati 56.18 s
+    # ileride). July3 oturumlari haritada yok -> 0, davranis ayni.
+    correction_s = DATALINK_SESSION_CLOCK_CORRECTION_S.get(session.get("name"), 0.0)
+    if correction_s:
+        for sample in samples:
+            sample["timestamp_utc"] = sample["timestamp_utc"] + timedelta(
+                seconds=correction_s
+            )
     samples.sort(key=lambda item: item["timestamp_utc"])
     return samples
 
@@ -2347,8 +2476,10 @@ def run_datalink_measured_curve_analysis(
     timestamp_mode="filename_trt",
 ):
     log_root = find_measured_curve_log_root(log_root)
-    datalink_root = log_root / "Datalink"
-    bin_paths = sorted(log_root.glob("*.BIN"))
+    datalink_root = resolve_datalink_session_root(log_root)
+    bin_paths = sorted(
+        path for path in log_root.iterdir() if path.suffix.lower() == ".bin"
+    )
     normalized_date_hint = normalize_datalink_date_hint(date_hint)
     sessions = find_datalink_session_dirs(datalink_root)
     sessions = filter_datalink_sessions_by_date_hint(sessions, normalized_date_hint)
@@ -2986,7 +3117,8 @@ def plot_july21_validation_ratio(
     ax.legend(fontsize=8.5, ncol=2)
     fig.tight_layout()
     fig.savefig(output_path, dpi=190)
-    plt.close(fig)
+    # Figur acik birakilir: menu akisi plt.show() ile pencereyi gosterir
+    # (diger menzil2 grafiklerinin deseni; Agg altinda no-op).
     return Path(output_path).resolve()
 
 
@@ -3039,7 +3171,6 @@ def plot_july21_validation_vehicle_power(
     ax.legend(fontsize=8.5, ncol=2)
     fig.tight_layout()
     fig.savefig(output_path, dpi=190)
-    plt.close(fig)
     return Path(output_path).resolve()
 
 
@@ -3095,6 +3226,54 @@ def run_july21_validation_against_july3(fit_suite, log_root=None, make_graph=Tru
     }
 
 
+def plot_combined_fit_curves(
+    model_functions, observations, output_path, power_scale_w=None
+):
+    """Birlesik (3+21 Temmuz) fit egrileri + kaynagina gore renklendirilmis
+    gozlem noktalari. power_scale_w verilirse Watt, verilmezse P/Ph cizer."""
+    import matplotlib.pyplot as plt
+
+    scale = power_scale_w if power_scale_w else 1.0
+    speeds = [value / 10.0 for value in range(20, 201)]
+    fig, ax = plt.subplots(figsize=(12.5, 7.2))
+    for name, model_fn in model_functions.items():
+        ax.plot(
+            speeds,
+            [model_fn(speed) * scale for speed in speeds],
+            color=JULY21_MODEL_COLORS.get(name, "#333333"),
+            linewidth=2.0,
+            label=f"{name} - birlesik fit",
+        )
+    source_style = {
+        "2026-07-03": ("black", "o", "3 Temmuz gozlemleri"),
+        "2026-07-21": ("#e67e22", "D", "21 Temmuz gozlemleri (ilk 10 tur)"),
+    }
+    for source, (color, marker, label) in source_style.items():
+        points = [
+            obs for obs in observations if obs.get("flight_source") == source
+        ]
+        ax.scatter(
+            [obs["speed_ms"] for obs in points],
+            [obs["power_ratio"] * scale for obs in points],
+            marker=marker,
+            s=60,
+            facecolor=color,
+            edgecolor="white",
+            linewidth=0.8,
+            zorder=6,
+            label=label,
+        )
+    ax.set_title("3 + 21 Temmuz birlesik fit (yalniz ilk 10 kesintisiz tur egitimde)")
+    ax.set_xlabel("Yer hizi (m/s)")
+    ax.set_ylabel("Arac gucu (W, 6S2P esdegeri)" if power_scale_w else "P / P_hover")
+    ax.set_xlim(2.0, 20.0)
+    ax.grid(True, alpha=0.25)
+    ax.legend(fontsize=8.5, ncol=2)
+    fig.tight_layout()
+    fig.savefig(output_path, dpi=190)
+    return Path(output_path).resolve()
+
+
 def build_combined_july3_july21_fit_suite(
     profile,
     sonuc,
@@ -3104,6 +3283,7 @@ def build_combined_july3_july21_fit_suite(
     july3_log_root=None,
     july3_date_hint=DATALINK_MEASURED_CURVE_DATE_HINT,
     july21_log_root=None,
+    make_graph=False,
 ):
     """3 Temmuz + 21 Temmuz(yalniz ilk 10 kesintisiz tur) birlesik fiti.
 
@@ -3166,13 +3346,29 @@ def build_combined_july3_july21_fit_suite(
         if audit:
             model_audit[public_name] = audit
 
+    vehicle_measured_hover_power_w = july3_suite.get(
+        "vehicle_measured_hover_power_w"
+    )
+    graph_paths = {}
+    if make_graph:
+        graph_paths["power_ratio"] = plot_combined_fit_curves(
+            model_functions,
+            combined_obs,
+            output_path=JULY21_COMBINED_RATIO_OUTPUT_PATH,
+        )
+        if vehicle_measured_hover_power_w:
+            graph_paths["vehicle_power"] = plot_combined_fit_curves(
+                model_functions,
+                combined_obs,
+                output_path=JULY21_COMBINED_POWER_OUTPUT_PATH,
+                power_scale_w=vehicle_measured_hover_power_w,
+            )
+
     return {
         "mode": "combined_july3_july21_fit",
         "july3_suite": july3_suite,
         "power_reference_w": power_reference_w,
-        "vehicle_measured_hover_power_w": july3_suite.get(
-            "vehicle_measured_hover_power_w"
-        ),
+        "vehicle_measured_hover_power_w": vehicle_measured_hover_power_w,
         "observations": combined_obs,
         "july3_observation_count": len(july3_obs),
         "july21_train_observation_count": len(july21_train_obs),
@@ -3184,6 +3380,7 @@ def build_combined_july3_july21_fit_suite(
         "model_profile": model_fit["profile"],
         "july21_metadata": july21_meta,
         "excluded_phases": ["pilot_mudahalesi_sonrasi", "gorev_disi"],
+        "graph_paths": graph_paths,
     }
 
 
@@ -3260,6 +3457,8 @@ def print_combined_fit_summary(result):
     for name, audit in audit_models.items():
         if isinstance(audit, dict) and "status" in audit:
             print(f"  audit[{name}]: {audit['status']}")
+    for key, path in result.get("graph_paths", {}).items():
+        print(f"  grafik[{key}]: {path}")
 
 
 def print_datalink_fit_suite_summary(suite):
@@ -6068,7 +6267,6 @@ def drone_simulasyon():
         print(
             "   (5)     Sadece DataLink ham verilerini (log) ve batarya grafiğini göster"
         )
-        print("   (6)     21 Temmuz doğrulama / birleşik fit")
         print("   (q)     Çıkış")
 
         son_secim = input("Seçiminiz: ").strip().lower()
@@ -6078,6 +6276,108 @@ def drone_simulasyon():
         elif son_secim in {"3", "4"}:
             try:
                 print("\n--- PRESET/LOG DATALINK FIT ANALIZI ---")
+
+                kaynak_entries = discover_datalink_log_roots()
+
+                def _kaynak_label(prefix, fallback):
+                    for entry in kaynak_entries:
+                        if entry["label"].lower().startswith(prefix):
+                            return (
+                                f"{entry['label']} "
+                                f"({', '.join(entry['date_hints'])})"
+                            )
+                    return fallback
+
+                print("\nVeri kaynağı:")
+                print(
+                    "1) "
+                    + _kaynak_label("3 temmuz", "3 Temmuz Tüm Test Logları (260703)")
+                    + " — kalibrasyon fiti [varsayılan]"
+                )
+                print(
+                    "2) "
+                    + _kaynak_label(
+                        "21 temmuz", "21 temmuz Tüm Test Logları (260721)"
+                    )
+                    + " — dış doğrulama (3 Temmuz fiti dondurulur)"
+                )
+                print(
+                    "3) 3 + 21 Temmuz birleşik fit "
+                    "(yalnız ilk 10 kesintisiz tur eğitime katılır)"
+                )
+                print("4) Elle klasör/tarih gir")
+                veri_kaynagi = input("Veri kaynağı (1-4) [1]: ").strip() or "1"
+                if veri_kaynagi not in {"1", "2", "3", "4"}:
+                    veri_kaynagi = "1"
+
+                if veri_kaynagi in {"2", "3"}:
+                    # 3 Temmuz fit bağlamı Fırfır preset ile (seçenek-3 fit
+                    # akışının birebir aynısı).
+                    fit_profile = build_speed_model_profile(
+                        "1",
+                        yeni_agirlik / 1000.0,
+                        motor_sayisi,
+                        secilen_prop_inc,
+                        drag_area,
+                        require_theoretical=False,
+                    )
+                    fit_drag_area_cm2 = (
+                        fit_profile.get("body_area_m2", drag_area / 10000.0)
+                        * 10000.0
+                    )
+                    fit_sonuc = BauersfeldMenzilHesaplayici(
+                        hover_power_w=yeni_total_power,
+                        correction_factor=correction_factor,
+                        battery_wh=yeni_enerji,
+                        total_mass_kg=fit_profile["mass_kg"],
+                        drag_area_cm2=fit_drag_area_cm2,
+                        prop_diameter_inch=fit_profile["prop_diameter_inch"],
+                        num_rotors=fit_profile["num_rotors"],
+                    ).solve()
+                    graph_raw = (
+                        input("Grafik oluşturulsun mu? (e/h) [e]: ")
+                        .strip()
+                        .lower()
+                    )
+                    make_graph = graph_raw != "h"
+
+                    if veri_kaynagi == "2":
+                        fit_suite = build_datalink_fitted_model_suite(
+                            fit_profile,
+                            fit_sonuc,
+                            yeni_total_power,
+                            yeni_enerji,
+                            correction_factor,
+                        )
+                        validation = run_july21_validation_against_july3(
+                            fit_suite, make_graph=make_graph
+                        )
+                        print_july21_validation_summary(validation)
+                    else:
+                        combined = build_combined_july3_july21_fit_suite(
+                            fit_profile,
+                            fit_sonuc,
+                            yeni_total_power,
+                            yeni_enerji,
+                            correction_factor,
+                            make_graph=make_graph,
+                        )
+                        print_combined_fit_summary(combined)
+
+                    if make_graph:
+                        import matplotlib.pyplot as plt
+
+                        print("plt.show() cagriliyor.")
+                        plt.show()
+
+                    print("\nSonraki adım:")
+                    print("   [Enter / 1] Ana menüye dön")
+                    print("   (q / 2)     Çıkış")
+                    sonraki_adim = input("Seçiminiz: ").strip().lower()
+                    if sonraki_adim in {"q", "2", "c", "ç", "exit"}:
+                        break
+                    continue
+
                 raw_speeds = input(
                     "Uçuş hızı/hızları (m/s, virgülle; örn 6,10,15,20,25) [6,10,15,20,25]: "
                 ).strip()
@@ -6133,17 +6433,14 @@ def drone_simulasyon():
                 )
                 selected_preview = parse_datalink_model_selection(model_choice)
                 print("Seçilen modeller: " + ", ".join(selected_preview))
-                root_raw = input(
-                    "DataLink/log klasörü [otomatik: 3 Temmuz Tüm Test Logları]: "
-                ).strip()
-                datalink_log_root = Path(root_raw) if root_raw else None
-                date_hint_raw = input(
-                    "DataLink tarih hint'i (YYMMDD) [260703]: "
-                ).strip()
-                datalink_date_hint = (
-                    normalize_datalink_date_hint(date_hint_raw)
-                    or DATALINK_MEASURED_CURVE_DATE_HINT
-                )
+                if veri_kaynagi == "4":
+                    datalink_log_root, datalink_date_hint = (
+                        prompt_datalink_root_and_hint()
+                    )
+                else:
+                    # Kaynak 1: 3 Temmuz varsayilani, soru sorulmaz.
+                    datalink_log_root = None
+                    datalink_date_hint = DATALINK_MEASURED_CURVE_DATE_HINT
 
                 graph_raw = (
                     input("Seçilen modeller için grafik oluşturulsun mu? (e/h) [e]: ")
@@ -6217,100 +6514,9 @@ def drone_simulasyon():
             except Exception as exc:
                 print(f"Preset fit + uygulama analizi çalıştırılamadı: {exc}")
 
-        elif son_secim == "6":
-            try:
-                print("\n--- 21 TEMMUZ DOĞRULAMA / BİRLEŞİK FİT ---")
-                print("1) 3 Temmuz fitine karşı dış doğrulama [varsayılan]")
-                print("   3 Temmuz fiti dondurulur; 21 Temmuz noktaları üzerine çizilir.")
-                print("2) 3 + 21 Temmuz birleşik fit")
-                print("   Yalnız 21 Temmuz ilk 10 kesintisiz tur eğitime katılır.")
-                july21_mode = input("Seçim (1/2) [1]: ").strip() or "1"
-                if july21_mode not in {"1", "2"}:
-                    july21_mode = "1"
-
-                # 3 Temmuz fitini seçenek 3 ile birebir aynı Fırfır preset akışıyla kur.
-                fit_profile = build_speed_model_profile(
-                    "1",
-                    yeni_agirlik / 1000.0,
-                    motor_sayisi,
-                    secilen_prop_inc,
-                    drag_area,
-                    require_theoretical=False,
-                )
-                fit_drag_area_cm2 = (
-                    fit_profile.get("body_area_m2", drag_area / 10000.0) * 10000.0
-                )
-                fit_sonuc = BauersfeldMenzilHesaplayici(
-                    hover_power_w=yeni_total_power,
-                    correction_factor=correction_factor,
-                    battery_wh=yeni_enerji,
-                    total_mass_kg=fit_profile["mass_kg"],
-                    drag_area_cm2=fit_drag_area_cm2,
-                    prop_diameter_inch=fit_profile["prop_diameter_inch"],
-                    num_rotors=fit_profile["num_rotors"],
-                ).solve()
-
-                july21_root_raw = input(
-                    "21 Temmuz log klasörü [otomatik: 21 temmuz Tüm Test Logları]: "
-                ).strip()
-                july21_log_root = Path(july21_root_raw) if july21_root_raw else None
-
-                if july21_mode == "2":
-                    combined = build_combined_july3_july21_fit_suite(
-                        fit_profile,
-                        fit_sonuc,
-                        yeni_total_power,
-                        yeni_enerji,
-                        correction_factor,
-                        july21_log_root=july21_log_root,
-                    )
-                    print_combined_fit_summary(combined)
-                else:
-                    graph_raw = (
-                        input("Grafik oluşturulsun mu? (e/h) [e]: ").strip().lower()
-                    )
-                    make_graph = graph_raw != "h"
-                    fit_suite = build_datalink_fitted_model_suite(
-                        fit_profile,
-                        fit_sonuc,
-                        yeni_total_power,
-                        yeni_enerji,
-                        correction_factor,
-                    )
-                    validation = run_july21_validation_against_july3(
-                        fit_suite,
-                        log_root=july21_log_root,
-                        make_graph=make_graph,
-                    )
-                    print_july21_validation_summary(validation)
-
-                print("\nSonraki adım:")
-                print("   [Enter / 1] Ana menüye dön")
-                print("   (q / 2)     Çıkış")
-                sonraki_adim = input("Seçiminiz: ").strip().lower()
-                if sonraki_adim in {"q", "2", "c", "ç", "exit"}:
-                    break
-
-            except ValueError:
-                print("Lütfen geçerli sayısal değerler giriniz!")
-            except Exception as exc:
-                print(f"21 Temmuz analizi çalıştırılamadı: {exc}")
-
         elif son_secim == "5":
             try:
-                log_root = input(
-                    "DataLink/log klasörü [otomatik: 3 Temmuz Tüm Test Logları]: "
-                ).strip()
-                date_hint = input("DataLink tarih hint'i (YYMMDD) [260703]: ").strip()
-
-                if not log_root:
-                    # Otomatik: find_measured_curve_log_root '3 Temmuz*'
-                    # klasorunu bulur (eski sabit yol var olmayan bir dizine
-                    # isaret ediyordu).
-                    log_root = None
-                if not date_hint:
-                    date_hint = "260703"
-
+                log_root, date_hint = prompt_datalink_root_and_hint()
                 run_datalink_raw_data_viewer(log_root, date_hint)
 
                 sonraki_adim = (
