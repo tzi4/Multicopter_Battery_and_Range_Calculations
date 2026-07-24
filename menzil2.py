@@ -6263,7 +6263,8 @@ def drone_simulasyon():
         # --- KULLANICI ETKİLEŞİMLİ SEÇENEK ---
         print("\nNe yapmak istersiniz?")
         print("   [Enter] Yeni Hesaplama Yap")
-        print("   (3)     Preset/log DataLink fit analizi")
+        print("   (3)     Preset/log DataLink fit analizi (3 veya 21 Temmuz seç)")
+        print("   (4)     Birleşik analiz (3 + 21 Temmuz, tek grafik)")
         print(
             "   (5)     Sadece DataLink ham verilerini (log) ve batarya grafiğini göster"
         )
@@ -6273,110 +6274,16 @@ def drone_simulasyon():
 
         if son_secim == "q":
             break
-        elif son_secim in {"3", "4"}:
+        elif son_secim == "3":
             try:
                 print("\n--- PRESET/LOG DATALINK FIT ANALIZI ---")
-
-                kaynak_entries = discover_datalink_log_roots()
-
-                def _kaynak_label(prefix, fallback):
-                    for entry in kaynak_entries:
-                        if entry["label"].lower().startswith(prefix):
-                            return (
-                                f"{entry['label']} "
-                                f"({', '.join(entry['date_hints'])})"
-                            )
-                    return fallback
-
-                print("\nVeri kaynağı:")
                 print(
-                    "1) "
-                    + _kaynak_label("3 temmuz", "3 Temmuz Tüm Test Logları (260703)")
-                    + " — kalibrasyon fiti [varsayılan]"
+                    "Hangi uçuşun verisiyle fit yapılsın? "
+                    "(arkasındaki matematik her uçuş için aynıdır)"
                 )
-                print(
-                    "2) "
-                    + _kaynak_label(
-                        "21 temmuz", "21 temmuz Tüm Test Logları (260721)"
-                    )
-                    + " — dış doğrulama (3 Temmuz fiti dondurulur)"
+                datalink_log_root, datalink_date_hint = (
+                    prompt_datalink_root_and_hint()
                 )
-                print(
-                    "3) 3 + 21 Temmuz birleşik fit "
-                    "(yalnız ilk 10 kesintisiz tur eğitime katılır)"
-                )
-                print("4) Elle klasör/tarih gir")
-                veri_kaynagi = input("Veri kaynağı (1-4) [1]: ").strip() or "1"
-                if veri_kaynagi not in {"1", "2", "3", "4"}:
-                    veri_kaynagi = "1"
-
-                if veri_kaynagi in {"2", "3"}:
-                    # 3 Temmuz fit bağlamı Fırfır preset ile (seçenek-3 fit
-                    # akışının birebir aynısı).
-                    fit_profile = build_speed_model_profile(
-                        "1",
-                        yeni_agirlik / 1000.0,
-                        motor_sayisi,
-                        secilen_prop_inc,
-                        drag_area,
-                        require_theoretical=False,
-                    )
-                    fit_drag_area_cm2 = (
-                        fit_profile.get("body_area_m2", drag_area / 10000.0)
-                        * 10000.0
-                    )
-                    fit_sonuc = BauersfeldMenzilHesaplayici(
-                        hover_power_w=yeni_total_power,
-                        correction_factor=correction_factor,
-                        battery_wh=yeni_enerji,
-                        total_mass_kg=fit_profile["mass_kg"],
-                        drag_area_cm2=fit_drag_area_cm2,
-                        prop_diameter_inch=fit_profile["prop_diameter_inch"],
-                        num_rotors=fit_profile["num_rotors"],
-                    ).solve()
-                    graph_raw = (
-                        input("Grafik oluşturulsun mu? (e/h) [e]: ")
-                        .strip()
-                        .lower()
-                    )
-                    make_graph = graph_raw != "h"
-
-                    if veri_kaynagi == "2":
-                        fit_suite = build_datalink_fitted_model_suite(
-                            fit_profile,
-                            fit_sonuc,
-                            yeni_total_power,
-                            yeni_enerji,
-                            correction_factor,
-                        )
-                        validation = run_july21_validation_against_july3(
-                            fit_suite, make_graph=make_graph
-                        )
-                        print_july21_validation_summary(validation)
-                    else:
-                        combined = build_combined_july3_july21_fit_suite(
-                            fit_profile,
-                            fit_sonuc,
-                            yeni_total_power,
-                            yeni_enerji,
-                            correction_factor,
-                            make_graph=make_graph,
-                        )
-                        print_combined_fit_summary(combined)
-
-                    if make_graph:
-                        import matplotlib.pyplot as plt
-
-                        print("plt.show() cagriliyor.")
-                        plt.show()
-
-                    print("\nSonraki adım:")
-                    print("   [Enter / 1] Ana menüye dön")
-                    print("   (q / 2)     Çıkış")
-                    sonraki_adim = input("Seçiminiz: ").strip().lower()
-                    if sonraki_adim in {"q", "2", "c", "ç", "exit"}:
-                        break
-                    continue
 
                 raw_speeds = input(
                     "Uçuş hızı/hızları (m/s, virgülle; örn 6,10,15,20,25) [6,10,15,20,25]: "
@@ -6433,14 +6340,6 @@ def drone_simulasyon():
                 )
                 selected_preview = parse_datalink_model_selection(model_choice)
                 print("Seçilen modeller: " + ", ".join(selected_preview))
-                if veri_kaynagi == "4":
-                    datalink_log_root, datalink_date_hint = (
-                        prompt_datalink_root_and_hint()
-                    )
-                else:
-                    # Kaynak 1: 3 Temmuz varsayilani, soru sorulmaz.
-                    datalink_log_root = None
-                    datalink_date_hint = DATALINK_MEASURED_CURVE_DATE_HINT
 
                 graph_raw = (
                     input("Seçilen modeller için grafik oluşturulsun mu? (e/h) [e]: ")
@@ -6513,6 +6412,74 @@ def drone_simulasyon():
                 print("Lütfen geçerli sayısal değerler giriniz!")
             except Exception as exc:
                 print(f"Preset fit + uygulama analizi çalıştırılamadı: {exc}")
+
+        elif son_secim == "4":
+            try:
+                print("\n--- BİRLEŞİK ANALİZ (3 + 21 TEMMUZ) ---")
+                print(
+                    "3 Temmuz'un tüm hızları + 21 Temmuz'un ilk 10 kesintisiz turu "
+                    "aynı fit'e katılır; tüm veriler tek grafikte gösterilir."
+                )
+                # Fit bağlamı seçenek-3 ile birebir aynı Fırfır preset akışı.
+                fit_profile = build_speed_model_profile(
+                    "1",
+                    yeni_agirlik / 1000.0,
+                    motor_sayisi,
+                    secilen_prop_inc,
+                    drag_area,
+                    require_theoretical=False,
+                )
+                fit_drag_area_cm2 = (
+                    fit_profile.get("body_area_m2", drag_area / 10000.0) * 10000.0
+                )
+                fit_sonuc = BauersfeldMenzilHesaplayici(
+                    hover_power_w=yeni_total_power,
+                    correction_factor=correction_factor,
+                    battery_wh=yeni_enerji,
+                    total_mass_kg=fit_profile["mass_kg"],
+                    drag_area_cm2=fit_drag_area_cm2,
+                    prop_diameter_inch=fit_profile["prop_diameter_inch"],
+                    num_rotors=fit_profile["num_rotors"],
+                ).solve()
+                graph_raw = (
+                    input("Grafik oluşturulsun mu? (e/h) [e]: ").strip().lower()
+                )
+                make_graph = graph_raw != "h"
+
+                combined = build_combined_july3_july21_fit_suite(
+                    fit_profile,
+                    fit_sonuc,
+                    yeni_total_power,
+                    yeni_enerji,
+                    correction_factor,
+                    make_graph=make_graph,
+                )
+                print_combined_fit_summary(combined)
+
+                # Ek çıktı: 3 Temmuz fiti TEK BAŞINA 21 Temmuz'u ne kadar iyi
+                # öngörüyor? (fit dondurulur, 21 Temmuz dış doğrulama noktaları)
+                validation = run_july21_validation_against_july3(
+                    combined["july3_suite"], make_graph=make_graph
+                )
+                print_july21_validation_summary(validation)
+
+                if make_graph:
+                    import matplotlib.pyplot as plt
+
+                    print("plt.show() cagriliyor.")
+                    plt.show()
+
+                print("\nSonraki adım:")
+                print("   [Enter / 1] Ana menüye dön")
+                print("   (q / 2)     Çıkış")
+                sonraki_adim = input("Seçiminiz: ").strip().lower()
+                if sonraki_adim in {"q", "2", "c", "ç", "exit"}:
+                    break
+
+            except ValueError:
+                print("Lütfen geçerli sayısal değerler giriniz!")
+            except Exception as exc:
+                print(f"Birleşik analiz çalıştırılamadı: {exc}")
 
         elif son_secim == "5":
             try:
