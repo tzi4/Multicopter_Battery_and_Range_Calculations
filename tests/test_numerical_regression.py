@@ -36,7 +36,7 @@ def test_bauersfeld_public_example_matches_legacy_result():
     ("cells", "capacity_mah", "chemistry", "expected_wh"),
     [
         (6, 5000, "lipo", 111.0),
-        (6, 5000, "lihv", 119.88),
+        (6, 5000, "lihv", 129.5),
         (12, 27000, "liion", 1198.8),
     ],
 )

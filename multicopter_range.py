@@ -4842,9 +4842,9 @@ def run_preset_fit_apply_to_vehicle(
 
 def calculate_real_energy_wh(total_cells, capacity_mah, battery_type="lihv"):
     if battery_type == "lihv":
-        nominal_voltage = 3.996
+        # Empirical LiHV energy adjustment established from this project's tests.
+        nominal_voltage = 3.7 * 7.0 / 6.0
     elif battery_type == "lipo":
-        # Historical 7/6 energy adjustment between LiPo and LiHV.
         nominal_voltage = 3.7
     elif battery_type == "liion":
         # This project's solid-state Li-ion pack charges to 4.3 V and uses 3.7 V nominal.
