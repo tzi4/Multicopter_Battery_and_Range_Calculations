@@ -23,9 +23,9 @@ class BauersfeldRangeCalculator:
         self,
         hover_power_w,  # Hover power
         correction_factor,  # Correction Factor
-        battery_wh,  # Batarya Enerjisi
+        battery_wh,  # Battery energy
         total_mass_kg,  # Total mass
-        drag_area_cm2,  # A (Makalede Surface Area)
+        drag_area_cm2,  # A (surface area in the paper)
         prop_diameter_inch,  # Propeller diameter
         num_rotors,
     ):  # Rotor count
@@ -37,7 +37,7 @@ class BauersfeldRangeCalculator:
         self.A_ref = drag_area_cm2  # The paper's coefficients use cm^2.
         self.Nr = num_rotors
 
-        # Fiziksel Sabitler
+        # Physical constants
         self.g = 9.81
         self.rho = 1.225
 
@@ -49,7 +49,7 @@ class BauersfeldRangeCalculator:
         denominator = 2 * self.rho * math.pi * (self.r_prop**2) * self.Nr
         self.vi_h = math.sqrt(numerator / denominator)
 
-        # KATSAYILAR (Tablo II)
+        # Coefficients (Table II)
         # Range coefficients
         self.c0_r = 0.041546
         self.c1_r = 0.041122
@@ -104,7 +104,7 @@ class BauersfeldRangeCalculator:
 
 # DATASHEET DATA SETS
 
-# 1. P80 III KV100 + MF Pervane (Referans - Vibe)
+# 1. P80 III KV100 + MF propeller (reference - Vibe)
 p80_raw_data = [
     [3505, 47.87, 6.23],
     [3744, 47.87, 6.71],
@@ -343,7 +343,7 @@ m8108_light_29in_data = [
     [5517, 629.8],
 ]
 
-# 10. MN601S KV170 + T-MOTOR P21x6.3 (12S - 48V Test Verisi)
+# 10. MN601S KV170 + T-MOTOR P21x6.3 (12S - 48V test data)
 mn601s_kv170_data = [
     [1677, 149],
     [1774, 168],
@@ -508,11 +508,11 @@ u8lite_kv190_g29_data = [
     [7334, 1049],
 ]
 
-# T-MOTOR datasheet yuk testi ("testParameter_U8 Lite ... KV190.xls"):
-# U8 Lite KV190, 6S (24V), [thrust_g, mekanik RPM].
-# NOT: DataLink loglarindaki ham 'RPM' alani eRPM/10'dur (36N42P -> 21 kutup
-# cifti); parser bunu DATALINK_RPM_SCALE (=10/21) ile mekanik RPM'e cevirir.
-# Bu tablo duzeltilmis olcegin dogrulama capasidir (hover ~3100 g -> ~2216 RPM).
+# T-MOTOR datasheet load test ("testParameter_U8 Lite ... KV190.xls"):
+# U8 Lite KV190, 6S (24V), [thrust_g, mechanical RPM].
+# Note: the raw RPM field in DataLink logs is eRPM/10 (36N42P -> 21 pole pairs).
+# The parser converts it to mechanical RPM with DATALINK_RPM_SCALE (=10/21).
+# This table anchors validation of that corrected scale (hover ~3100 g -> ~2216 RPM).
 u8lite_kv190_g28_thrust_rpm = [
     [1662, 1632],
     [1806, 1709],
@@ -613,7 +613,7 @@ u8ii_kv85_data = [
     [6352, 792],
 ]
 
-# 18. T-MOTOR P80 MF3218 (12S - 48V Test Verisi)
+# 18. T-MOTOR P80 MF3218 (12S - 48V test data)
 # Thrust (g) and power (W) values were transcribed from datasheet figures.
 mf3218_data = [
     [3505, 298],
@@ -639,7 +639,7 @@ mf3218_data = [
     [15849, 2671],
 ]
 
-# 19. T-MOTOR P60 KV170 + P22x6.6 (12S - 48V Test Verisi)
+# 19. T-MOTOR P60 KV170 + P22x6.6 (12S - 48V test data)
 p60_kv170_data = [
     [2801, 316.8],
     [3312, 412.8],
@@ -862,8 +862,8 @@ FIRFIR_SPEED_PRESET = {
     "prop_diameter_inch": 28.0,
     "blade_count": 2,
     "rho": 1.225,
-    # DataLink ham hover ~4500 (eRPM/10) * DATALINK_RPM_SCALE = ~2143 mekanik RPM;
-    # datasheet yuk testi ayni itkide ~2216 RPM verir (uyumlu, fark ~%3).
+    # Raw DataLink hover ~4500 (eRPM/10) * DATALINK_RPM_SCALE = ~2143 mechanical
+    # RPM; the datasheet load test gives ~2216 RPM at the same thrust (~3% difference).
     "utip_ms": 79.8,
     "hover_rpm_estimate": 2142.9,
     "rotor_solidity_s": 0.05,
@@ -879,9 +879,10 @@ FIRFIR_SPEED_PRESET = {
     "pitch_measurement_deg": 4.0,
     "p_endurance_ratio": 0.914,
     "p_range_ratio": 1.092,
-    # Firfir'in thrust-tablosu teorik hover gucu (U8 Lite KV190 + G28x9.2, 12.4 kg / 4 motor).
-    # DataLink olculen hover / bu teorik = gerceklik/verim orani; tune edilmis model yeni
-    # araca uygulanirken bu oran yeni aracin teorik P_hover'ina da carpilir.
+    # Firfir's thrust-table theoretical hover power (U8 Lite KV190 + G28x9.2,
+    # 12.4 kg / 4 motors). DataLink measured hover / this theoretical value is
+    # the reality/efficiency ratio. When the tuned model is applied to a new
+    # aircraft, that aircraft's theoretical P_hover is multiplied by this ratio.
     "theoretical_hover_power_w": get_power_from_thrust(12400.0 / 4.0, u8lite_kv190_data)
     * 4.0,
 }
@@ -899,13 +900,13 @@ DATALINK_RECORD_BYTES = 160
 DATALINK_SLOT_BYTES = 19
 DATALINK_DEFAULT_SAMPLE_HZ = 20.0
 DATALINK_CURRENT_SCALE = 100.0
-# Ham .udat 'RPM' alani mekanik RPM degil eRPM/10'dur (U8 Lite 36N42P -> 21
-# kutup cifti): mekanik RPM = ham * 10/21. Datasheet capasi: Firfir hover
-# itkisinde (3100 g/rotor, G28x9.2) yuk testi ~2216 mekanik RPM verir; ham
-# ~4500 * 10/21 = ~2143 bununla uyumlu. KV190@6S yuksuz maks ~4218 RPM
-# oldugundan ham 4500'un mekanik olmasi zaten imkansizdi.
+# The raw .udat RPM field is eRPM/10, not mechanical RPM (U8 Lite 36N42P ->
+# 21 pole pairs): mechanical RPM = raw * 10/21. Datasheet anchor: at Firfir's
+# hover thrust (3100 g/rotor, G28x9.2), the load test gives ~2216 mechanical
+# RPM; raw ~4500 * 10/21 = ~2143, which is consistent. Since the unloaded
+# KV190@6S maximum is ~4218 RPM, raw 4500 could not be mechanical RPM.
 DATALINK_RPM_SCALE = 10.0 / 21.0
-# Eski ham-alan sanity filtresi 300-12000'in mekanik karsiligi (~143-5714).
+# Mechanical equivalent (~143-5714) of the old raw-field sanity range 300-12000.
 DATALINK_RPM_SANITY_RANGE_MECH = (140.0, 5750.0)
 DATALINK_SPEED_BIN_WIDTH_MS = 1.0
 DATALINK_MIN_BIN_SAMPLES = 80
@@ -940,20 +941,21 @@ FIRFIR_BATTERY_CELLS = 6
 FIRFIR_BATTERY_MEASURED_USABLE_AH = 25.2
 FIRFIR_BATTERY_DATASHEET_NOMINAL_AH = 27.0
 FIRFIR_BATTERY_NOMINAL_V_PER_CELL = 3.7
-# July3 Firfir bataryasinda datasheet 27 Ah'in yalnizca 25.2 Ah'i kullanilabilir
-# olculdu. Bu usable oranini (eski CF yerine) girilen tum bataryalara uygularak
-# benzer, model-tabanli bir davranis elde ediyoruz.
+# Only 25.2 Ah of the July 3 Firfir battery's datasheet-rated 27 Ah was measured
+# as usable. Applying this usable fraction (instead of the old CF) to entered
+# batteries gives consistent, model-based behavior.
 FIRFIR_BATTERY_USABLE_FRACTION = (
     FIRFIR_BATTERY_MEASURED_USABLE_AH / FIRFIR_BATTERY_DATASHEET_NOMINAL_AH
 )
-# Firfir gercek pili 6S2P (12 hucre = "12 pil"). Akim/enerji sensoru YALNIZCA TEK
-# paralel kola (6S1P) takiliydi; bu yuzden DataLink loglarindan OLCULEN hover gucu
-# (~758 W) ve entegre enerji (~490 Wh / usable ~559 Wh) gercek aracin YARISIDIR.
-# Gercek arac degerleri = olculen x FIRFIR_BATTERY_PARALLEL_ARMS:
-#   hover ~1516 W (teorik 1124 W'in ustunde -> fiziksel olarak dogru),
-#   full pack usable ~1119 Wh, hover suresi 40 dk (oran degismez, kol-bagimsiz).
-# NOT: P/Ph tune matematigi bir ORAN oldugundan kol carpani orada sadelesir; bu sabit
-# yalnizca fit-kaynagi (Firfir) MUTLAK degerlerini fiziksel gercege tasimak icindir.
+# Firfir's actual battery is 6S2P (12 cells). The current/energy sensor was
+# installed on only one parallel branch (6S1P), so hover power measured from
+# DataLink (~758 W) and integrated energy (~490 Wh / usable ~559 Wh) are half
+# the actual aircraft values. Actual values = measured values multiplied by
+# FIRFIR_BATTERY_PARALLEL_ARMS: hover ~1516 W (above the theoretical 1124 W,
+# which is physically plausible), full-pack usable energy ~1119 Wh, and hover
+# time 40 min (the branch-independent ratio is unchanged). Because P/Ph tuning
+# uses a ratio, the branch multiplier cancels there; this constant only maps
+# absolute Firfir fit-source values to the physical aircraft.
 FIRFIR_BATTERY_PARALLEL_ARMS = 2
 
 # Rest-voltage anchors for the calibrated 6S Li-ion solid-state pack.
@@ -2162,9 +2164,9 @@ def build_battery_qc_report(bin_paths, joined_samples):
 
 
 def build_measured_curve_model_fit(
-    profile, sonuc, hover_power_reference_w, observations, faessler_fit=None
+    profile, calculation_result, hover_power_reference_w, observations, faessler_fit=None
 ):
-    vi_h = sonuc["vi_h"]
+    vi_h = calculation_result["vi_h"]
     measured_profile = dict(profile)
     utip_values = [obs["utip_ms"] for obs in observations if obs.get("utip_ms")]
     if utip_values:
@@ -2318,7 +2320,7 @@ def plot_measured_power_curve(
                 linestyle="--",
             )
     ax.axvline(extrapolation_start_ms, linestyle="--", color="gray", alpha=0.7)
-    ax.set_xlabel("Hiz [m/s]")
+    ax.set_xlabel("Speed [m/s]")
     ax.set_ylabel("P(V) / P_hover_measured")
     ax.set_title("Diagnostic surrogate fits; measured bins are the data source")
     ax.grid(True, alpha=0.3)
@@ -2363,7 +2365,7 @@ def plot_empirical_datalink_power_curve(
                 fontsize=7,
                 va="bottom" if y_offset > 0 else "top",
             )
-    ax.set_xlabel("Hiz [m/s]")
+    ax.set_xlabel("Speed [m/s]")
     ax.set_ylabel("P(V) / P_hover_measured")
     ax.set_title("DataLink empirical P(v): measured range only")
     ax.margins(y=0.18)
@@ -2409,7 +2411,7 @@ def plot_battery_voltage_timeline(
 
 def run_datalink_measured_curve_analysis(
     profile,
-    sonuc,
+    calculation_result,
     hover_power_w,
     battery_wh,
     correction_factor,
@@ -2496,7 +2498,7 @@ def run_datalink_measured_curve_analysis(
     empirical_curve = build_empirical_datalink_power_curve(observations)
     battery_qc_report = build_battery_qc_report(bin_paths, joined_for_fit)
     model_fit = build_measured_curve_model_fit(
-        profile, sonuc, power_reference_w, observations
+        profile, calculation_result, power_reference_w, observations
     )
     graph_paths = {}
     result = {
@@ -2577,7 +2579,7 @@ def build_battery_reserve_report(
 
 def build_datalink_fitted_model_suite(
     profile,
-    sonuc,
+    calculation_result,
     hover_power_w,
     battery_wh,
     correction_factor,
@@ -2586,7 +2588,7 @@ def build_datalink_fitted_model_suite(
 ):
     result = run_datalink_measured_curve_analysis(
         profile,
-        sonuc,
+        calculation_result,
         hover_power_w,
         battery_wh,
         correction_factor,
@@ -2617,10 +2619,10 @@ def build_datalink_fitted_model_suite(
         correction_factor,
         battery_basis,
     )
-    # Sensor tek paralel kolda (6S1P) oldugundan OLCULEN hover gucu gercek aracin
-    # yarisidir. Fit-kaynagi (Firfir) MUTLAK degerlerini fiziksel gercege tasimak icin
-    # kol carpaniyla arac seviyesine cikariyoruz. (Reserve raporu ve P/Ph orani tek-kol
-    # tutarli kalir; 40 dk baseline degismez -- oran kol-bagimsizdir.)
+    # Because the sensor was on one parallel branch (6S1P), measured hover power
+    # is half the actual aircraft power. Scale absolute Firfir fit-source values
+    # to aircraft level with the branch multiplier. The reserve report and P/Ph
+    # ratio remain branch-consistent, so the 40-minute baseline is unchanged.
     measured_hover_power_w = result.get("measured_hover_power_w")
     theoretical_hover_power_w = profile.get("theoretical_hover_power_w")
     vehicle_measured_hover_power_w = (
@@ -2631,8 +2633,8 @@ def build_datalink_fitted_model_suite(
     full_pack_usable_energy_wh = (
         battery_basis.get("usable_energy_wh", 0.0) * FIRFIR_BATTERY_PARALLEL_ARMS
     )
-    # Gerceklik/verim orani ARTIK arac seviyesinde: gercek hover / teorik hover.
-    # (Onceki tek-kol degeri teorigin altinda -> fiziksel olarak imkansizdi.)
+    # Reality/efficiency ratio at aircraft level: actual / theoretical hover.
+    # The former one-branch value was below theory and physically impossible.
     if vehicle_measured_hover_power_w and theoretical_hover_power_w:
         datalink_efficiency_ratio = (
             vehicle_measured_hover_power_w / theoretical_hover_power_w
@@ -3112,9 +3114,9 @@ def fit_observation_weighted_zeng(
         hover_split = theoretical_params["p0_mech"] / (
             theoretical_params["p0_mech"] + theoretical_params["pi_mech"]
         )
-        # build_theoretical_zeng_params "k_par" anahtari uretmez; gozlemsiz
-        # fallback'te parazit katsayisi attitude-log prior'indan, o da yoksa
-        # teorik CdA'dan turetilir (k = 0.5*rho*CdA / P_hover_ref).
+        # build_theoretical_zeng_params does not produce a k_par key. With no
+        # observations, derive the parasite coefficient from the attitude-log
+        # prior or, if absent, theoretical CdA (k = 0.5*rho*CdA / P_hover_ref).
         theoretical_k_par = (
             0.5
             * theoretical_params["rho"]
@@ -3537,12 +3539,12 @@ def estimate_cda_from_pitch(speed_ms, pitch_deg, mass_kg, rho=1.225):
     return 2.0 * drag_n / (rho * speed_ms**2)
 
 
-# --- FAZ-4: FIZIKSEL PARAMETRE TRANSFERI ---------------------------------
-# Dondurulmus Firfir P/Ph seklini kopyalamak yerine, fitten boyutsuz aero
-# katsayilari (delta*sigma, 1+k_induced, CdA, lambda/W, lift/N) cozulur ve
-# girilen aracin kutle / disk alani / Utip degerleriyle uc modelin oran
-# egrileri yeniden kurulur. CF analojisinin dogru genellemesi: aractan araca
-# tasinabilir olan sey oran egrisi degil, boyutsuz katsayilardir.
+# --- PHASE 4: PHYSICAL PARAMETER TRANSFER ---------------------------------
+# Instead of copying the frozen Firfir P/Ph shape, solve dimensionless
+# aerodynamic coefficients (delta*sigma, 1+k_induced, CdA, lambda/W, lift/N)
+# from the fit, then rebuild all three model ratios using the entered aircraft's
+# mass, disc area, and Utip. The transferable quantities between aircraft are
+# the dimensionless coefficients, not the ratio curve itself.
 
 
 def _disc_area_total_m2(profile):
@@ -3650,17 +3652,18 @@ def transfer_kirschstein_params_to_vehicle(
     kp = kirschstein_params
     rho = kp.get("rho", 1.225)
     p_hotel_w = kp.get("p_hotel_w", 0.0)
-    # 1) Firfir bazini arac-seviyesi tutarli hale getir: orijinal parametreler
-    #    tek-kol elektrik referansini (P_ref) arac-seviyesi profil gucuyle
-    #    karistirir; burada lift/N tam arac hover gucunden turetilir.
+    # 1) Make the Firfir basis aircraft-level consistent. The original parameters
+    #    mix a one-branch electrical reference (P_ref) with aircraft-level profile
+    #    power; derive lift/N from full-aircraft hover power here.
     lift_power_per_newton = max(
         0.0,
         (hover_power_vehicle_w - kp["p_profile_hover_w"] - p_hotel_w) / kp["weight_n"],
     )
     base_fit = dict(kp)
     base_fit["lift_power_per_newton"] = lift_power_per_newton
-    # 2) Duzeltme katsayilarini arac-seviyesi baza gore, orijinal (dondurulmus)
-    #    Firfir orani hedef alinarak yeniden fitle.
+    # 2) Rebase correction coefficients to the aircraft-level basis while keeping
+    #    the original frozen calibration relationship.
+    #    Refit against the Firfir ratio as the target.
     rows = []
     for i in range(101):
         v = 0.25 * i
@@ -3671,7 +3674,7 @@ def transfer_kirschstein_params_to_vehicle(
         )
     induced_relief_scale, extra_cubic_k = _fit_two_parameter_weighted(rows)
 
-    # 3) Yeni aracin geometrisiyle bilesenleri yeniden kur.
+    # 3) Rebuild the components with the new aircraft geometry.
     apply_radius_m = apply_profile["prop_diameter_inch"] * 0.0254 / 2.0
     apply_weight_n = apply_profile["mass_kg"] * 9.81
     apply_area_m2 = _disc_area_total_m2(apply_profile)
@@ -3750,12 +3753,12 @@ def estimate_theoretical_utip_similarity(
 
 
 def datasheet_rpm_from_thrust(prop_diameter_inch, thrust_g):
-    """KV190 datasheet yuk-testi tablosundan (28"/29") thrust -> mekanik RPM."""
+    """Map thrust to mechanical RPM using the KV190 28/29-inch load-test tables."""
     table = U8LITE_KV190_THRUST_RPM_TABLES.get(round(float(prop_diameter_inch), 1))
     if table is None:
         raise ValueError(
-            f"KV190 datasheet RPM tablosu {prop_diameter_inch}\" pervane icin yok "
-            "(su an 28.0 ve 29.0 destekleniyor)."
+            f"No KV190 datasheet RPM table exists for a {prop_diameter_inch}\" propeller "
+            "(currently supported: 28.0 and 29.0 inches)."
         )
     thrusts = [row[0] for row in table]
     rpms = [row[1] for row in table]
@@ -3822,13 +3825,13 @@ def build_transferred_model_suite(suite, apply_profile, apply_utip_ms=None):
     model_params = suite.get("model_params", {})
     power_reference_w = suite.get("power_reference_w")
     if not power_reference_w:
-        raise ValueError("Transfer icin fit hover referansi (power_reference_w) yok.")
+        raise ValueError("Transfer requires a fitted hover reference (power_reference_w).")
     arms = suite.get("battery_parallel_arms") or 1
     hover_power_vehicle_w = power_reference_w * arms
     fit_utip_ms = suite.get("utip_ms") or fit_profile.get("utip_ms")
     utip_ms = apply_utip_ms or apply_profile.get("utip_ms") or fit_utip_ms
     if not utip_ms or utip_ms <= 0:
-        raise ValueError("Transfer icin gecerli bir Utip gerekli.")
+        raise ValueError("Transfer requires a valid Utip value.")
 
     model_functions = {}
     transferred_params = {}
@@ -3862,8 +3865,8 @@ def build_transferred_model_suite(suite, apply_profile, apply_utip_ms=None):
 
     if not model_functions:
         raise ValueError(
-            "Transfer icin fit parametreleri (model_params) bulunamadi; "
-            "suite gercek DataLink fitinden gelmeli."
+            "No fitted parameters (model_params) are available for transfer; "
+            "the suite must come from a real DataLink fit."
         )
 
     return {
@@ -3921,11 +3924,11 @@ def print_transfer_summary(transfer):
 
 
 def build_july3_firfir_battery_basis():
-    # Bu basis, sensorun olctugu TEK KOLA (6S1P) karsilik gelir; olculen hover gucu
-    # (~758 W) da tek koldur, bu yuzden ikisinin orani = 40 dk baseline dogru cikar.
-    # Gercek pack 6S2P (12 pil): full usable = usable_energy_wh x
-    # FIRFIR_BATTERY_PARALLEL_ARMS (~1119 Wh). Full pack'i tek basina kullanmak icin
-    # olculen hover gucunu de x2 yapmak GEREKIR yoksa sure ikiye katlanir.
+    # This basis represents the single sensed branch (6S1P). Measured hover power
+    # (~758 W) also comes from that branch, so their ratio correctly gives the
+    # 40-minute baseline. The actual pack is 6S2P: full usable energy is this
+    # value times FIRFIR_BATTERY_PARALLEL_ARMS (~1119 Wh). Using full-pack energy
+    # requires doubling measured hover power too, or endurance would double.
     usable_energy_wh = (
         FIRFIR_BATTERY_CELLS
         * FIRFIR_BATTERY_NOMINAL_V_PER_CELL
@@ -4050,8 +4053,8 @@ def ask_utip(prop_diameter_inch, default_utip=80.0):
     print("\nPropeller tip-speed input:")
     print("1) Enter RPM and calculate tip speed")
     print("2) Enter tip speed directly")
-    secim = input("Selection [2]: ").strip() or "2"
-    if secim == "1":
+    selection = input("Selection [2]: ").strip() or "2"
+    if selection == "1":
         rpm = float(input("Estimated hover RPM: ").strip())
         return tip_speed_from_rpm(prop_diameter_inch, rpm), rpm
     raw = input(f"Utip m/s [{default_utip}]: ").strip()
@@ -4191,9 +4194,8 @@ def datalink_selection_slug(selected_models):
 
 
 def datalink_graph_output_paths(selected_models):
-    # Empirical interpolation grafigi bilincli olarak burada YOK: o grafik
-    # yalnizca menu-5 ham veri gorselleyicisinde uretilir
-    # (raw_datalink_empirical_interpolation.png).
+    # The empirical interpolation plot is intentionally omitted here. It is
+    # produced only by the raw-data viewer (raw_datalink_empirical_interpolation.png).
     slug = datalink_selection_slug(selected_models)
     return {
         "power": f"datalink_{slug}_power_ratio.png",
@@ -4252,7 +4254,7 @@ def plot_datalink_empirical_interpolation(
             color=point.get("color", "gray"),
             label=point["label"],
         )
-    ax.set_xlabel("Hiz [m/s]")
+    ax.set_xlabel("Speed [m/s]")
     ax.set_ylabel("P(V) / P_hover(DataLink)")
     ax.set_title("DataLink empirical interpolation with Bauersfeld references")
     ax.margins(y=0.18)
@@ -4299,7 +4301,7 @@ def plot_datalink_power_ratio_comparison(
             color=point.get("color", "gray"),
             label=point["label"],
         )
-    ax.set_xlabel("Hiz [m/s]")
+    ax.set_xlabel("Speed [m/s]")
     ax.set_ylabel("P(V) / P_hover(DataLink)")
     ax.set_title("DataLink-fitted model P(V) comparison")
     ax.grid(True, alpha=0.3)
@@ -4392,7 +4394,7 @@ def plot_datalink_range_time_comparison(
         )
     ax_range.grid(True, alpha=0.3)
     ax_range.legend(fontsize=8)
-    ax_time.set_xlabel("Hiz [m/s]")
+    ax_time.set_xlabel("Speed [m/s]")
     ax_time.set_ylabel("Endurance at 10% reserve [min]")
     ax_time.grid(True, alpha=0.3)
     ax_time.legend(fontsize=8)
@@ -4401,37 +4403,37 @@ def plot_datalink_range_time_comparison(
     return Path(output_path).resolve()
 
 
-# Model secim ozeti:
+# Model-selection summary:
 # 1) legacy_parabola_baseline:
-#    Tutar: hover, Bauersfeld endurance ve range noktalarindan gecen eski baseline.
-#    Tutmaz: Zeng/rotor fizigi, turev kosullari ve log verisi; sadece kaba karsilastirma.
+#    Includes: old baseline through hover and Bauersfeld endurance/range points.
+#    Excludes: Zeng/rotor physics, derivative constraints, and log data; rough comparison only.
 # 2) bauersfeld_anchored_zeng:
-#    Tutar: P(0)=1, P(ve)=0.914, P(vr)=1.092; Zeng benzeri induced/profile/parasite sekli.
-#    Tutmaz: attitude log ve stadyum voltaj verisi; 10.7 m/s sonrasi Zeng extrapolation.
+#    Includes: P(0)=1, P(ve)=0.914, P(vr)=1.092 and a Zeng-like induced/profile/parasite shape.
+#    Excludes: attitude logs and stadium voltage data; Zeng extrapolation above 10.7 m/s.
 # 3) theoretical_zeng_pitch_CDA:
-#    Tutar: Zeng'in ham teorik rotor terimleri ve 6.04 m/s, 4 deg pitch'ten gelen C_DA.
-#    Tutmaz: datasheet hover gucu; bu yuzden P(0)/P_hover 1 degil. Ana model degil, diagnostik.
+#    Includes: raw theoretical Zeng rotor terms and CDA from 6.04 m/s at 4 degrees pitch.
+#    Excludes: datasheet hover power, so P(0)/P_hover is not 1. Diagnostic, not primary.
 # 4) hybrid_calibrated_zeng_fit:
-#    Tutar: Bauersfeld anchor'lari + stadyum voltaj anchor'i + log hiz bandi C_DA prior'lari.
-#    Tutmaz: power/current olcumu olmayan hizlarda tam dogrulama; yuksek hiz halen extrapolation.
+#    Includes: Bauersfeld and stadium-voltage anchors plus log-band CDA priors.
+#    Excludes: full validation where power/current is unmeasured; high speed is extrapolated.
 # 5) pure_zeng_flight_fit:
-#    Tutar: normalize Zeng formu + log hiz bandi C_DA + stadyum 6 m/s P/Ph anchor'i.
-#    Tutmaz: Bauersfeld ve/vr anchor'larini zorla tutmaz; rotor parametrelerini serbest tune etmez.
+#    Includes: normalized Zeng form, log-band CDA, and the stadium 6 m/s P/Ph anchor.
+#    Excludes: forced Bauersfeld ve/vr anchors and free tuning of rotor parameters.
 # 6) faessler_drag_constrained_zeng:
-#    Tutar: log tilt direncini body drag + linear rotor drag olarak ayirir.
-#    Tutmaz: current/RPM gucu yok; yuksek hiz halen extrapolation.
+#    Includes: separates log-derived tilt resistance into body and linear rotor drag.
+#    Excludes: current/RPM power; high speed remains extrapolated.
 # 7) kirschstein_component_benchmark:
-#    Tutar: Pair + Plift + Pprofile + Pint bilesenlerini ayri hesaplar.
-#    Tutmaz: 6 m/s voltaj anchor'ini zorla tutmaz; benchmark olarak kalir.
+#    Includes: separate Pair, Plift, Pprofile, and Pint components.
+#    Excludes: forcing the 6 m/s voltage anchor; retained as a benchmark.
 # 8) datalink_empirical_pv:
-#    Tutar: 3 Temmuz DataLink + ArduPilot measured speed bins.
-#    Tutmaz: olcum araligi disina deger uydurmaz.
+#    Includes: July 3 DataLink and ArduPilot measured speed bins.
+#    Excludes: no values are inferred outside the measured range.
 
 
 def parse_datalink_model_selection(raw):
     raw = (raw or "4").strip().lower()
     all_models = list(DATALINK_FIT_MODEL_ORDER)
-    if raw in {"4", "all", "hepsi", "*"}:
+    if raw in {"4", "all", "*"}:
         return all_models
 
     aliases = {
@@ -4499,7 +4501,7 @@ def print_datalink_model_descriptions():
 def run_preset_fit_apply_to_vehicle(
     speeds,
     fit_profile,
-    fit_sonuc,
+    fit_result,
     model_choice,
     apply_hover_power_w,
     apply_battery_wh,
@@ -4507,27 +4509,26 @@ def run_preset_fit_apply_to_vehicle(
     make_graph,
     datalink_log_root=None,
     datalink_date_hint=DATALINK_MEASURED_CURVE_DATE_HINT,
-    apply_sonuc=None,
+    apply_result=None,
     apply_profile=None,
     apply_utip_ms=None,
     apply_utip_mode=None,
 ):
-    # Model fiti HER ZAMAN fit_profile uzerinden, Firfir DataLink verisiyle
-    # yapilir. apply_profile verilirse (Faz-4) fitten cozulen boyutsuz aero
-    # katsayilari girilen aracin fizigiyle yeniden kurulur ve oran egrileri
-    # araca duyarli hale gelir; verilmezse eski davranis (dondurulmus Firfir
-    # sekli) korunur. ANA SONUC (mutlak guc/sure/menzil) her iki durumda da
-    # kullanicinin girdigi aracin KENDI hover gucu + bataryasi ile hesaplanir.
-    # Firfir July3 calibrated basis yalnizca "tune kaynagi" bilgisi olarak
-    # gosterilir (calibrated_* degiskenleri, sonuc degil).
-    apply_sonuc = apply_sonuc or fit_sonuc
-    v_endurance = apply_sonuc["optimal_endurance_speed_ms"]
-    v_range = apply_sonuc["optimal_speed_ms"]
+    # The model is always fitted to Firfir DataLink data through fit_profile.
+    # When apply_profile is provided, the dimensionless aerodynamic coefficients
+    # are rebuilt with the entered aircraft's physics so the ratio curves respond
+    # to that aircraft. Otherwise the frozen Firfir shape is retained. In both
+    # cases, absolute power, time, and range use the entered aircraft's own hover
+    # power and battery. The calibrated July 3 Firfir basis is reported only as
+    # calibration-source information, not as the application result.
+    apply_result = apply_result or fit_result
+    v_endurance = apply_result["optimal_endurance_speed_ms"]
+    v_range = apply_result["optimal_speed_ms"]
 
     selected = parse_datalink_model_selection(model_choice)
     suite = build_datalink_fitted_model_suite(
         fit_profile,
-        fit_sonuc,
+        fit_result,
         apply_hover_power_w,
         apply_battery_wh,
         apply_correction_factor,
@@ -4537,8 +4538,8 @@ def run_preset_fit_apply_to_vehicle(
     model_functions = suite["model_functions"]
     transfer = None
     if apply_profile and apply_utip_mode == "theoretical_datasheet":
-        # Secenek: Utip'i KV190 datasheet yuk-testi RPM egrisinden (G28x9.2 /
-        # G29x9.5, girilen pervaneye gore), girilen kutle icin turet.
+        # Option: derive Utip for the entered mass from the KV190 datasheet
+        # load-test RPM curve (G28x9.2 or G29x9.5, matching the propeller).
         fit_measured_utip = suite.get("utip_ms") or fit_profile.get("utip_ms")
         apply_prop_inch = apply_profile.get("prop_diameter_inch", 29.0)
         theo = None
@@ -4636,7 +4637,7 @@ def run_preset_fit_apply_to_vehicle(
 
     typed_battery_basis = build_applied_battery_basis(
         apply_battery_wh,
-        label="Girilen arac usable",
+        label="Entered aircraft usable energy",
     )
     range_time_basis = suite.get("range_time_basis", {})
     calibrated_battery_basis = (
@@ -4659,9 +4660,9 @@ def run_preset_fit_apply_to_vehicle(
         result_mode = "datalink_calibrated_application"
         result_basis_label = "DataLink-calibrated entered vehicle basis"
         result_basis_source = (
-            f"Girilen teorik hover gucu {apply_hover_power_w:.1f} W, Firfir "
-            f"DataLink gercek/teorik hover olcegi {hover_scale:.3f} ile "
-            f"{result_hover_power_w:.1f} W olarak kalibre edildi."
+            f"Entered theoretical hover power {apply_hover_power_w:.1f} W was "
+            f"calibrated to {result_hover_power_w:.1f} W using Firfir's DataLink "
+            f"measured/theoretical hover scale of {hover_scale:.3f}."
         )
     else:
         result_mode = "entered_vehicle_application"
@@ -4693,7 +4694,7 @@ def run_preset_fit_apply_to_vehicle(
 
     print_datalink_fit_suite_summary(suite)
 
-    # --- Modelin tune edildigi kaynak (sadece bilgi, sonuc degil) ---
+    # Calibration source (reported for information, not as the application result).
     print("\n--- MODEL CALIBRATION SOURCE (Firfir DataLink) ---")
     print(
         "The model was calibrated from Firfir flight data; the P/Ph curve comes from "
@@ -4846,7 +4847,7 @@ def calculate_real_energy_wh(total_cells, capacity_mah, battery_type="lihv"):
         # Historical 7/6 energy adjustment between LiPo and LiHV.
         nominal_voltage = 3.7
     elif battery_type == "liion":
-        # Bu projedeki solid-state Li-ion paket 4.3V'a sarj ediliyor ve nominal 3.7V kabul ediliyor.
+        # This project's solid-state Li-ion pack charges to 4.3 V and uses 3.7 V nominal.
         nominal_voltage = 3.7
     else:
         nominal_voltage = 3.7
@@ -4858,8 +4859,8 @@ def run_datalink_raw_data_viewer(log_root, date_hint):
 
     print("\n--- Raw DataLink data viewer ---")
     try:
-        # Analiz sonuc["vi_h"] bekler; preset fiziginden hover induklenen hizi
-        # hesapla (eski kod bos dict geciriyordu -> KeyError).
+        # The analysis expects result["vi_h"]. Derive induced hover speed from
+        # the preset physics (the old empty dictionary caused a KeyError).
         preset = dict(FIRFIR_SPEED_PRESET)
         vi_h = math.sqrt(
             preset["mass_kg"]
@@ -4965,17 +4966,17 @@ def main(argv=None):
     calculate = subparsers.add_parser(
         "calculate", help="calculate range and endurance from aircraft inputs"
     )
-    calculate.add_argument("--hover-power", type=float, required=True, help="measured hover power in W")
-    calculate.add_argument("--battery-energy", type=float, required=True, help="battery energy in Wh")
-    calculate.add_argument("--mass", type=float, required=True, help="total aircraft mass in kg")
-    calculate.add_argument("--drag-area", type=float, required=True, help="reference drag area in cm^2")
+    calculate.add_argument("--hover-power", type=float, required=True, help="whole-aircraft measured hover power in W")
+    calculate.add_argument("--battery-energy", type=float, required=True, help="whole-pack energy basis in Wh")
+    calculate.add_argument("--mass", type=float, required=True, help="total takeoff mass in kg")
+    calculate.add_argument("--drag-area", type=float, required=True, help="Bauersfeld projected reference area in cm^2 (not CdA)")
     calculate.add_argument("--prop-diameter", type=float, required=True, help="propeller diameter in inches")
     calculate.add_argument("--rotors", type=int, required=True, help="number of rotors")
     calculate.add_argument(
         "--correction-factor",
         type=float,
         default=1.0,
-        help="empirical energy/power correction factor (default: 1.0)",
+        help="usable-energy multiplier; use 1.0 for an already-usable energy input (default: 1.0)",
     )
 
     analyze = subparsers.add_parser(

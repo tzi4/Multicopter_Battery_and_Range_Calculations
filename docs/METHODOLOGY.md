@@ -3,9 +3,20 @@
 ## Calculation model
 
 The general calculator uses the optimum-speed relationships reported by
-Bauersfeld et al. together with measured hover power, battery energy, total
-mass, rotor geometry, and reference drag area. The correction factor is an
-explicit user input; it is not silently inferred for arbitrary aircraft.
+Bauersfeld and Scaramuzza together with measured hover power, battery energy,
+total mass, rotor geometry, and projected reference area. The correction factor
+multiplies the entered energy basis and is an explicit user input; it is not
+silently inferred for arbitrary aircraft.
+
+The fitted constants in `BauersfeldRangeCalculator` follow:
+
+> Leonard Bauersfeld and Davide Scaramuzza, “Range, Endurance, and Optimal
+> Speed Estimates for Multicopters,” *IEEE Robotics and Automation Letters*,
+> 2022. [DOI: 10.1109/LRA.2022.3145063](https://doi.org/10.1109/LRA.2022.3145063).
+
+The calculator uses the paper's projected-area input in square centimetres;
+this input is distinct from the aerodynamic `CdA` terms used in the fitted
+Zeng/Faessler/Kirschstein model implementations.
 
 ## Calibration pipeline
 
@@ -26,6 +37,8 @@ apparently close curve from hiding an underdetermined model.
 
 ## Important calibration assumptions
 
+- Calibration profile: 12.4 kg quadrotor, 28-inch propeller metadata, and an
+  approximately 80 m/s measured hover tip speed.
 - The calibration aircraft had a 6S2P battery. The DataLink current sensor saw
   only one parallel branch, so measured absolute power and energy represent half
   of the aircraft total. Power ratios are unaffected because the factor cancels.
@@ -48,3 +61,13 @@ identity transfer back to the calibration aircraft is covered by tests.
 The three model families are nearly indistinguishable inside the calibration
 speed range. Their separation outside that range is a model-structure effect,
 not independent high-speed validation.
+
+## Output interpretation
+
+- The general `calculate` command is a Bauersfeld-based estimate. It does not
+  automatically apply the DataLink-fitted forward-flight curves.
+- `analyze-calibration` reconstructs the bundled empirical/fitted calibration;
+  it does not claim that the resulting curve is valid for an arbitrary vehicle.
+- Reported range assumes still-air speed and constant modeled power. Wind,
+  manoeuvres, climb/descent, battery voltage sag, temperature, and reserve
+  policy can materially change an actual flight.

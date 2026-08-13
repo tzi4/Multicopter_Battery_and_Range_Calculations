@@ -56,6 +56,35 @@ multicopter-range calculate \
   --correction-factor 0.93
 ```
 
+Input definitions:
+
+- `--hover-power`: measured electrical power for the **whole aircraft** during
+  steady hover, in watts. Do not enter per-motor power.
+- `--battery-energy`: energy basis for the whole battery pack, in watt-hours.
+  Use nominal energy only when the correction factor accounts for unusable
+  capacity; otherwise enter an independently measured usable-energy value.
+- `--mass`: takeoff mass including the battery and payload, in kilograms.
+- `--drag-area`: the projected reference area used by the Bauersfeld regression,
+  in square centimetres. This is not the aerodynamic `CdA` used by the fitted
+  forward-flight models.
+- `--prop-diameter`: one propeller's diameter, in inches.
+- `--rotors`: total load-bearing rotor count.
+- `--correction-factor`: a dimensionless multiplier applied to available energy
+  in the range/endurance calculation. Use `1.0` when `--battery-energy` is
+  already usable energy. A value such as `0.93` means 93% of the entered energy
+  is treated as usable. The tool does not infer this value for a new aircraft.
+
+The example above produces:
+
+```text
+Induced hover velocity: 5.590 m/s
+Best-range speed: 10.934 m/s
+Best-range flight time: 40.879 min
+Maximum range: 26.819 km
+Best-endurance speed: 6.711 m/s
+Maximum endurance: 48.840 min
+```
+
 The same command works without installation:
 
 ```bash
@@ -108,11 +137,15 @@ python -m pytest -q
 ```
 
 The full suite parses the real flight logs and may take around one minute.
-For a fast unit-only check:
+For a fast unit and numerical-regression check:
 
 ```bash
-python -m pytest -q tests/test_transfer.py
+python -m pytest -q tests/test_numerical_regression.py tests/test_transfer.py
 ```
+
+The old and public implementations were also executed side by side over broad
+input grids and the complete bundled telemetry set. See
+[Numerical validation](docs/VALIDATION.md) for the exact comparison and scope.
 
 ## Project layout
 
@@ -121,8 +154,11 @@ python -m pytest -q tests/test_transfer.py
 - `data/calibration/2026-07-03/` — raw logs and the derived attitude input needed
   to reproduce the calibration.
 - `tests/test_transfer.py` — model and physical-transfer unit tests.
+- `tests/test_numerical_regression.py` — representative outputs captured from
+  the pre-cleanup implementation.
 - `tests/test_calibration.py` — end-to-end tests against the included logs.
 - `docs/METHODOLOGY.md` — model basis, calibration decisions, and limitations.
+- `docs/VALIDATION.md` — old-versus-public numerical equivalence evidence.
 
 ## Contributing and security
 

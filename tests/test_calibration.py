@@ -14,7 +14,7 @@ def _firfir_context():
     )
     battery_wh = multicopter_range.calculate_real_energy_wh(12, 27000, "liion")
     correction_factor = 0.72
-    sonuc = multicopter_range.BauersfeldRangeCalculator(
+    calculation_result = multicopter_range.BauersfeldRangeCalculator(
         hover_power_w,
         correction_factor,
         battery_wh,
@@ -23,7 +23,7 @@ def _firfir_context():
         profile["prop_diameter_inch"],
         profile["num_rotors"],
     ).solve()
-    return profile, sonuc, hover_power_w, battery_wh, correction_factor
+    return profile, calculation_result, hover_power_w, battery_wh, correction_factor
 
 
 def _july3_root():
@@ -33,11 +33,11 @@ def _july3_root():
 
 
 def test_july3_measured_curve_builds_sync_battery_and_model_reports():
-    profile, sonuc, hover_power_w, battery_wh, correction_factor = _firfir_context()
+    profile, calculation_result, hover_power_w, battery_wh, correction_factor = _firfir_context()
 
     result = multicopter_range.run_datalink_measured_curve_analysis(
         profile,
-        sonuc,
+        calculation_result,
         hover_power_w,
         battery_wh,
         correction_factor,
@@ -48,7 +48,7 @@ def test_july3_measured_curve_builds_sync_battery_and_model_reports():
 
     accepted = [row for row in result["sync_report"] if row["accepted_for_fit"]]
     assert result["fit_mode"] == "measured_datalink_power_curve"
-    assert result["joined_sample_count"] > 40000
+    assert result["joined_sample_count"] == 46175
     assert len(accepted) == 2
     assert {row["bin"] for row in accepted} == {"00000076.BIN", "00000077.BIN"}
     assert all(row["timestamp_mode"] == "filename_trt" for row in accepted)
@@ -57,11 +57,31 @@ def test_july3_measured_curve_builds_sync_battery_and_model_reports():
         for row in result["sync_report"]
     )
 
-    assert 700.0 <= result["measured_hover_power_w"] <= 820.0
-    # Mekanik olcek (DATALINK_RPM_SCALE sonrasi): datasheet capasi hover ~2216 RPM
-    # -> Utip ~82.5 m/s; olculen medyan ~80 m/s beklenir.
-    assert 78.0 <= result["utip_ms"] <= 86.0
+    assert result["measured_hover_power_w"] == pytest.approx(757.8910000000001, abs=1e-9)
+    # Mechanical scale (after DATALINK_RPM_SCALE): datasheet anchor hover ~2216 RPM,
+    # giving Utip ~82.5 m/s; the measured median is ~80 m/s.
+    assert result["utip_ms"] == pytest.approx(80.05357530658453, abs=1e-9)
     observations = result["speed_bin_observations"]
+    legacy_observations = [
+        (2.4624748023768035, 1.016136885119364, 1303),
+        (3.5112854813223504, 1.0266898538180291, 1107),
+        (4.526273127797663, 1.0079628864836763, 911),
+        (5.594750877597143, 0.9666264673943878, 1760),
+        (6.422153388401631, 1.003588906584192, 1711),
+        (7.900430308277751, 0.9550555422877433, 4935),
+        (8.077235608570042, 0.9523051467823207, 2020),
+        (9.536946761960088, 1.0839282957575693, 1154),
+        (10.90436628327396, 0.99188339748064, 8556),
+        (11.088186985269962, 1.023626088711965, 4552),
+        (12.338323946638543, 1.0490848947935785, 86),
+    ]
+    assert len(observations) == len(legacy_observations)
+    for observation, (speed_ms, power_ratio, sample_count) in zip(
+        observations, legacy_observations
+    ):
+        assert observation["speed_ms"] == pytest.approx(speed_ms, abs=1e-12)
+        assert observation["power_ratio"] == pytest.approx(power_ratio, abs=1e-12)
+        assert observation["sample_count"] == sample_count
     assert len([obs for obs in observations if 2.0 <= obs["speed_ms"] <= 12.5]) >= 8
     assert all(obs["power_ratio"] > 0.0 for obs in observations)
     assert all(obs["stable_fraction"] >= 0.5 for obs in observations)
@@ -184,11 +204,11 @@ def test_measured_curve_graph_mode_does_not_emit_voltage_graph(monkeypatch, tmp_
 
 
 def test_july3_battery_monitor_is_voltage_sanity_not_direct_power_fit():
-    profile, sonuc, hover_power_w, battery_wh, correction_factor = _firfir_context()
+    profile, calculation_result, hover_power_w, battery_wh, correction_factor = _firfir_context()
 
     result = multicopter_range.run_datalink_measured_curve_analysis(
         profile,
-        sonuc,
+        calculation_result,
         hover_power_w,
         battery_wh,
         correction_factor,
@@ -217,10 +237,11 @@ def test_datalink_flight_time_uses_july3_6s_usable_capacity_not_legacy_cf():
         battery_basis=battery_basis,
     )
 
-    # Legacy 12-pil (1198.8 Wh, 3.7 V/hucre liion) yorumu, CF ile bile dogru July3
-    # (559 Wh) baseline'dan cok daha uzun bir sure verir -> loglardaki 40 dk
-    # gerceginden sapar. Bu yuzden July3 usable kapasitesi kullanilir.
-    # (legacy deger ~76.87 dk, baseline 39.86 dk)
+    # The legacy 12-cell interpretation (1198.8 Wh at 3.7 V/cell Li-ion), even
+    # with CF applied, predicts a much longer flight than the correct July 3
+    # baseline (559 Wh) and conflicts with the roughly 40-minute logs. Therefore,
+    # the analysis uses the July 3 usable-capacity basis.
+    # (Legacy value ~76.87 min; baseline 39.86 min.)
     legacy_time_10_min = legacy_battery_wh / 757.891 * 60.0 * 0.72 * 1.125
     assert legacy_time_10_min == pytest.approx(76.87, abs=0.1)
     assert legacy_time_10_min > row["time_10_min"] * 1.5
@@ -230,7 +251,7 @@ def test_datalink_flight_time_uses_july3_6s_usable_capacity_not_legacy_cf():
 
 
 def test_datalink_fit_suite_reports_july3_battery_basis(monkeypatch):
-    profile, sonuc, hover_power_w, battery_wh, correction_factor = _firfir_context()
+    profile, calculation_result, hover_power_w, battery_wh, correction_factor = _firfir_context()
 
     fake_result = {
         "empirical_curve": {"measured_points": []},
@@ -261,28 +282,29 @@ def test_datalink_fit_suite_reports_july3_battery_basis(monkeypatch):
 
     suite = multicopter_range.build_datalink_fitted_model_suite(
         profile,
-        sonuc,
+        calculation_result,
         hover_power_w,
         battery_wh,
         correction_factor,
     )
 
     reserve = suite["battery_reserve_report"]
-    # Basis + reserve TEK KOL (6S1P) tutarli kalir -> 40 dk baseline degismez
+    # Basis and reserve remain consistent on one branch (6S1P), preserving the 40-minute baseline.
     assert suite["battery_basis"]["usable_energy_wh"] == pytest.approx(559.44, abs=0.01)
     assert reserve["hover_10_reserve_min"] == pytest.approx(39.86, abs=0.05)
     assert reserve["hover_20_reserve_min"] == pytest.approx(35.43, abs=0.05)
-    # Legacy 12-pil yorumu dogru baseline'dan >1.5x uzun (legacy ~76.87 dk,
-    # 3.7 V/hucre liion enerjisiyle)
+    # The legacy 12-cell interpretation is over 1.5x longer than the correct
+    # baseline (~76.87 min with 3.7 V/cell Li-ion energy).
     assert reserve["legacy_hover_10_reserve_min"] == pytest.approx(76.87, abs=0.1)
     assert reserve["legacy_hover_10_reserve_min"] > reserve["hover_10_reserve_min"] * 1.5
 
-    # Sensor tek koldaydi: gercek arac hover ve full pack usable = x2 (6S2P, 12 pil).
-    # Bu MUTLAK degerler fiziksel gercek (1516 W > teorik 1124 W), 40 dk oran-sabiti korunur.
+    # The sensor was on one branch: actual-aircraft hover and full-pack usable
+    # energy are x2 (6S2P, 12 cells). These absolute values are physically
+    # plausible (1516 W > theoretical 1124 W), while the 40-minute ratio is preserved.
     assert suite["battery_parallel_arms"] == 2
     assert suite["vehicle_measured_hover_power_w"] == pytest.approx(757.891 * 2, abs=0.01)
     assert suite["full_pack_usable_energy_wh"] == pytest.approx(559.44 * 2, abs=0.02)
-    # Verim orani artik arac seviyesinde >1 (gercek hover teorigin ustunde -> fiziksel)
+    # The aircraft-level efficiency ratio is now >1 (actual hover exceeds theory).
     assert suite["datalink_efficiency_ratio"] == pytest.approx(
         (757.891 * 2) / suite["fit_theoretical_hover_power_w"], rel=1e-6
     )
@@ -368,14 +390,13 @@ def test_datalink_empirical_pv_is_available_from_custom_speed_model_selection():
         "kirschstein_datalink_fit",
     ]
     assert multicopter_range.parse_datalink_model_selection("all") == multicopter_range.parse_datalink_model_selection("4")
-    assert multicopter_range.parse_datalink_model_selection("hepsi") == multicopter_range.parse_datalink_model_selection("4")
     assert multicopter_range.parse_datalink_model_selection("zeng") == ["zeng_datalink_fit"]
 
 
 def test_preset_fit_console_summary_uses_measured_reference_and_reports_batt(
     monkeypatch, capsys, tmp_path
 ):
-    profile, sonuc, hover_power_w, battery_wh, correction_factor = _firfir_context()
+    profile, calculation_result, hover_power_w, battery_wh, correction_factor = _firfir_context()
     observations = [
         {
             "label": "DataLink v~5.0",
@@ -444,18 +465,18 @@ def test_preset_fit_console_summary_uses_measured_reference_and_reports_batt(
     multicopter_range.run_preset_fit_apply_to_vehicle(
         [6.0, 20.0],
         profile,
-        sonuc,
+        calculation_result,
         "1",
         760.0,
         battery_wh,
         correction_factor,
         make_graph=False,
-        apply_sonuc=sonuc,
+        apply_result=calculation_result,
     )
 
     out = capsys.readouterr().out
     assert "DataLink fit suite" in out
-    # Olculen hover tek kol (6S1P) olarak etiketlenir
+    # Measured hover is labeled as one branch (6S1P).
     assert "P_hover(DataLink, measured branch)=760.0 W" in out
     assert "Utip(DataLink RPM)=81.4 m/s" in out
     assert "BATT QC" in out
@@ -469,7 +490,7 @@ def test_preset_fit_console_summary_uses_measured_reference_and_reports_batt(
 def test_preset_fit_application_uses_global_hover_scale_and_entered_battery_basis(
     monkeypatch, capsys, tmp_path
 ):
-    profile, fit_sonuc, _hover_power_w, battery_wh, correction_factor = _firfir_context()
+    profile, fit_result, _hover_power_w, battery_wh, correction_factor = _firfir_context()
     observations = [
         {
             "label": "DataLink v~6.0",
@@ -512,24 +533,24 @@ def test_preset_fit_application_uses_global_hover_scale_and_entered_battery_basi
     multicopter_range.run_preset_fit_apply_to_vehicle(
         [6.0],
         profile,
-        fit_sonuc,
+        fit_result,
         "1",
         1000.0,
         battery_wh,
         correction_factor,
         make_graph=False,
-        apply_sonuc=fit_sonuc,
+        apply_result=fit_result,
     )
 
     out = capsys.readouterr().out
-    # Model P/Ph orani Firfir'e tune edilir; ANA tablo/grafik ise girilen aracin
-    # bataryasi ve global DataLink hover olcegi ile hesaplanir.
+    # Model P/Ph is tuned to Firfir, while the primary table and graph use the
+    # entered aircraft's battery and global DataLink hover scale.
     expected_usable = battery_wh * multicopter_range.FIRFIR_BATTERY_USABLE_FRACTION
     assert "P=1250.0 W" in out
     assert "P_hover = 1250.0 W" in out
     assert f"{expected_usable:.1f} Wh usable" in out
     assert "DataLink-calibrated entered vehicle basis" in out
-    # Firfir July3 calibrated basis hala tune-kaynagi bilgisi olarak gosterilir.
+    # The calibrated July 3 Firfir basis remains visible as fit-source information.
     assert "MODEL CALIBRATION BASIS" in out
     assert "P_hover(Firfir calibrated) = 760.0 W" in out
 
@@ -537,7 +558,7 @@ def test_preset_fit_application_uses_global_hover_scale_and_entered_battery_basi
 def test_preset_fit_application_generates_datalink_graphs_with_global_hover_scale(
     monkeypatch, tmp_path
 ):
-    profile, fit_sonuc, _hover_power_w, battery_wh, correction_factor = _firfir_context()
+    profile, fit_result, _hover_power_w, battery_wh, correction_factor = _firfir_context()
     observations = [
         {
             "label": "DataLink v~6.0",
@@ -616,23 +637,23 @@ def test_preset_fit_application_generates_datalink_graphs_with_global_hover_scal
     multicopter_range.run_preset_fit_apply_to_vehicle(
         [6.0],
         profile,
-        fit_sonuc,
+        fit_result,
         "1",
         1000.0,
         battery_wh,
         correction_factor,
         make_graph=True,
-        apply_sonuc=fit_sonuc,
+        apply_result=fit_result,
     )
 
-    # Empirical interpolation grafigi artik yalnizca menu-5 ham veri
-    # gorselleyicisinde uretilir; preset akisi cizmez.
+    # The empirical interpolation plot is now produced only by the raw-data
+    # viewer; the preset flow does not draw it.
     assert "empirical_output_path" not in calls
     assert calls["power_output_path"] == "datalink_zeng_power_ratio.png"
     assert calls["range_output_path"] == "datalink_zeng_range_time.png"
     assert "battery_output_path" not in calls
-    # Grafik/hesap girilen aracin hover gucu global DataLink olcegiyle kalibre
-    # edilerek ve girilen bataryanin usable enerjisiyle yapilir.
+    # Graphs and calculations use entered battery usable energy and aircraft
+    # hover power calibrated with the global DataLink scale.
     assert calls["range_power_reference_w"] == 1250.0
     expected_usable = battery_wh * multicopter_range.FIRFIR_BATTERY_USABLE_FRACTION
     assert calls["range_battery_basis"]["usable_energy_wh"] == pytest.approx(
@@ -643,7 +664,7 @@ def test_preset_fit_application_generates_datalink_graphs_with_global_hover_scal
 def test_preset_fit_application_uses_global_datalink_hover_scale(
     monkeypatch, capsys, tmp_path
 ):
-    profile, fit_sonuc, _hover_power_w, battery_wh, correction_factor = _firfir_context()
+    profile, fit_result, _hover_power_w, battery_wh, correction_factor = _firfir_context()
     hover_scale = (757.891 * 2.0) / 1124.0
     observations = [
         {
@@ -687,32 +708,33 @@ def test_preset_fit_application_uses_global_datalink_hover_scale(
     multicopter_range.run_preset_fit_apply_to_vehicle(
         [6.0],
         profile,
-        fit_sonuc,
+        fit_result,
         "1",
         1124.0,
         battery_wh,
         correction_factor,
         make_graph=False,
-        apply_sonuc=fit_sonuc,
+        apply_result=fit_result,
     )
 
     out = capsys.readouterr().out
-    # Ozel arac tanima yok: girilen hover, Firfir DataLink gercek/teorik hover
-    # olcegiyle global olarak kalibre edilir; batarya girilen LiIon enerjisinden gelir.
+    # There is no special-case aircraft detection. Entered hover is calibrated
+    # globally with Firfir's measured/theoretical DataLink scale, and battery
+    # energy comes from the entered Li-ion configuration.
     expected_usable = battery_wh * multicopter_range.FIRFIR_BATTERY_USABLE_FRACTION
     assert "DataLink-calibrated entered vehicle basis" in out
     assert "P_hover = 1515.8 W" in out
     assert f"{expected_usable:.1f} Wh usable" in out
     # 1198.8 Wh liion -> 1118.9 Wh usable; 1515.8 W hover -> 44.3 dk pratik %0
     assert "20%=35.4 min, 10%=39.9 min" in out
-    # Firfir calibrated tek-kol basis hala tune-kaynagi bilgisi olarak gosterilir.
+    # Firfir's calibrated one-branch basis remains visible as fit-source information.
     assert "P_hover(Firfir calibrated) = 757.9 W" in out
 
 
 def test_global_hover_scale_lowers_16ms_estimate_without_vehicle_special_case(
     monkeypatch, tmp_path
 ):
-    profile, fit_sonuc, _hover_power_w, battery_wh, correction_factor = _firfir_context()
+    profile, fit_result, _hover_power_w, battery_wh, correction_factor = _firfir_context()
     hover_scale = (757.891 * 2.0) / 1124.0
     observations = [
         {
@@ -756,13 +778,13 @@ def test_global_hover_scale_lowers_16ms_estimate_without_vehicle_special_case(
     result = multicopter_range.run_preset_fit_apply_to_vehicle(
         [16.0],
         profile,
-        fit_sonuc,
+        fit_result,
         "1",
         1124.0,
         battery_wh,
         correction_factor,
         make_graph=False,
-        apply_sonuc=fit_sonuc,
+        apply_result=fit_result,
     )
 
     basis = result["result_range_time_basis"]
@@ -792,7 +814,7 @@ def test_global_hover_scale_lowers_16ms_estimate_without_vehicle_special_case(
 def test_global_hover_scale_report_and_graph_use_same_result_basis(
     monkeypatch, tmp_path
 ):
-    profile, fit_sonuc, _hover_power_w, battery_wh, correction_factor = _firfir_context()
+    profile, fit_result, _hover_power_w, battery_wh, correction_factor = _firfir_context()
     hover_scale = (757.891 * 2.0) / 1124.0
     observations = [
         {
@@ -861,13 +883,13 @@ def test_global_hover_scale_report_and_graph_use_same_result_basis(
     result = multicopter_range.run_preset_fit_apply_to_vehicle(
         [6.0],
         profile,
-        fit_sonuc,
+        fit_result,
         "1",
         1124.0,
         battery_wh,
         correction_factor,
         make_graph=True,
-        apply_sonuc=fit_sonuc,
+        apply_result=fit_result,
     )
 
     basis = result["result_range_time_basis"]
@@ -891,7 +913,7 @@ def test_global_hover_scale_report_and_graph_use_same_result_basis(
 
 
 def test_preset_fit_selection_generates_model_specific_graphs(monkeypatch, tmp_path):
-    profile, sonuc, hover_power_w, battery_wh, correction_factor = _firfir_context()
+    profile, calculation_result, hover_power_w, battery_wh, correction_factor = _firfir_context()
     observations = [
         {
             "label": "DataLink v~5.0",
@@ -990,25 +1012,25 @@ def test_preset_fit_selection_generates_model_specific_graphs(monkeypatch, tmp_p
     multicopter_range.run_preset_fit_apply_to_vehicle(
         [6.0, 20.0],
         profile,
-        sonuc,
+        calculation_result,
         "1",
         760.0,
         battery_wh,
         correction_factor,
         make_graph=True,
-        apply_sonuc=sonuc,
+        apply_result=calculation_result,
     )
 
     assert calls["range_model_names"] == ["zeng_datalink_fit"]
     assert calls["power_model_names"] == ["zeng_datalink_fit"]
-    # Empirical interpolation grafigi artik yalnizca menu-5 ham veri
-    # gorselleyicisinde uretilir; preset akisi cizmez.
+    # The empirical interpolation plot is produced only by the raw-data viewer;
+    # the preset flow does not draw it.
     assert "empirical_output_path" not in calls
     assert calls["power_output_path"] == "datalink_zeng_power_ratio.png"
     assert calls["range_output_path"] == "datalink_zeng_range_time.png"
     assert "battery_output_path" not in calls
     assert calls["range_power_reference_w"] == 760.0
-    # Preset akisi girilen bataryayi July3 usable oraniyla olcekler.
+    # The preset flow scales the entered battery by the July 3 usable fraction.
     expected_usable = battery_wh * multicopter_range.FIRFIR_BATTERY_USABLE_FRACTION
     assert calls["range_battery_basis"]["usable_energy_wh"] == pytest.approx(
         expected_usable, abs=0.01
@@ -1018,7 +1040,7 @@ def test_preset_fit_selection_generates_model_specific_graphs(monkeypatch, tmp_p
 
 
 def test_preset_fit_all_selection_uses_all_three_models(monkeypatch, tmp_path):
-    profile, sonuc, hover_power_w, battery_wh, correction_factor = _firfir_context()
+    profile, calculation_result, hover_power_w, battery_wh, correction_factor = _firfir_context()
     observations = [
         {
             "label": "DataLink v~5.0",
@@ -1107,13 +1129,13 @@ def test_preset_fit_all_selection_uses_all_three_models(monkeypatch, tmp_path):
     multicopter_range.run_preset_fit_apply_to_vehicle(
         [6.0, 20.0],
         profile,
-        sonuc,
+        calculation_result,
         "4",
         760.0,
         battery_wh,
         correction_factor,
         make_graph=True,
-        apply_sonuc=sonuc,
+        apply_result=calculation_result,
     )
 
     assert calls["power_model_names"] == [

@@ -6,7 +6,7 @@ import multicopter_range
 
 
 FIT_HOVER_W = 758.0
-# Mekanik olcek (DATALINK_RPM_SCALE sonrasi): eski ham-olcek 168 m/s -> ~80 m/s.
+# Mechanical scale after DATALINK_RPM_SCALE: old raw scale 168 m/s -> ~80 m/s.
 FIT_UTIP_MS = 80.0
 FIT_V0_MS = math.sqrt(
     12.4 * 9.81 / (2.0 * 1.225 * 4.0 * math.pi * (28.0 * 0.0254 / 2.0) ** 2)
@@ -20,8 +20,8 @@ def _fit_profile():
 
 
 def _synthetic_observations():
-    # Zeng-formlu "gercek" bir egriden uretilmis sentetik binler; fitler bu
-    # egriyi geri bulur, boylece transfer ozdesligi gercekci parametrelerle test edilir.
+    # Synthetic bins generated from a Zeng-shaped ground-truth curve. The fits
+    # recover it, letting transfer identity use realistic parameters.
     observations = []
     for speed in [3.0, 4.0, 5.0, 6.0, 7.0, 8.0, 9.0, 10.0, 11.0, 12.0]:
         ratio = (
@@ -96,7 +96,7 @@ def _grid():
     return [0.25 * i for i in range(1, 101)]
 
 
-# --- Faz 3 duzeltmeleri -----------------------------------------------------
+# --- Phase 3 corrections ---------------------------------------------------
 
 
 def test_fit_observation_weighted_zeng_empty_observations_has_no_keyerror():
@@ -133,19 +133,19 @@ def test_resolve_fit_power_reference_prefers_measured_then_fit_profile():
     assert (
         multicopter_range.resolve_fit_power_reference(757.9, fit_profile, 999.0) == 757.9
     )
-    # Olculen hover yoksa GIRILEN aracin gucu degil, fit aracinin teorik
-    # hover'i kullanilmali (yanlis referansla sessiz normalizasyon yok).
+    # Without measured hover, use the fit aircraft's theoretical hover rather
+    # than the entered aircraft's power; avoid silent normalization to a wrong reference.
     assert multicopter_range.resolve_fit_power_reference(None, fit_profile, 999.0) == 1124.0
     assert multicopter_range.resolve_fit_power_reference(None, {}, 999.0) == 999.0
 
 
-# --- Faz 4: fiziksel parametre transferi ------------------------------------
+# --- Phase 4: physical parameter transfer ---------------------------------
 
 
 def test_transfer_identity_reproduces_fit_vehicle_curves():
     suite = _fitted_suite()
     apply_profile = {
-        "vehicle_name": "Firfir (ozdeslik)",
+        "vehicle_name": "Firfir (identity)",
         "mass_kg": 12.4,
         "num_rotors": 4,
         "prop_diameter_inch": 28.0,
@@ -160,8 +160,8 @@ def test_transfer_identity_reproduces_fit_vehicle_curves():
         rebuilt = transfer["model_functions"][name]
         for speed in _grid():
             assert rebuilt(speed) == pytest.approx(original(speed), abs=1e-9), name
-    # Kirschstein arac-seviyesi tutarli baza yeniden oturtulur; ozdeslik kucuk
-    # bir yeniden-fit kalintisiyla saglanir.
+    # Kirschstein is rebased consistently at aircraft level; identity is reached
+    # with a small refit residual.
     original = suite["model_functions"]["kirschstein_datalink_fit"]
     rebuilt = transfer["model_functions"]["kirschstein_datalink_fit"]
     max_residual = max(abs(rebuilt(v) - original(v)) for v in _grid())
@@ -171,7 +171,7 @@ def test_transfer_identity_reproduces_fit_vehicle_curves():
 def test_transfer_mass_changes_curve_shape_not_just_scale():
     suite = _fitted_suite()
     heavy_profile = {
-        "vehicle_name": "Agir arac",
+        "vehicle_name": "Heavy aircraft",
         "mass_kg": 24.8,
         "num_rotors": 4,
         "prop_diameter_inch": 28.0,
@@ -181,15 +181,15 @@ def test_transfer_mass_changes_curve_shape_not_just_scale():
     transfer = multicopter_range.build_transferred_model_suite(suite, heavy_profile)
 
     zeng = transfer["model_params"]["zeng_datalink_fit"]
-    # Kutle 2x -> disk yuku 2x -> v0 sqrt(2) katina cikar.
+    # Mass 2x -> disc loading 2x -> v0 increases by sqrt(2).
     assert zeng["v0_ms"] == pytest.approx(FIT_V0_MS * math.sqrt(2.0), rel=1e-6)
-    # Induced guc W^1.5 ile buyur -> hover tahmini fit aracindan buyuk.
+    # Induced power grows with W^1.5, so predicted hover exceeds the fit aircraft.
     assert zeng["transfer"]["hover_power_pred_w"] > FIT_HOVER_W * 2
 
     frozen = suite["model_functions"]["zeng_datalink_fit"]
     rebuilt = transfer["model_functions"]["zeng_datalink_fit"]
-    # SEKIL degisir, sadece olcek degil: iki egri orantili olsaydi
-    # rebuilt/frozen orani her hizda ayni olurdu.
+    # Curve shape changes, not only scale. If the curves were proportional, the
+    # rebuilt/frozen ratio would be equal at every speed.
     ratio_low = rebuilt(5.0) / frozen(5.0)
     ratio_high = rebuilt(15.0) / frozen(15.0)
     assert abs(ratio_low - ratio_high) > 0.005
@@ -197,7 +197,7 @@ def test_transfer_mass_changes_curve_shape_not_just_scale():
     def optimum_range_speed(fn):
         return min(_grid(), key=lambda v: fn(v) / v)
 
-    # Agir aracta menzil-optimum hizi saga kayar (frozen sekil bunu asla gosteremez).
+    # A heavier aircraft shifts best-range speed upward, unlike a frozen shape.
     assert optimum_range_speed(rebuilt) > optimum_range_speed(frozen)
 
 
@@ -208,7 +208,7 @@ def test_theoretical_utip_similarity_identity_and_scaling():
     assert identity["utip_ms"] == pytest.approx(FIT_UTIP_MS)
     assert identity["pct_diff_vs_fit"] == pytest.approx(0.0, abs=1e-9)
 
-    # Ayni kutlede 29" pervane: ayni itki icin daha yavas donus -> Utip x 28/29.
+    # At equal mass, a 29-inch prop turns slower for equal thrust: Utip x 28/29.
     g29 = multicopter_range.estimate_theoretical_utip_similarity(
         12.4, 4, 29.0, 12.4, 4, 28.0, FIT_UTIP_MS
     )
@@ -217,7 +217,7 @@ def test_theoretical_utip_similarity_identity_and_scaling():
         g29["utip_ms"] * 60.0 / (math.pi * 29.0 * 0.0254)
     )
 
-    # Kutle 2x -> rotor basina itki 2x -> Utip sqrt(2) katina cikar.
+    # Mass 2x -> per-rotor thrust 2x -> Utip increases by sqrt(2).
     heavy = multicopter_range.estimate_theoretical_utip_similarity(
         24.8, 4, 28.0, 12.4, 4, 28.0, FIT_UTIP_MS
     )
@@ -225,20 +225,20 @@ def test_theoretical_utip_similarity_identity_and_scaling():
 
 
 def test_theoretical_utip_datasheet_identity_and_scale_discovery():
-    # Fit noktasinda ozdeslik: ayni arac girilirse fit Utip'i birebir geri doner.
+    # Identity at the fit point: the same aircraft returns the fitted Utip exactly.
     identity = multicopter_range.estimate_theoretical_utip_datasheet(
         12.4, 4, 28.0, 12.4, 4, 28.0, FIT_UTIP_MS
     )
     assert identity["utip_ms"] == pytest.approx(FIT_UTIP_MS)
     assert identity["pct_diff_vs_fit"] == pytest.approx(0.0, abs=1e-9)
 
-    # Datasheet mutlak degerler: 3100 g @ G28x9.2 -> ~2216 RPM, ~82 m/s.
+    # Absolute datasheet values: 3100 g @ G28x9.2 -> ~2216 RPM, ~82 m/s.
     assert identity["fit_rpm_datasheet"] == pytest.approx(2216.3, abs=1.0)
     assert identity["fit_utip_datasheet_ms"] == pytest.approx(82.5, abs=0.5)
-    # Parser DATALINK_RPM_SCALE duzeltmesi sonrasi olcek ~1.0 (80 / 82.5 = 0.97).
+    # Scale is ~1.0 after parser DATALINK_RPM_SCALE correction (80 / 82.5 = 0.97).
     assert 0.9 < identity["datalink_scale"] < 1.05
 
-    # 29" pervane, ayni kutle: oran datasheet egrilerinden gelir.
+    # For a 29-inch prop at equal mass, the ratio comes from datasheet curves.
     g29 = multicopter_range.estimate_theoretical_utip_datasheet(
         12.4, 4, 29.0, 12.4, 4, 28.0, FIT_UTIP_MS
     )
@@ -278,13 +278,13 @@ def test_preset_fit_theoretical_datasheet_utip_mode_feeds_transfer(
         lambda *_args, **_kwargs: tmp_path / "report.md",
     )
     fit_profile = _fit_profile()
-    fake_sonuc = {
+    fake_result = {
         "optimal_endurance_speed_ms": 6.6,
         "optimal_speed_ms": 10.7,
         "vi_h": FIT_V0_MS,
     }
     apply_profile = {
-        "vehicle_name": "Sim arac",
+        "vehicle_name": "Simulation aircraft",
         "mass_kg": 18.6,
         "num_rotors": 4,
         "prop_diameter_inch": 29.0,
@@ -294,13 +294,13 @@ def test_preset_fit_theoretical_datasheet_utip_mode_feeds_transfer(
     result = multicopter_range.run_preset_fit_apply_to_vehicle(
         [6.0],
         fit_profile,
-        fake_sonuc,
+        fake_result,
         "1",
         1500.0,
         1198.8,
         0.72,
         make_graph=False,
-        apply_sonuc=fake_sonuc,
+        apply_result=fake_result,
         apply_profile=apply_profile,
         apply_utip_mode="theoretical_datasheet",
     )
@@ -313,10 +313,9 @@ def test_preset_fit_theoretical_datasheet_utip_mode_feeds_transfer(
     assert "Datasheet mechanical RPM" in out
     assert f"Applied fit-anchored tip speed = {expected['utip_ms']:.1f} m/s" in out
     assert f"%{expected['pct_diff_vs_fit']:+.1f}" in out
-    # Parser olcek duzeltmesi sonrasi datalink_scale ~0.97 -> olcek uyarisi
-    # artik tetiklenmemeli.
+    # datalink_scale ~0.97 after parser correction, so no scale warning is expected.
     assert "WARNING: DataLink tip speed" not in out
-    # Teorik Utip transfere girdi olarak gecer.
+    # Theoretical Utip is passed into the transfer.
     assert result["transfer"]["apply_utip_ms"] == pytest.approx(expected["utip_ms"])
     zeng = result["transfer"]["model_params"]["zeng_datalink_fit"]
     assert zeng["utip_ms"] == pytest.approx(expected["utip_ms"])
