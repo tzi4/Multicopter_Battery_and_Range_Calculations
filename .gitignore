@@ -1,44 +1,28 @@
-# Keep the repository focused on the runnable menzil package.
-*
-!*/
-!.gitignore
-!.gitattributes
-!*.py
-!requirements.txt
-!README.md
-!LICENSE
-!CLAUDE.md
-!mukerrer_egri_davranisi_raporu.md
-
-# Runtime data used by menzil2.py DataLink analysis.
-!flight_attitude_00000075.csv
-!flight_attitude_00000075_armed.csv
-!ham_ucus_verileri.md
-!3 Temmuz Tüm Test Logları/
-!3 Temmuz Tüm Test Logları/**
-
-# Figures embedded in README.md.
-!datalink_all_empirical_interpolation.png
-!datalink_all_power_ratio.png
-!datalink_all_range_time.png
-
-# Local scratch scripts from the cleanup/refactor work.
-add_option5.py
-refactor.py
-refactor2.py
-remove_dead.py
-remove_dead2.py
-remove_dead3.py
-remove_dead4.py
-remove_plots.py
-remove_stadium_str.py
-update_menu.py
-
-# Local/tool/cache folders.
-.agents/
-.claude/
-.codex/
-__pycache__/
-.pytest_cache/
+# Python environments and caches
 .venv/
 venv/
+__pycache__/
+*.py[cod]
+.pytest_cache/
+.coverage
+htmlcov/
+*.egg-info/
+build/
+dist/
+
+# Generated analysis output
+*.log
+empirical_datalink_power_curve.png
+diagnostic_datalink_surrogate_fits.png
+scientific_model_fit_audit.md
+datalink_fit_method_report.md
+measured_datalink_power_curve*.png
+raw_datalink_*.png
+july21_*.png
+combined_july3_july21_*.png
+
+# Editors and operating systems
+.idea/
+.vscode/
+.DS_Store
+Thumbs.db

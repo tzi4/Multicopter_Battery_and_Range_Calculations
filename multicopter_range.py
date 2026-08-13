@@ -1,5 +1,10 @@
-# TARIK ZİYA İNCİ VE FURKAN DEMİRYÜREK TARAFINDAN ÖZENLE HAZIRLANDI
+"""Multicopter battery-endurance and forward-flight range models.
 
+The module combines a Bauersfeld-based calculator with parsers and fitted
+models for the calibration flight data shipped in ``data/calibration``.
+"""
+
+import argparse
 import csv
 import math
 import re
@@ -13,23 +18,23 @@ except Exception:
     pass
 
 
-class BauersfeldMenzilHesaplayici:
+class BauersfeldRangeCalculator:
     def __init__(
         self,
-        hover_power_w,  # Hover Gücü
+        hover_power_w,  # Hover power
         correction_factor,  # Correction Factor
         battery_wh,  # Batarya Enerjisi
-        total_mass_kg,  # Toplam Kütle
+        total_mass_kg,  # Total mass
         drag_area_cm2,  # A (Makalede Surface Area)
-        prop_diameter_inch,  # Pervane Çapı
+        prop_diameter_inch,  # Propeller diameter
         num_rotors,
-    ):  # Motor Sayısı
+    ):  # Rotor count
 
         self.P_h_measured = hover_power_w
         self.cf = correction_factor
         self.energy_wh = battery_wh
         self.m = total_mass_kg
-        self.A_ref = drag_area_cm2  # Makale katsayıları cm^2 bazlıdır!
+        self.A_ref = drag_area_cm2  # The paper's coefficients use cm^2.
         self.Nr = num_rotors
 
         # Fiziksel Sabitler
@@ -38,50 +43,49 @@ class BauersfeldMenzilHesaplayici:
 
         self.r_prop = (prop_diameter_inch * 0.0254) / 2.0
 
-        # Hover İndüklenen Hız (vi,h)
+        # Induced hover velocity (vi,h)
         # Eq 4: vi,h = sqrt(mg / 2*rho*pi*r^2*Nr)
         numerator = self.m * self.g
         denominator = 2 * self.rho * math.pi * (self.r_prop**2) * self.Nr
         self.vi_h = math.sqrt(numerator / denominator)
 
         # KATSAYILAR (Tablo II)
-        # Range (Menzil) Katsayıları
+        # Range coefficients
         self.c0_r = 0.041546
         self.c1_r = 0.041122
         self.c2_r = 0.00053292
 
-        # Endurance (Dayanım) Katsayıları
+        # Endurance coefficients
         self.c0_e = 0.10188
         self.c1_e = 0.071358
         self.c2_e = 0.0007381
 
     def solve(self):
-        # Optimal Hızları Hesapla (Eq 18)
-        # Formül: v_opt = vi,h / (c0 + c1*vi,h + c2*A)
+        # Calculate optimum speeds (Eq. 18).
+        # Formula: v_opt = vi,h / (c0 + c1*vi,h + c2*A)
 
-        # 1. Maksimum Menzil Hızı (v_range)
+        # 1. Best-range speed (v_range)
         denom_r = self.c0_r + (self.c1_r * self.vi_h) + (self.c2_r * self.A_ref)
         v_range_ms = self.vi_h / denom_r
 
-        # 2. Maksimum Dayanım Hızı (v_endurance) - (Genelde hover'dan biraz hızlıdır)
+        # 2. Best-endurance speed (usually slightly faster than hover)
         denom_e = self.c0_e + (self.c1_e * self.vi_h) + (self.c2_e * self.A_ref)
         v_endurance_ms = self.vi_h / denom_e
 
-        # Güç Tüketimlerini Hesapla (Eq 17)
+        # Calculate power consumption (Eq. 17).
         # Makale diyor ki:
         # P_range = 1.092 * P_hover
         # P_endurance = 0.914 * P_hover
 
-        # Burada ölçülen P_hover'ı baz alıyoruz (Correction Factor uygulanmamış ham güç)
+        # Use measured, uncorrected hover power as the baseline.
         P_range_w = 1.092 * self.P_h_measured
         P_endurance_w = 0.914 * self.P_h_measured
 
-        # Süre ve Menzil Hesabı
-        # Menzil Modu İçin:
+        # Endurance and range for best-range mode.
         flight_time_hours_r = (self.energy_wh / P_range_w) * self.cf
         max_range_km = (v_range_ms * 3.6) * flight_time_hours_r
 
-        # Dayanım Modu İçin:
+        # Best-endurance mode.
         flight_time_hours_e = (self.energy_wh / P_endurance_w) * self.cf
         max_range_km_e = (v_endurance_ms * 3.6) * flight_time_hours_e
 
@@ -98,7 +102,7 @@ class BauersfeldMenzilHesaplayici:
         }
 
 
-# VERİ SETLERİ (DATASHEETS)
+# DATASHEET DATA SETS
 
 # 1. P80 III KV100 + MF Pervane (Referans - Vibe)
 p80_raw_data = [
@@ -610,7 +614,7 @@ u8ii_kv85_data = [
 ]
 
 # 18. T-MOTOR P80 MF3218 (12S - 48V Test Verisi)
-# Not: Görsellerdeki Thrust (g) ve Power (W) değerleri birleştirildi.
+# Thrust (g) and power (W) values were transcribed from datasheet figures.
 mf3218_data = [
     [3505, 298],
     [3744, 321],
@@ -715,7 +719,7 @@ u8iix_kv100_data = [
     [9082, 1569],
 ]
 
-# 23. Yıldızlar İyi Motor - 24V (6S LIPO) + HQ9x5x3 Propeller
+# 23. Yildizlar high-performing motor - 24 V (6S LiPo) + HQ9x5x3
 yildizlar_iyi_motor_data = [
     [784, 129],
     [1263, 267],
@@ -726,7 +730,7 @@ yildizlar_iyi_motor_data = [
     [4279, 1535],
 ]
 
-# 24. Yıldızlar Kötü Motor - SE 3115 900KV + HQ 9x5x3 (6S - 24V)
+# 24. Yildizlar low-performing motor - SE 3115 900KV + HQ9x5x3
 yildizlar_kotu_motor_data = [
     [265, 45.36],
     [835, 189.00],
@@ -738,7 +742,7 @@ yildizlar_kotu_motor_data = [
     [3784, 1596.54],
 ]
 
-# 25. Yıldızlar Geçen Sene Motoru - DAL T5045 Tri-blade
+# 25. Previous-year Yildizlar motor - DAL T5045 tri-blade
 yildizlar_gecen_sene_data = [
     [96, 16.00],
     [221, 49.60],
@@ -759,7 +763,7 @@ yildizlar_gecen_sene_data = [
     [1281, 537.60],
 ]
 
-# 26. Yıldızlar Sanal Ortalama Motor - (İyi ve Kötü Motor Ortalaması)
+# 26. Virtual average of the two Yildizlar motor data sets
 yildizlar_sanal_ortalama_data = [
     [265, 22.68],
     [784, 152.57],
@@ -777,7 +781,7 @@ yildizlar_sanal_ortalama_data = [
 ]
 
 
-# --- FONKSİYONLAR ---
+# HELPERS
 
 
 def interpolate(value, x_list, y_list):
@@ -803,7 +807,7 @@ def get_power_from_thrust(thrust, data_list):
 
 
 def _det3(m):
-    """3x3 matris determinantı (Cramer kuralı için)"""
+    """Return a 3x3 matrix determinant for Cramer's rule."""
     return (
         m[0][0] * (m[1][1] * m[2][2] - m[1][2] * m[2][1])
         - m[0][1] * (m[1][0] * m[2][2] - m[1][2] * m[2][0])
@@ -812,8 +816,7 @@ def _det3(m):
 
 
 def quadratic_regression(data_list):
-    """Kuadratik regresyon: power = a*thrust^2 + b*thrust + c
-    Tüm veri noktalarına en küçük kareler yöntemiyle 2. derece polinom uydurur."""
+    """Fit ``power = a*thrust^2 + b*thrust + c`` by least squares."""
     n = len(data_list)
     sx = sum(d[0] for d in data_list)
     sy = sum(d[1] for d in data_list)
@@ -839,17 +842,17 @@ def quadratic_regression(data_list):
 
 
 def get_power_from_thrust_quadratic(thrust, data_list):
-    """Aralık içinde lineer interpolasyon, aralık dışında kuadratik regresyon ile ekstrapolasyon."""
+    """Interpolate linearly in range and extrapolate quadratically outside it."""
     thrusts = [d[0] for d in data_list]
 
-    # Veri aralığı içindeyse normal interpolasyon kullan
+    # Use normal interpolation inside the measured range.
     if thrusts[0] <= thrust <= thrusts[-1]:
         return get_power_from_thrust(thrust, data_list)
 
-    # Aralık dışı: kuadratik regresyon ile ekstrapolasyon
+    # Extrapolate quadratically outside the measured range.
     a, b, c = quadratic_regression(data_list)
     power = a * (thrust**2) + b * thrust + c
-    return max(0, power)  # Negatif güç fiziksel olarak anlamsız
+    return max(0, power)  # Negative power is not physically meaningful.
 
 
 FIRFIR_SPEED_PRESET = {
@@ -883,12 +886,12 @@ FIRFIR_SPEED_PRESET = {
     * 4.0,
 }
 
+CALIBRATION_DATA_ROOT = "data/calibration/2026-07-03"
 FIRFIR_ATTITUDE_LOG_CANDIDATES = [
-    "flight_attitude_00000075.csv",
-    "flight_attitude_00000075_armed.csv",
+    f"{CALIBRATION_DATA_ROOT}/flight_attitude.csv",
 ]
 FIRFIR_DATALINK_ROOT_CANDIDATES = [
-    "Some Datalink Data/datalink",
+    f"{CALIBRATION_DATA_ROOT}/Datalink",
 ]
 DATALINK_EXPECTED_MOTOR_COUNT = 4
 DATALINK_RECORD_HEADER_BYTES = 32
@@ -931,69 +934,7 @@ DATALINK_FIT_MODEL_SLUGS = {
 DATALINK_DATASHEET_UTIP_RANGE_MS = (57.0, 110.0)
 DATALINK_FIRFIR_LAMBDA_ACCEPTANCE_N_PER_MS = (0.3, 3.5)
 DATALINK_BODY_CD_MAX = 5.0
-
-# --- 21 Temmuz (harici dogrulama / birlesik fit) ---
-# 21 Temmuz uzun ucusu 3 Temmuz'un eklendigi gibi (find/parse/join/fit ayni
-# menzil2 fonksiyonlariyla) ayri bir veri kaynagi olarak eklenir. Varsayilan rol
-# DIS DOGRULAMA'dir: 3 Temmuz fiti dondurulur, 21 Temmuz noktalari fitin uzerine
-# cizilir; fit katsayilari degismez. Kaynak devir notu:
-# "21 temmuz Tum Test Loglari/MENZIL2_21_TEMMUZ_ENTEGRASYON_DEVIR_NOTU.md".
-JULY21_LOG_ROOT_PREFIX = "21 temmuz"
-JULY21_DATALINK_SESSION_NAME = "UART-260721-103715"
-JULY21_BIN_GLOB = "*11-56-15.bin"
-# KRITIK "veri kaymasi": uzun ucusta DataLink bilgisayar saati autopilot GPS
-# saatinden 56.18 s ILERIDE (CTUN.ThO ile toplam ESC akiminin capraz
-# korelasyonu). Duzeltilmeden zaman eslestirmesi fiziksel olarak yanlis anlari
-# birlestirir; yalnizca en-yakin-timestamp kontrolu yeterli DEGILDIR.
-JULY21_DATALINK_CLOCK_AHEAD_S = 56.18
-# 21 Temmuz pervanesi 28"; 3 Temmuz fit profilinin 29" metadatasi 21 Temmuz
-# ornekleri uzerine yazilmamali (oturum bazinda ayri tutulur).
-JULY21_PROP_DIAMETER_INCH = 28.0
-# Kesintisiz gorev turu imzasi: MISE CNum sirasi [2,3,4,5]. Uzun ucusta 10 tane.
-JULY21_UNINTERRUPTED_LAP_ITEMS = [2, 3, 4, 5]
-JULY21_VALIDATION_MIN_SPEED_MS = 2.0
-JULY21_VALIDATION_MAX_SPEED_MS = 20.0
-JULY21_VALIDATION_BIN_WIDTH_MS = 1.0
-JULY21_VALIDATION_MIN_SAMPLES = 80
-# "Guvenilir" = kararli-hal kapisi. Fit yalniz kararli duz ucus P(v) ogrenir;
-# gecis/donus anlari (yuksek ivme, yuksek burun acisi) ayni hizda fiziksel
-# olarak daha fazla guc ceker ve fit'le kiyaslanamaz (elmayla-armut). Fizik
-# analizi: kararli seyir ~0.5 m/s2, gecis kutulari ~1.5-2.1 m/s2 ivme tasir.
-# Bu esik altindaki ornekler kararli kabul edilir; doğrulama ve birlesik fit
-# egitimi yalniz bunlari kullanir.
-JULY21_STEADY_MAX_ACCEL_MS2 = 1.0
-# Pilot mudahalesi sonrasi ve gorev-disi ornekler dogrulamaya hic girmez.
-JULY21_VALIDATION_PHASES = ("ilk_10_kesintisiz_tur",)
-JULY21_TRAIN_PHASE = "ilk_10_kesintisiz_tur"
-JULY21_VALIDATION_RATIO_OUTPUT_PATH = "july21_validation_power_ratio.png"
-JULY21_VALIDATION_POWER_OUTPUT_PATH = "july21_validation_vehicle_power.png"
-JULY21_MODEL_LABELS = {
-    "zeng_datalink_fit": "Zeng - 3 Temmuz fit",
-    "faessler_datalink_fit": "Faessler - 3 Temmuz fit",
-    "kirschstein_datalink_fit": "Kirschstein - 3 Temmuz fit",
-}
-JULY21_MODEL_COLORS = {
-    "zeng_datalink_fit": "#1f77b4",
-    "faessler_datalink_fit": "#2ca02c",
-    "kirschstein_datalink_fit": "#9467bd",
-}
-JULY21_PHASE_PLOT_STYLE = {
-    "ilk_10_kesintisiz_tur": (
-        "#e67e22",
-        "D",
-        "21 Temmuz - ilk 10 kesintisiz tur (kararli-hal)",
-    ),
-}
-JULY21_COMBINED_RATIO_OUTPUT_PATH = "combined_july3_july21_power_ratio.png"
-JULY21_COMBINED_POWER_OUTPUT_PATH = "combined_july3_july21_vehicle_power.png"
-# Oturuma ozel DataLink saat duzeltmesi (saniye, DataLink zamanina EKLENIR).
-# Genel July3-tarzi pipeline (menu-3 elle giris / menu-5 ham veri) 21 Temmuz
-# oturumunu islerken de 56.18 s kaymasi duzeltilmis olur; July3 oturumlari
-# haritada olmadigi icin davranislari degismez.
-DATALINK_SESSION_CLOCK_CORRECTION_S = {
-    JULY21_DATALINK_SESSION_NAME: -JULY21_DATALINK_CLOCK_AHEAD_S,
-}
-
+DATALINK_SESSION_CLOCK_CORRECTION_S = {}
 
 FIRFIR_BATTERY_CELLS = 6
 FIRFIR_BATTERY_MEASURED_USABLE_AH = 25.2
@@ -1015,7 +956,7 @@ FIRFIR_BATTERY_USABLE_FRACTION = (
 # yalnizca fit-kaynagi (Firfir) MUTLAK degerlerini fiziksel gercege tasimak icindir.
 FIRFIR_BATTERY_PARALLEL_ARMS = 2
 
-# Rest-voltage anchors from ham_ucus_verileri.md for the 6S Li-ion solid-state pack.
+# Rest-voltage anchors for the calibrated 6S Li-ion solid-state pack.
 
 
 def tip_speed_from_rpm(prop_diameter_inch, rpm):
@@ -1396,10 +1337,10 @@ def find_datalink_session_dirs(root=None):
 
 
 def resolve_datalink_session_root(log_root):
-    """UART oturum klasorlerinin bulundugu koku dondurur.
+    """Return the directory that directly contains the UART sessions.
 
-    3 Temmuz duzeni: root/Datalink/UART-*  |  21 Temmuz duzeni: root/UART-*.
-    Once Datalink/ alt klasoru denenir; yoksa (veya UART icermiyorsa) kok."""
+    Both ``root/Datalink/UART-*`` and ``root/UART-*`` layouts are supported.
+    """
     log_root = Path(log_root)
     datalink_sub = log_root / "Datalink"
     if datalink_sub.is_dir() and any(
@@ -1424,13 +1365,9 @@ def _session_date_hints(session_root):
 
 
 def discover_datalink_log_roots():
-    """Kullanicinin klasor adi/tarih ezberlemesine gerek kalmasin diye repo
-    kokundeki log klasorlerini ve icerdikleri UART tarih hint'lerini tarar."""
+    """Return bundled and user-added flight-log roots with UART date hints."""
     base_dir = Path(__file__).resolve().parent
-    candidates = []
-    for child in sorted(base_dir.iterdir()):
-        if child.is_dir() and "temmuz" in child.name.lower():
-            candidates.append(child)
+    candidates = [base_dir / CALIBRATION_DATA_ROOT]
     for candidate in FIRFIR_DATALINK_ROOT_CANDIDATES:
         path = Path(candidate)
         if not path.is_absolute():
@@ -1454,37 +1391,37 @@ def discover_datalink_log_roots():
                     "has_bin": has_bin,
                 }
             )
-    # Kalibrasyon varsayilani '3 Temmuz*' listede hep 1 numara olsun
-    # (alfabetik sirada '21 temmuz' one gecerdi).
+    # Keep the bundled calibration set first.
     entries.sort(
-        key=lambda entry: (not entry["label"].lower().startswith("3 temmuz"),
-                           entry["label"].lower())
+        key=lambda entry: (
+            entry["path"] != base_dir / CALIBRATION_DATA_ROOT,
+            entry["label"].lower(),
+        )
     )
     return entries
 
 
 def prompt_datalink_root_and_hint(default_hint=DATALINK_MEASURED_CURVE_DATE_HINT):
-    """Kesfedilen log klasorlerini numarali listeler; kullanici klasor adi /
-    tarih hint'i ezberlemek zorunda kalmaz. 'e' ile eski elle giris korunur."""
+    """Prompt for a discovered flight-log root and a YYMMDD date hint."""
     entries = [
         entry for entry in discover_datalink_log_roots() if entry.get("has_bin")
     ]
-    print("\nDataLink/log klasörü:")
+    print("\nDataLink/log directory:")
     for idx, entry in enumerate(entries, 1):
-        default_marker = " [varsayılan]" if idx == 1 else ""
+        default_marker = " [default]" if idx == 1 else ""
         print(
             f"{idx}) {entry['label']} "
-            f"(tarih: {', '.join(entry['date_hints'])}){default_marker}"
+            f"(dates: {', '.join(entry['date_hints'])}){default_marker}"
         )
-    print("e) Elle klasör/tarih gir")
-    default_choice = "1" if entries else "e"
-    raw = input(f"Seçim [{default_choice}]: ").strip().lower() or default_choice
-    if raw == "e" or not entries:
+    print("m) Enter a directory/date manually")
+    default_choice = "1" if entries else "m"
+    raw = input(f"Selection [{default_choice}]: ").strip().lower() or default_choice
+    if raw == "m" or not entries:
         root_raw = input(
-            "Klasör yolu [otomatik: 3 Temmuz Tüm Test Logları]: "
+            "Log directory [automatic: bundled 2026-07-03 calibration data]: "
         ).strip()
         log_root = Path(root_raw) if root_raw else None
-        hint_raw = input(f"Tarih hint'i (YYMMDD) [{default_hint}]: ").strip()
+        hint_raw = input(f"Date hint (YYMMDD) [{default_hint}]: ").strip()
         return log_root, normalize_datalink_date_hint(hint_raw) or default_hint
     try:
         idx = int(raw)
@@ -1493,10 +1430,10 @@ def prompt_datalink_root_and_hint(default_hint=DATALINK_MEASURED_CURVE_DATE_HINT
     entry = entries[min(max(idx, 1), len(entries)) - 1]
     hints = entry["date_hints"]
     if len(hints) > 1:
-        print("Tarih:")
+        print("Date:")
         for h_idx, hint in enumerate(hints, 1):
             print(f"{h_idx}) {hint}")
-        hint_raw = input("Seçim [1]: ").strip()
+        hint_raw = input("Selection [1]: ").strip()
         try:
             h_idx = int(hint_raw) if hint_raw else 1
         except ValueError:
@@ -1663,8 +1600,7 @@ def _parse_datalink_session_samples(session, timestamp_mode, prop_diameter_inch)
         samples.extend(
             sample for sample in parsed["samples"] if sample.get("timestamp_utc")
         )
-    # Oturuma ozel saat duzeltmesi (orn. 21 Temmuz DataLink saati 56.18 s
-    # ileride). July3 oturumlari haritada yok -> 0, davranis ayni.
+    # Apply an optional per-session correction to each DataLink timestamp.
     correction_s = DATALINK_SESSION_CLOCK_CORRECTION_S.get(session.get("name"), 0.0)
     if correction_s:
         for sample in samples:
@@ -2026,25 +1962,20 @@ def audit_scientific_fit_parameters(model_name, params, profile=None):
 
 
 def resolve_fit_power_reference(measured_hover_power_w, profile, entered_hover_power_w):
-    """P/Ph oran egrisinin normalizasyon referansini secer.
-
-    Olculen DataLink hover'i esastir. Bulunamazsa girilen aracin hover'i DEGIL,
-    fit aracinin (profil) teorik hover'i kullanilir; aksi halde fit verisi yanlis
-    aracin gucuyle normalize edilip sessizce bozuk bir oran egrisi uretir.
-    """
+    """Choose a safe normalization reference for the P(V)/P_hover curve."""
     if measured_hover_power_w:
         return measured_hover_power_w
     theoretical_w = profile.get("theoretical_hover_power_w")
     if theoretical_w:
         print(
-            "UYARI: DataLink hover gucu olculemedi; P/Ph normalizasyonu fit "
-            f"aracinin teorik hover'i ({theoretical_w:.1f} W) ile yapildi."
+            "WARNING: DataLink hover power was unavailable; normalizing P/Ph "
+            f"with the fit aircraft's theoretical hover power ({theoretical_w:.1f} W)."
         )
         return theoretical_w
     print(
-        "UYARI: DataLink hover gucu olculemedi ve fit profilinde teorik hover "
-        f"yok; oran egrisi girilen hover ({entered_hover_power_w:.1f} W) ile "
-        "normalize edildi -- girilen arac fit araci degilse sonuclar guvenilmez."
+        "WARNING: DataLink and theoretical fit-aircraft hover power are unavailable; "
+        f"normalizing with the entered hover power ({entered_hover_power_w:.1f} W). "
+        "Results are unreliable unless the entered aircraft produced the fit data."
     )
     return entered_hover_power_w
 
@@ -2056,11 +1987,12 @@ def find_measured_curve_log_root(log_root=None):
             return path
         raise FileNotFoundError(f"DataLink measured log root not found: {path}")
 
-    base_dir = Path(__file__).resolve().parent
-    for child in sorted(base_dir.iterdir()):
-        if child.is_dir() and child.name.startswith("3 Temmuz"):
-            return child
-    raise FileNotFoundError("3 Temmuz log klasoru bulunamadi.")
+    default_root = Path(__file__).resolve().parent / CALIBRATION_DATA_ROOT
+    if default_root.is_dir():
+        return default_root
+    raise FileNotFoundError(
+        f"Bundled calibration log directory not found: {default_root}"
+    )
 
 
 def read_battery_monitor_rows(bin_path, start_utc=None, end_utc=None):
@@ -2709,7 +2641,7 @@ def build_datalink_fitted_model_suite(
         datalink_efficiency_ratio = None
     range_time_basis = {
         "label": "6S 25.2Ah measured usable capacity / July3 calibrated hover",
-        "source": "3 Temmuz DataLink hover + 25.2Ah measured usable capacity",
+        "source": "3 July DataLink hover + 25.2 Ah measured usable capacity",
         "power_reference_w": power_reference_w,
         "battery_basis": battery_basis,
         "usable_energy_wh": battery_basis.get("usable_energy_wh", 0.0),
@@ -2747,766 +2679,35 @@ def build_datalink_fitted_model_suite(
     }
 
 
-# =====================================================================
-# 21 Temmuz veri kaynagi (3 Temmuz'un eklendigi gibi; port loader'lar).
-# analyze_july21_anomaly.py mantigi menzil2'ye tasindi; helper scriptlere
-# import bagimliligi yoktur. Ayni parse/join/fit fonksiyonlari kullanilir.
-# =====================================================================
-
-
-def find_july21_log_root(log_root=None):
-    """3 Temmuz'un find_measured_curve_log_root muadili. '21 temmuz' klasoru."""
-    if log_root:
-        path = Path(log_root)
-        if path.is_dir():
-            return path
-        raise FileNotFoundError(f"21 Temmuz log klasoru bulunamadi: {log_root}")
-    base_dir = Path(__file__).resolve().parent
-    for child in sorted(base_dir.iterdir()):
-        if child.is_dir() and child.name.lower().startswith(JULY21_LOG_ROOT_PREFIX):
-            return child
-    raise FileNotFoundError("21 Temmuz log klasoru bulunamadi.")
-
-
-def find_july21_bin_path(log_root):
-    """Uzun ucus BIN'i; .bin/.BIN platformdan bagimsiz bulunur."""
-    log_root = Path(log_root)
-    matches = sorted(log_root.glob(JULY21_BIN_GLOB))
-    if not matches:
-        matches = sorted(
-            path
-            for path in log_root.glob("*11-56-15.*")
-            if path.suffix.lower() == ".bin"
-        )
-    if not matches:
-        raise FileNotFoundError(
-            f"21 Temmuz uzun ucus BIN dosyasi bulunamadi ({JULY21_BIN_GLOB})."
-        )
-    return matches[0]
-
-
-def find_july21_datalink_session(log_root):
-    """UART oturumu log kokunde DOGRUDAN bulunur (3 Temmuz'daki Datalink/ alt
-    klasor duzeninden farkli)."""
-    log_root = Path(log_root)
-    session = log_root / JULY21_DATALINK_SESSION_NAME
-    if not session.is_dir():
-        raise FileNotFoundError(f"21 Temmuz DataLink oturumu bulunamadi: {session}")
-    return session
-
-
-def _read_july21_ardupilot_series(bin_path):
-    """analyze_july21_anomaly.read_log portu (yalniz ARM/MISE + zaman span)."""
-    from pymavlink import mavutil
-
-    span = read_ardupilot_bin_time_span(bin_path)
-    series = {"ARM": [], "MISE": []}
-    log = mavutil.mavlink_connection(str(bin_path), robust_parsing=True)
-    while True:
-        msg = log.recv_match(type=["ARM", "MISE"], blocking=False)
-        if msg is None:
-            break
-        data = msg.to_dict()
-        if "TimeUS" in data:
-            data["t"] = data["TimeUS"] / 1e6
-        series[msg.get_type()].append(data)
-    return span, series
-
-
-def _read_july21_datalink_samples(
-    session_dir, prop_diameter_inch=JULY21_PROP_DIAMETER_INCH
-):
-    """analyze_july21_anomaly.read_datalink portu. 21 Temmuz pervanesi 28"."""
-    session_dir = Path(session_dir)
-    samples = []
-    file_stats = []
-    for path in sorted(session_dir.glob("*.udat")):
-        parsed = parse_datalink_udat_file(
-            path,
-            prop_diameter_inch=prop_diameter_inch,
-            timestamp_mode="filename_trt",
-        )
-        file_stats.append(
-            {
-                "file": path.name,
-                "raw_records": parsed.get("raw_record_count", 0),
-                "valid_records": parsed.get("record_count", 0),
-                "sample_rate_hz": parsed.get("sample_rate_hz"),
-                "voltage_median_v": parsed.get("voltage_median_v"),
-                "power_median_w": parsed.get("power_median_w"),
-                "rpm_median": parsed.get("rpm_median"),
-            }
-        )
-        samples.extend(
-            sample
-            for sample in parsed.get("samples", [])
-            if sample.get("timestamp_utc")
-        )
-    samples.sort(key=lambda row: row["timestamp_utc"])
-    return samples, file_stats
-
-
-def _identify_july21_long_flight(series):
-    """En uzun ARM->DISARM penceresi (analyze_july21_anomaly.identify_long_flight)."""
-    windows = []
-    start = None
-    for row in series.get("ARM", []):
-        if row.get("ArmState") == 1:
-            start = row["t"]
-        elif row.get("ArmState") == 0 and start is not None:
-            windows.append((start, row["t"]))
-            start = None
-    if not windows:
-        raise RuntimeError("21 Temmuz ARM/DISARM penceresi bulunamadi.")
-    return max(windows, key=lambda pair: pair[1] - pair[0])
-
-
-def _build_july21_laps(series, flight_start, flight_end):
-    """MISE CNum'a gore gorev turlari (analyze_july21_anomaly.build_laps)."""
-    mise = [
-        row
-        for row in series.get("MISE", [])
-        if flight_start <= row["t"] <= flight_end
-    ]
-    starts = []
-    for idx, row in enumerate(mise):
-        if row.get("CNum") != 2:
-            continue
-        if not starts:
-            starts.append(row)
-            continue
-        prev = mise[idx - 1] if idx else None
-        if prev and prev.get("CNum") == 5 and row["t"] - prev["t"] < 25.0:
-            starts.append(row)
-    laps = []
-    for idx, start in enumerate(starts):
-        end_t = starts[idx + 1]["t"] if idx + 1 < len(starts) else flight_end
-        events = [row for row in mise if start["t"] <= row["t"] < end_t]
-        laps.append(
-            {
-                "lap": idx + 1,
-                "start_t": start["t"],
-                "end_t": end_t,
-                "mission_items": [row.get("CNum") for row in events],
-            }
-        )
-    return laps
-
-
-def _july21_log_time_to_utc(span, time_s):
-    return span["first_utc"] + timedelta(seconds=time_s - span["first_timeus_s"])
-
-
-def build_july21_joined_samples(power_reference_w, log_root=None):
-    """21 Temmuz uzun ucusunu 3 Temmuz tek-kol hover referansiyla oranlanmis,
-    saat-duzeltmesi uygulanmis, faz etiketli birlesik ornekler olarak dondurur.
-
-    56.18 s DataLink saat duzeltmesi burada uygulanir; 10 kesintisiz tur
-    bulunamazsa sessiz fallback yerine anlasilir hata verilir (devir notu)."""
-    log_root = find_july21_log_root(log_root)
-    bin_path = find_july21_bin_path(log_root)
-    session_dir = find_july21_datalink_session(log_root)
-
-    span, series = _read_july21_ardupilot_series(bin_path)
-    flight_start, flight_end = _identify_july21_long_flight(series)
-    laps = _build_july21_laps(series, flight_start, flight_end)
-    uninterrupted = [
-        lap for lap in laps if lap["mission_items"] == JULY21_UNINTERRUPTED_LAP_ITEMS
-    ]
-    if len(uninterrupted) != 10:
-        raise RuntimeError(
-            f"21 Temmuz: beklenen 10 kesintisiz tur yerine {len(uninterrupted)} bulundu"
-        )
-
-    clean_start_utc = _july21_log_time_to_utc(span, uninterrupted[0]["start_t"])
-    clean_end_utc = _july21_log_time_to_utc(span, uninterrupted[-1]["end_t"])
-    flight_start_utc = _july21_log_time_to_utc(span, flight_start)
-    flight_end_utc = _july21_log_time_to_utc(span, flight_end)
-
-    datalink_raw, file_stats = _read_july21_datalink_samples(session_dir)
-    datalink_corrected = []
-    for row in datalink_raw:
-        item = dict(row)
-        item["timestamp_utc"] = row["timestamp_utc"] - timedelta(
-            seconds=JULY21_DATALINK_CLOCK_AHEAD_S
-        )
-        datalink_corrected.append(item)
-    datalink_corrected.sort(key=lambda row: row["timestamp_utc"])
-
-    flight_samples = read_ardupilot_flight_samples(
-        bin_path, start_utc=flight_start_utc, end_utc=flight_end_utc
-    )
-    joined = join_datalink_and_flight_samples(
-        datalink_corrected, flight_samples, power_reference_w, max_dt_s=0.35
-    )
-    joined = annotate_joined_sample_stability(joined)
-    for row in joined:
-        if clean_start_utc <= row["timestamp_utc"] <= clean_end_utc:
-            row["validation_phase"] = "ilk_10_kesintisiz_tur"
-        elif clean_end_utc < row["timestamp_utc"] <= flight_end_utc:
-            row["validation_phase"] = "pilot_mudahalesi_sonrasi"
-        else:
-            row["validation_phase"] = "gorev_disi"
-
-    metadata = {
-        "log_root": log_root,
-        "bin": bin_path.name,
-        "datalink_session": session_dir.name,
-        "clock_correction_s": -JULY21_DATALINK_CLOCK_AHEAD_S,
-        "prop_diameter_inch": JULY21_PROP_DIAMETER_INCH,
-        "file_stats": file_stats,
-        "flight_start_utc": flight_start_utc,
-        "flight_end_utc": flight_end_utc,
-        "clean_start_utc": clean_start_utc,
-        "clean_end_utc": clean_end_utc,
-        "uninterrupted_lap_count": len(uninterrupted),
-        "joined_sample_count": len(joined),
-    }
-    return joined, metadata
-
-
-def build_july21_validation_observations(samples, phase, power_reference_w):
-    """Tek faza ait 21 Temmuz orneklerini 3 Temmuz'la ayni hiz-kutusu
-    mantigiyla (build_datalink_speed_observations) gozleme indirger.
-
-    KARARLI-HAL kapisi: yalniz |accel| <= JULY21_STEADY_MAX_ACCEL_MS2 olan
-    ornekler alinir. Gecis/donus anlari (yuksek ivme) fit'in temsil ettigi
-    kararli duz ucus rejiminde degildir; bunlari katmak elmayla-armut
-    kiyaslamasidir. Hem dogrulama hem birlesik fit egitimi bu kapiyi kullanir."""
-    selected = [
-        row
-        for row in samples
-        if row.get("validation_phase") == phase
-        and JULY21_VALIDATION_MIN_SPEED_MS
-        <= row.get("speed_ms", -1.0)
-        <= JULY21_VALIDATION_MAX_SPEED_MS
-        and abs(row.get("accel_ms2", 0.0)) <= JULY21_STEADY_MAX_ACCEL_MS2
-    ]
-    return build_datalink_speed_observations(
-        selected,
-        min_speed_ms=JULY21_VALIDATION_MIN_SPEED_MS,
-        max_speed_ms=JULY21_VALIDATION_MAX_SPEED_MS,
-        bin_width_ms=JULY21_VALIDATION_BIN_WIDTH_MS,
-        min_samples=JULY21_VALIDATION_MIN_SAMPLES,
-        power_reference_w=power_reference_w,
-        stable_only=True,
-        min_stable_fraction=0.5,
-        extrapolation_start_ms=None,
-    )
-
-
-def build_july21_validation_rows(
-    observations_by_phase, model_functions, vehicle_hover_power_w
-):
-    rows = []
-    for phase, observations in observations_by_phase.items():
-        for obs in observations:
-            row = {
-                "phase": phase,
-                "speed_ms": obs["speed_ms"],
-                "sample_count": obs["sample_count"],
-                "stable_fraction": obs["stable_fraction"],
-                "measured_ratio": obs["power_ratio"],
-                "measured_single_arm_power_w": obs["power_w"],
-            }
-            if vehicle_hover_power_w:
-                row["measured_vehicle_power_w"] = (
-                    obs["power_ratio"] * vehicle_hover_power_w
-                )
-            for name, model_fn in model_functions.items():
-                predicted_ratio = model_fn(obs["speed_ms"])
-                row[f"{name}_predicted_ratio"] = predicted_ratio
-                if vehicle_hover_power_w:
-                    row[f"{name}_predicted_vehicle_power_w"] = (
-                        predicted_ratio * vehicle_hover_power_w
-                    )
-                row[f"{name}_residual_percent"] = 100.0 * (
-                    obs["power_ratio"] / predicted_ratio - 1.0
-                )
-            rows.append(row)
-    return rows
-
-
-def _summarize_july21_residuals(rows, model_names):
-    import statistics
-
-    result = {}
-    for phase in sorted({row["phase"] for row in rows}):
-        phase_rows = [row for row in rows if row["phase"] == phase]
-        if not phase_rows:
-            continue
-        result[phase] = {
-            "bin_count": len(phase_rows),
-            "speed_min_ms": min(row["speed_ms"] for row in phase_rows),
-            "speed_max_ms": max(row["speed_ms"] for row in phase_rows),
-            "models": {},
-        }
-        for name in model_names:
-            residuals = [row[f"{name}_residual_percent"] for row in phase_rows]
-            result[phase]["models"][name] = {
-                "median_residual_percent": statistics.median(residuals),
-                "mean_absolute_residual_percent": statistics.fmean(
-                    abs(value) for value in residuals
-                ),
-                "max_absolute_residual_percent": max(
-                    abs(value) for value in residuals
-                ),
-            }
-    return result
-
-
-def _july21_raw_plot_samples(samples, phase, stride=20):
-    selected = [
-        row
-        for row in samples
-        if row.get("validation_phase") == phase
-        and row.get("stable")
-        and JULY21_VALIDATION_MIN_SPEED_MS
-        <= row.get("speed_ms", -1.0)
-        <= JULY21_VALIDATION_MAX_SPEED_MS
-        and 0.2 <= row.get("power_ratio", -1.0) <= 3.5
-    ]
-    return selected[::stride]
-
-
-def plot_july21_validation_ratio(
-    fit_suite, samples, observations_by_phase, output_path
-):
-    import matplotlib.pyplot as plt
-
-    speeds = [value / 10.0 for value in range(20, 201)]
-    fig, ax = plt.subplots(figsize=(12.5, 7.2))
-    for name, model_fn in fit_suite.get("model_functions", {}).items():
-        ax.plot(
-            speeds,
-            [model_fn(speed) for speed in speeds],
-            color=JULY21_MODEL_COLORS.get(name, "#333333"),
-            linewidth=2.0,
-            label=JULY21_MODEL_LABELS.get(name, name),
-        )
-    july3_obs = fit_suite.get("observations", [])
-    ax.scatter(
-        [row["speed_ms"] for row in july3_obs],
-        [row["power_ratio"] for row in july3_obs],
-        marker="o",
-        s=50,
-        facecolor="black",
-        edgecolor="white",
-        linewidth=0.7,
-        zorder=6,
-        label="3 Temmuz fit noktalari",
-    )
-    for phase, (color, marker, label) in JULY21_PHASE_PLOT_STYLE.items():
-        raw = _july21_raw_plot_samples(samples, phase)
-        ax.scatter(
-            [row["speed_ms"] for row in raw],
-            [row["power_ratio"] for row in raw],
-            s=9,
-            color=color,
-            alpha=0.10,
-            linewidth=0,
-            zorder=2,
-        )
-        observations = observations_by_phase.get(phase, [])
-        ax.scatter(
-            [row["speed_ms"] for row in observations],
-            [row["power_ratio"] for row in observations],
-            marker=marker,
-            s=72,
-            facecolor=color,
-            edgecolor="white",
-            linewidth=0.8,
-            zorder=7,
-            label=label,
-        )
-    ax.axvline(
-        12.5,
-        color="#777777",
-        linestyle=":",
-        linewidth=1.2,
-        label="3 Temmuz olcum ust bolgesi",
-    )
-    ax.set_title("3 Temmuz menzil2 fitleri uzerinde 21 Temmuz dogrulama noktalari")
-    ax.set_xlabel("Yer hizi (m/s)")
-    ax.set_ylabel("P / P_hover")
-    ax.set_xlim(2.0, 20.0)
-    ax.grid(True, alpha=0.25)
-    ax.legend(fontsize=8.5, ncol=2)
-    fig.tight_layout()
-    fig.savefig(output_path, dpi=190)
-    # Figur acik birakilir: menu akisi plt.show() ile pencereyi gosterir
-    # (diger menzil2 grafiklerinin deseni; Agg altinda no-op).
-    return Path(output_path).resolve()
-
-
-def plot_july21_validation_vehicle_power(
-    fit_suite, observations_by_phase, vehicle_hover_power_w, output_path
-):
-    import matplotlib.pyplot as plt
-
-    speeds = [value / 10.0 for value in range(20, 201)]
-    fig, ax = plt.subplots(figsize=(12.5, 7.2))
-    for name, model_fn in fit_suite.get("model_functions", {}).items():
-        ax.plot(
-            speeds,
-            [model_fn(speed) * vehicle_hover_power_w for speed in speeds],
-            color=JULY21_MODEL_COLORS.get(name, "#333333"),
-            linewidth=2.0,
-            label=JULY21_MODEL_LABELS.get(name, name),
-        )
-    july3_obs = fit_suite.get("observations", [])
-    ax.scatter(
-        [row["speed_ms"] for row in july3_obs],
-        [row["power_ratio"] * vehicle_hover_power_w for row in july3_obs],
-        marker="o",
-        s=50,
-        facecolor="black",
-        edgecolor="white",
-        linewidth=0.7,
-        zorder=6,
-        label="3 Temmuz fit noktalari",
-    )
-    for phase, (color, marker, label) in JULY21_PHASE_PLOT_STYLE.items():
-        observations = observations_by_phase.get(phase, [])
-        ax.scatter(
-            [row["speed_ms"] for row in observations],
-            [row["power_ratio"] * vehicle_hover_power_w for row in observations],
-            marker=marker,
-            s=72,
-            facecolor=color,
-            edgecolor="white",
-            linewidth=0.8,
-            zorder=7,
-            label=label,
-        )
-    ax.axvline(12.5, color="#777777", linestyle=":", linewidth=1.2)
-    ax.set_title("3 Temmuz fitleri ve 21 Temmuz olculen arac gucu")
-    ax.set_xlabel("Yer hizi (m/s)")
-    ax.set_ylabel("Arac gucu (W, 6S2P esdegeri)")
-    ax.set_xlim(2.0, 20.0)
-    ax.grid(True, alpha=0.25)
-    ax.legend(fontsize=8.5, ncol=2)
-    fig.tight_layout()
-    fig.savefig(output_path, dpi=190)
-    return Path(output_path).resolve()
-
-
-def run_july21_validation_against_july3(fit_suite, log_root=None, make_graph=True):
-    """DONDURULMUS 3 Temmuz fitine karsi 21 Temmuz dis dogrulamasi.
-    Fit katsayilari DEGISMEZ; yalnizca residual/grafik uretir."""
-    power_reference_w = fit_suite.get("power_reference_w")
-    vehicle_hover_power_w = fit_suite.get("vehicle_measured_hover_power_w")
-    model_functions = fit_suite.get("model_functions", {})
-    if not power_reference_w:
-        raise RuntimeError("3 Temmuz hover guc referansi yok; dogrulama yapilamaz.")
-    if not model_functions:
-        raise RuntimeError("3 Temmuz fit modelleri yok; dogrulama yapilamaz.")
-
-    samples, metadata = build_july21_joined_samples(
-        power_reference_w, log_root=log_root
-    )
-    observations_by_phase = {
-        phase: build_july21_validation_observations(samples, phase, power_reference_w)
-        for phase in JULY21_VALIDATION_PHASES
-    }
-    rows = build_july21_validation_rows(
-        observations_by_phase, model_functions, vehicle_hover_power_w
-    )
-    residual_summary = _summarize_july21_residuals(rows, list(model_functions))
-
-    graph_paths = {}
-    if make_graph:
-        graph_paths["power_ratio"] = plot_july21_validation_ratio(
-            fit_suite,
-            samples,
-            observations_by_phase,
-            output_path=JULY21_VALIDATION_RATIO_OUTPUT_PATH,
-        )
-        if vehicle_hover_power_w:
-            graph_paths["vehicle_power"] = plot_july21_validation_vehicle_power(
-                fit_suite,
-                observations_by_phase,
-                vehicle_hover_power_w,
-                output_path=JULY21_VALIDATION_POWER_OUTPUT_PATH,
-            )
-
-    return {
-        "mode": "july21_validation_vs_july3_fit",
-        "metadata": metadata,
-        "power_reference_w": power_reference_w,
-        "vehicle_measured_hover_power_w": vehicle_hover_power_w,
-        "observations_by_phase": observations_by_phase,
-        "validation_rows": rows,
-        "residual_summary": residual_summary,
-        "joined_samples": samples,
-        "graph_paths": graph_paths,
-    }
-
-
-def plot_combined_fit_curves(
-    model_functions, observations, output_path, power_scale_w=None
-):
-    """Birlesik (3+21 Temmuz) fit egrileri + kaynagina gore renklendirilmis
-    gozlem noktalari. power_scale_w verilirse Watt, verilmezse P/Ph cizer."""
-    import matplotlib.pyplot as plt
-
-    scale = power_scale_w if power_scale_w else 1.0
-    speeds = [value / 10.0 for value in range(20, 201)]
-    fig, ax = plt.subplots(figsize=(12.5, 7.2))
-    for name, model_fn in model_functions.items():
-        ax.plot(
-            speeds,
-            [model_fn(speed) * scale for speed in speeds],
-            color=JULY21_MODEL_COLORS.get(name, "#333333"),
-            linewidth=2.0,
-            label=f"{name} - birlesik fit",
-        )
-    source_style = {
-        "2026-07-03": ("black", "o", "3 Temmuz gozlemleri"),
-        "2026-07-21": ("#e67e22", "D", "21 Temmuz gozlemleri (ilk 10 tur)"),
-    }
-    for source, (color, marker, label) in source_style.items():
-        points = [
-            obs for obs in observations if obs.get("flight_source") == source
-        ]
-        ax.scatter(
-            [obs["speed_ms"] for obs in points],
-            [obs["power_ratio"] * scale for obs in points],
-            marker=marker,
-            s=60,
-            facecolor=color,
-            edgecolor="white",
-            linewidth=0.8,
-            zorder=6,
-            label=label,
-        )
-    ax.set_title("3 + 21 Temmuz birlesik fit (yalniz ilk 10 kesintisiz tur egitimde)")
-    ax.set_xlabel("Yer hizi (m/s)")
-    ax.set_ylabel("Arac gucu (W, 6S2P esdegeri)" if power_scale_w else "P / P_hover")
-    ax.set_xlim(2.0, 20.0)
-    ax.grid(True, alpha=0.25)
-    ax.legend(fontsize=8.5, ncol=2)
-    fig.tight_layout()
-    fig.savefig(output_path, dpi=190)
-    return Path(output_path).resolve()
-
-
-def build_combined_july3_july21_fit_suite(
-    profile,
-    sonuc,
-    hover_power_w,
-    battery_wh,
-    correction_factor,
-    july3_log_root=None,
-    july3_date_hint=DATALINK_MEASURED_CURVE_DATE_HINT,
-    july21_log_root=None,
-    make_graph=False,
-):
-    """3 Temmuz + 21 Temmuz(yalniz ilk 10 kesintisiz tur) birlesik fiti.
-
-    21 Temmuz ornekleri ONCE hiz-kutusu medyanlarina indirgenir
-    (build_datalink_speed_observations), boylece uzun ucusun ham ornek sayisi
-    3 Temmuz'u ezemez. Pilot-mudahalesi sonrasi ve gorev-disi ornekler
-    EGITIME ALINMAZ (devir notu QC). Fit yine 2-serbest-parametre audit'inden
-    gecer."""
-    july3_suite = build_datalink_fitted_model_suite(
-        profile,
-        sonuc,
-        hover_power_w,
-        battery_wh,
-        correction_factor,
-        log_root=july3_log_root,
-        date_hint=july3_date_hint,
-    )
-    power_reference_w = july3_suite.get("power_reference_w")
-    if not power_reference_w:
-        raise RuntimeError("3 Temmuz hover guc referansi yok; birlesik fit yapilamaz.")
-
-    july3_obs = [dict(obs) for obs in july3_suite.get("observations", [])]
-    for obs in july3_obs:
-        obs.setdefault("flight_source", "2026-07-03")
-
-    samples, july21_meta = build_july21_joined_samples(
-        power_reference_w, log_root=july21_log_root
-    )
-    july21_train_obs = build_july21_validation_observations(
-        samples, JULY21_TRAIN_PHASE, power_reference_w
-    )
-    for obs in july21_train_obs:
-        obs["flight_source"] = "2026-07-21"
-        obs["validation_phase"] = JULY21_TRAIN_PHASE
-
-    combined_obs = july3_obs + july21_train_obs
-    combined_obs.sort(key=lambda obs: obs["speed_ms"])
-
-    model_profile = july3_suite.get("model_profile", profile)
-    model_fit = build_measured_curve_model_fit(
-        model_profile, sonuc, power_reference_w, combined_obs
-    )
-    measured_params = {
-        "zeng_measured_fit": model_fit["zeng_params"],
-        "faessler_measured_fit": model_fit["faessler_params"],
-        "kirschstein_measured_fit": model_fit["kirschstein_params"],
-    }
-    model_functions = {}
-    model_params = {}
-    model_audit = {}
-    for measured_name, public_name in DATALINK_MEASURED_MODEL_NAME_MAP.items():
-        if measured_name in model_fit["model_functions"]:
-            model_functions[public_name] = model_fit["model_functions"][measured_name]
-        if measured_name in measured_params:
-            params = dict(measured_params[measured_name])
-            params["public_model_name"] = public_name
-            params["source_model_name"] = measured_name
-            model_params[public_name] = params
-        audit = model_fit.get("fit_audit", {}).get("models", {}).get(measured_name)
-        if audit:
-            model_audit[public_name] = audit
-
-    vehicle_measured_hover_power_w = july3_suite.get(
-        "vehicle_measured_hover_power_w"
-    )
-    graph_paths = {}
-    if make_graph:
-        graph_paths["power_ratio"] = plot_combined_fit_curves(
-            model_functions,
-            combined_obs,
-            output_path=JULY21_COMBINED_RATIO_OUTPUT_PATH,
-        )
-        if vehicle_measured_hover_power_w:
-            graph_paths["vehicle_power"] = plot_combined_fit_curves(
-                model_functions,
-                combined_obs,
-                output_path=JULY21_COMBINED_POWER_OUTPUT_PATH,
-                power_scale_w=vehicle_measured_hover_power_w,
-            )
-
-    return {
-        "mode": "combined_july3_july21_fit",
-        "july3_suite": july3_suite,
-        "power_reference_w": power_reference_w,
-        "vehicle_measured_hover_power_w": vehicle_measured_hover_power_w,
-        "observations": combined_obs,
-        "july3_observation_count": len(july3_obs),
-        "july21_train_observation_count": len(july21_train_obs),
-        "model_functions": model_functions,
-        "model_params": model_params,
-        "model_audit": model_audit,
-        "model_fit_residuals": model_fit["model_fit_residuals"],
-        "fit_audit": model_fit["fit_audit"],
-        "model_profile": model_fit["profile"],
-        "july21_metadata": july21_meta,
-        "excluded_phases": ["pilot_mudahalesi_sonrasi", "gorev_disi"],
-        "graph_paths": graph_paths,
-    }
-
-
-def print_july21_validation_summary(result):
-    meta = result.get("metadata", {})
-    print("\n21 Temmuz dis dogrulama (3 Temmuz fiti DONDURULDU):")
-    print(f"  BIN: {meta.get('bin')}  |  DataLink oturumu: {meta.get('datalink_session')}")
-    print(
-        f"  Saat duzeltmesi: {meta.get('clock_correction_s')} s "
-        f"(DataLink saati {JULY21_DATALINK_CLOCK_AHEAD_S} s ileriydi)"
-    )
-    print(
-        f"  Pervane: {meta.get('prop_diameter_inch')}\"  |  "
-        f"Birlesen ornek: {meta.get('joined_sample_count')}  |  "
-        f"Kesintisiz tur: {meta.get('uninterrupted_lap_count')}"
-    )
-    if result.get("vehicle_measured_hover_power_w"):
-        print(
-            f"  Arac hover (6S2P esdeger): "
-            f"{result['vehicle_measured_hover_power_w']:.1f} W  [tek kol x"
-            f"{FIRFIR_BATTERY_PARALLEL_ARMS}]"
-        )
-    for row in result.get("validation_rows", []):
-        if row["phase"] != JULY21_TRAIN_PHASE:
-            continue
-        parts = [f"  v={row['speed_ms']:.3f} m/s"]
-        if "measured_vehicle_power_w" in row:
-            parts.append(f"olculen={row['measured_vehicle_power_w']:.1f} W")
-        for name in result.get("residual_summary", {}).get(
-            JULY21_TRAIN_PHASE, {}
-        ).get("models", {}):
-            parts.append(f"{name}:{row[f'{name}_residual_percent']:+.3f}%")
-        print("  ".join(parts))
-    for phase, summary in result.get("residual_summary", {}).items():
-        print(f"  [{phase}] {summary['bin_count']} kutu, "
-              f"{summary['speed_min_ms']:.1f}-{summary['speed_max_ms']:.1f} m/s")
-        for name, stats in summary["models"].items():
-            print(
-                f"    {name}: medyan {stats['median_residual_percent']:+.2f}% | "
-                f"MAE {stats['mean_absolute_residual_percent']:.2f}% | "
-                f"maks {stats['max_absolute_residual_percent']:.2f}%"
-            )
-    for key, path in result.get("graph_paths", {}).items():
-        print(f"  grafik[{key}]: {path}")
-    print("  NOT: 21 Temmuz noktalari fit katsayilarini DEGISTIRMEZ (dis dogrulama).")
-
-
-def print_combined_fit_summary(result):
-    print("\n3 + 21 Temmuz BIRLESIK fit:")
-    print(
-        f"  Gozlem: 3 Temmuz {result.get('july3_observation_count')} + "
-        f"21 Temmuz(ilk 10 tur) {result.get('july21_train_observation_count')} kutu"
-    )
-    print(f"  Dislanan fazlar: {', '.join(result.get('excluded_phases', []))}")
-    print(f"  P_hover(3 Temmuz tek kol)={result.get('power_reference_w', 0.0):.1f} W")
-    for name, params in result.get("model_params", {}).items():
-        scalars = {
-            key: (round(value, 6) if isinstance(value, float) else value)
-            for key, value in params.items()
-            if isinstance(value, (int, float, str, bool))
-        }
-        print(f"  {name}: {scalars}")
-    residuals = result.get("model_fit_residuals", {})
-    for name, rows in residuals.items():
-        abs_res = [
-            abs(row.get("error", 0.0)) for row in rows if isinstance(row, dict)
-        ]
-        if abs_res:
-            print(
-                f"  {name} residual: MAE={sum(abs_res) / len(abs_res):.4f} "
-                f"maks={max(abs_res):.4f} (P/Ph orani, {len(abs_res)} kutu)"
-            )
-    audit_models = result.get("fit_audit", {}).get("models", {})
-    for name, audit in audit_models.items():
-        if isinstance(audit, dict) and "status" in audit:
-            print(f"  audit[{name}]: {audit['status']}")
-    for key, path in result.get("graph_paths", {}).items():
-        print(f"  grafik[{key}]: {path}")
-
-
 def print_datalink_fit_suite_summary(suite):
     empirical_curve = suite.get("empirical_curve", {})
     battery = suite.get("battery_qc_report", {})
     reserve = suite.get("battery_reserve_report", {})
     print("\nDataLink fit suite:")
     print(
-        f"  P_hover(DataLink, olculen tek kol)={suite.get('power_reference_w', 0.0):.1f} W"
+        f"  P_hover(DataLink, measured branch)={suite.get('power_reference_w', 0.0):.1f} W"
     )
     if suite.get("vehicle_measured_hover_power_w"):
         arms = suite.get("battery_parallel_arms", FIRFIR_BATTERY_PARALLEL_ARMS)
         print(
-            f"  P_hover(gercek arac, 6S{arms}P = {arms} kol)"
+            f"  P_hover(full aircraft, 6S{arms}P = {arms} branches)"
             f"={suite['vehicle_measured_hover_power_w']:.1f} W"
-            f"  [sensor {arms} koldan 1'ini olctu, x{arms}]"
+            f"  [sensor measured one of {arms} branches; scaled x{arms}]"
         )
     if suite.get("full_pack_usable_energy_wh"):
         print(
-            f"  Full pack usable (6S2P, 12 pil)={suite['full_pack_usable_energy_wh']:.1f} Wh"
-            "  [tek kol olcumu x2]"
+            f"  Full-pack usable energy (6S2P)={suite['full_pack_usable_energy_wh']:.1f} Wh"
+            "  [one-branch measurement x2]"
         )
     if suite.get("utip_ms") is not None:
         print(f"  Utip(DataLink RPM)={suite['utip_ms']:.1f} m/s")
     if empirical_curve.get("measured_points"):
         print(
-            "  Fit hedefi: stable DataLink speed binleri "
+            "  Fit target: stable DataLink speed bins "
             f"{empirical_curve['min_speed_ms']:.2f}-{empirical_curve['max_speed_ms']:.2f} m/s, "
             f"n={empirical_curve.get('sample_count_total', 0)}"
         )
-    print("  Stadyum voltaj ve 6.04 m/s pitch anchor fit hedefi olarak kullanilmiyor.")
+    print("  Stadium voltage and the 6.04 m/s pitch anchor are not fit targets.")
 
     print("\nBATT QC:")
     print(f"  BAT rows: {battery.get('bat_rows', 0)}")
@@ -3535,13 +2736,13 @@ def print_datalink_fit_suite_summary(suite):
             f"%20={reserve['hover_20_reserve_min']:.1f} dk, "
             f"%10={reserve['hover_10_reserve_min']:.1f} dk, "
             f"%5={reserve['hover_5_reserve_min']:.1f} dk, "
-            f"pratik %0={reserve['hover_0_practical_min']:.1f} dk"
+            f"practical 0%={reserve['hover_0_practical_min']:.1f} min"
         )
         print(
             "  Legacy input audit (not plotted): "
             f"{reserve['legacy_input_battery_wh']:.1f} Wh * "
             f"CF {reserve['legacy_correction_factor']:.3f}; "
-            "grafik/tablo sureleri icin ustteki DataLink battery basis kullanilir."
+            "the DataLink battery basis above is used for graph/table durations."
         )
 
 
@@ -4350,8 +3551,7 @@ def _disc_area_total_m2(profile):
 
 
 def _decompose_hover_split_to_physical(f0, hover_power_vehicle_w, fit_dims, rho):
-    """f0*Ph -> profil gucu, (1-f0)*Ph -> induced guc; fit aracinin geometrisi
-    ile boyutsuz katsayilara (delta*sigma, 1+k_induced) cozer."""
+    """Convert the fitted hover split into dimensionless physical terms."""
     area_m2 = _disc_area_total_m2(fit_dims)
     weight_n = fit_dims["mass_kg"] * 9.81
     utip_ms = fit_dims["utip_ms"]
@@ -4523,17 +3723,13 @@ def estimate_theoretical_utip_similarity(
     fit_prop_diameter_inch,
     fit_utip_ms,
 ):
-    """Pervane benzerligiyle teorik hover Utip kestirimi.
+    """Estimate hover tip speed by scaling within a similar propeller family.
 
-    Ayni pervane ailesi (T-MOTOR G28x9.2 / G29x9.5; pitch orani ~0.33) icin
-    itki katsayisi Ct sabit kabul edilir: T = Ct*rho*n^2*D^4. Fit aracinin
-    OLCULEN hover noktasi (rotor basina itki, Utip) capa alinir:
-        n ~ sqrt(T)/D^2   =>   Utip = pi*D*n ~ sqrt(T)/D
-        Utip_teorik = Utip_olculen * sqrt(T_yeni/T_fit) * (D_fit/D_yeni)
-    Hover itkisi = agirlik / rotor sayisi varsayilir (duz hover dengesi).
+    The fit aircraft's measured per-rotor thrust and tip speed form the anchor;
+    level-hover thrust is assumed to equal weight divided by rotor count.
     """
     if apply_mass_kg <= 0 or fit_mass_kg <= 0:
-        raise ValueError("Utip kestirimi icin kutleler pozitif olmali.")
+        raise ValueError("Mass values must be positive for tip-speed estimation.")
     thrust_per_rotor_kgf = apply_mass_kg / apply_num_rotors
     fit_thrust_per_rotor_kgf = fit_mass_kg / fit_num_rotors
     utip_ms = (
@@ -4575,20 +3771,14 @@ def estimate_theoretical_utip_datasheet(
     fit_prop_diameter_inch,
     fit_utip_ms,
 ):
-    """KV190 datasheet RPM egrisiyle teorik hover Utip (fit olcegine capali).
+    """Estimate fit-anchored hover tip speed from the KV190 RPM datasheet.
 
-    Girilen kutleden rotor basina hover itkisi bulunur, secilen pervanenin
-    (G28x9.2 / G29x9.5) datasheet thrust->RPM egrisinden mekanik RPM ve mutlak
-    datasheet Utip'i hesaplanir. Parser DATALINK_RPM_SCALE duzeltmesiyle mekanik
-    RPM olctugu icin datalink_scale ~1.0 beklenir (Firfir'de ~0.97); kucuk
-    datasheet/olcum farklari transfer oranini bozmasin diye kullanilan deger
-    yine de fit olcegine capalanir:
-      utip = fit_utip * (RPM_ds(T_yeni, D_yeni)*D_yeni) / (RPM_ds(T_fit, D_fit)*D_fit)
-    Boylece fit araci girildiginde birebir fit Utip'i geri doner ve transferin
-    Utip orani datasheet egrisinin gercek sekliyle olceklenir.
+    Per-rotor thrust selects a mechanical RPM from the G28x9.2/G29x9.5 table.
+    The resulting ratio is anchored to the measured fit-aircraft tip speed so
+    an identity transfer returns that measurement exactly.
     """
     if apply_mass_kg <= 0 or fit_mass_kg <= 0:
-        raise ValueError("Utip kestirimi icin kutleler pozitif olmali.")
+        raise ValueError("Mass values must be positive for tip-speed estimation.")
     thrust_per_rotor_g = apply_mass_kg / apply_num_rotors * 1000.0
     fit_thrust_per_rotor_g = fit_mass_kg / fit_num_rotors * 1000.0
     rpm_datasheet, thrust_table_range_g = datasheet_rpm_from_thrust(
@@ -4602,7 +3792,7 @@ def estimate_theoretical_utip_datasheet(
         fit_prop_diameter_inch, fit_rpm_datasheet
     )
     if fit_utip_datasheet_ms <= 0:
-        raise ValueError("Datasheet fit noktasi Utip'i hesaplanamadi.")
+        raise ValueError("Could not calculate the datasheet fit-point tip speed.")
     datalink_scale = fit_utip_ms / fit_utip_datasheet_ms
     utip_ms = utip_datasheet_ms * datalink_scale
     return {
@@ -4622,14 +3812,11 @@ def estimate_theoretical_utip_datasheet(
 
 
 def build_transferred_model_suite(suite, apply_profile, apply_utip_ms=None):
-    """FAZ-4: Firfir fitini girilen araca fiziksel olarak tasir.
+    """Transfer the Firfir fit to another aircraft using physical parameters.
 
-    Ozdeslik garantisi: apply_profile fit araciyla ayni kutle/rotor/pervane ve
-    Utip'e sahipse orijinal egriler geri gelir (Zeng/Faessler analitik olarak
-    birebir, Kirschstein kucuk bir yeniden-fit kalintisiyla).
-
-    Not: Batarya kapasitesi P/Ph SEKLINI etkilemez; batarya degisimi kutleyi
-    degistiriyorsa yeni TOPLAM kutle apply_profile'a girilmelidir.
+    Matching geometry and tip speed recover the original curves. Battery
+    capacity does not change P/Ph shape, but battery-induced mass changes must
+    be reflected in ``apply_profile``.
     """
     fit_profile = suite.get("model_profile") or {}
     model_params = suite.get("model_params", {})
@@ -4692,16 +3879,16 @@ def build_transferred_model_suite(suite, apply_profile, apply_utip_ms=None):
 
 def print_transfer_summary(transfer):
     apply_profile = transfer.get("apply_profile", {})
-    print("\n--- FIZIKSEL PARAMETRE TRANSFERI (Faz 4) ---")
+    print("\n--- PHYSICAL PARAMETER TRANSFER (Phase 4) ---")
     print(
-        "  Oran egrileri dondurulmus Firfir sekli degil; fitten cozulen boyutsuz "
-        "katsayilar girilen aracin fizigiyle yeniden kuruldu."
+        "  The ratio curves were rebuilt from fitted dimensionless coefficients "
+        "and the entered aircraft geometry."
     )
     print(
-        f"  Uygulanan arac: {apply_profile.get('vehicle_name', '?')}, "
+        f"  Applied aircraft: {apply_profile.get('vehicle_name', '?')}, "
         f"{apply_profile.get('mass_kg', 0.0):.2f} kg, "
         f"{apply_profile.get('num_rotors', 0)} rotor x "
-        f"{apply_profile.get('prop_diameter_inch', 0.0):.1f}\" pervane, "
+        f"{apply_profile.get('prop_diameter_inch', 0.0):.1f}\" propeller, "
         f"Utip={transfer.get('apply_utip_ms', 0.0):.1f} m/s"
     )
     for name, params in transfer.get("model_params", {}).items():
@@ -4728,8 +3915,8 @@ def print_transfer_summary(transfer):
             )
         print(line)
     print(
-        "  Not: P_hover(pred) capraz kontroldur; mutlak sure/menzil yine girilen "
-        "hover gucu ve batarya ile hesaplanir."
+        "  Note: P_hover(pred) is a cross-check; absolute endurance and range still "
+        "use the entered hover power and battery."
     )
 
 
@@ -4750,8 +3937,8 @@ def build_july3_firfir_battery_basis():
         * FIRFIR_BATTERY_DATASHEET_NOMINAL_AH
     )
     return {
-        "label": "6S1P (tek kol, sensor) 25.2Ah measured usable -- full pack 6S2P x2",
-        "source": "3 Temmuz battery analysis + ham_ucus_verileri.md",
+        "label": "6S1P sensed branch, 25.2 Ah measured usable; full 6S2P pack x2",
+        "source": "3 July 2026 battery analysis and bundled flight logs",
         "cells": FIRFIR_BATTERY_CELLS,
         "nominal_v_per_cell": FIRFIR_BATTERY_NOMINAL_V_PER_CELL,
         "usable_capacity_ah": FIRFIR_BATTERY_MEASURED_USABLE_AH,
@@ -4768,16 +3955,12 @@ def build_july3_firfir_battery_basis():
 
 
 def build_applied_battery_basis(nominal_energy_wh, label=None):
-    """Girilen bataryanin datasheet (nominal) enerjisini, July3 Firfir modelinin
-    olctugu usable orani (FIRFIR_BATTERY_USABLE_FRACTION ~ 25.2/27) ve ayni rezerv
-    fraksiyonlari ile kullanilabilir enerjiye olcekler. Boylece kullanicinin
-    girdigi her batarya, eski CF yerine model-tabanli ve July3 ile tutarli davranir.
-    """
+    """Scale nominal energy by the measured 3 July usable-capacity fraction."""
     usable_energy_wh = nominal_energy_wh * FIRFIR_BATTERY_USABLE_FRACTION
     return {
         "label": label
-        or f"Girilen batarya usable ({FIRFIR_BATTERY_USABLE_FRACTION * 100:.1f}% nominal, July3 orani)",
-        "source": "July3 Firfir usable orani girilen bataryaya olceklendi",
+        or f"Entered usable battery ({FIRFIR_BATTERY_USABLE_FRACTION * 100:.1f}% of nominal)",
+        "source": "3 July Firfir usable fraction applied to the entered battery",
         "usable_energy_wh": usable_energy_wh,
         "datasheet_nominal_energy_wh": nominal_energy_wh,
         "usable_fraction_of_nominal": FIRFIR_BATTERY_USABLE_FRACTION,
@@ -4864,12 +4047,12 @@ def parse_speed_list(raw):
 
 
 def ask_utip(prop_diameter_inch, default_utip=80.0):
-    print("\nUtip bilgisi:")
-    print("1) RPM gir, Utip hesaplansin")
-    print("2) Utip direkt gir")
-    secim = input("Secim [2]: ").strip() or "2"
+    print("\nPropeller tip-speed input:")
+    print("1) Enter RPM and calculate tip speed")
+    print("2) Enter tip speed directly")
+    secim = input("Selection [2]: ").strip() or "2"
     if secim == "1":
-        rpm = float(input("Hover RPM tahmini: ").strip())
+        rpm = float(input("Estimated hover RPM: ").strip())
         return tip_speed_from_rpm(prop_diameter_inch, rpm), rpm
     raw = input(f"Utip m/s [{default_utip}]: ").strip()
     return (float(raw) if raw else default_utip), None
@@ -4911,7 +4094,7 @@ def build_speed_model_profile(
         "pitch_measurement_speed_ms": None,
         "pitch_measurement_deg": None,
     }
-    print("\nManual/current drone icin sadece eksik Zeng parametreleri sorulacak.")
+    print("\nEnter the missing Zeng parameters for the current aircraft.")
     profile["utip_ms"], profile["hover_rpm_estimate"] = ask_utip(
         current_prop_diameter_inch, 80.0
     )
@@ -5201,7 +4384,7 @@ def plot_datalink_range_time_comparison(
             label=point["label"],
         )
 
-    ax_range.set_ylabel("%10 rezerv menzil [km]")
+    ax_range.set_ylabel("Range at 10% reserve [km]")
     if battery_basis:
         ax_range.set_title(
             f"Range/time basis: {battery_basis.get('label', 'battery usable capacity')} / "
@@ -5210,7 +4393,7 @@ def plot_datalink_range_time_comparison(
     ax_range.grid(True, alpha=0.3)
     ax_range.legend(fontsize=8)
     ax_time.set_xlabel("Hiz [m/s]")
-    ax_time.set_ylabel("%10 rezerv sure [dk]")
+    ax_time.set_ylabel("Endurance at 10% reserve [min]")
     ax_time.grid(True, alpha=0.3)
     ax_time.legend(fontsize=8)
     fig.tight_layout()
@@ -5274,43 +4457,43 @@ def parse_datalink_model_selection(raw):
 
 
 def print_datalink_model_descriptions():
-    print("\n--- DataLink-Fitted Model Seçimi ---")
+    print("\n--- DataLink-fitted model selection ---")
     print("  1) Zeng DataLink fit")
-    print("       Kaynak: 3 Temmuz DataLink V*I/RPM + ArduPilot stable speed binleri.")
+    print("       Source: 3 July DataLink V*I/RPM and stable ArduPilot speed bins.")
     print(
-        "       Fit: f0 ve k_par; P_hover ve U_tip DataLink'ten, v0 fizik formülünden gelir."
+        "       Fit: f0 and k_par; P_hover and U_tip come from DataLink, v0 from physics."
     )
     print(
-        "       Kullanım: Zeng induced/profile/parasite ailesiyle analitik extrapolation."
+        "       Use: analytical extrapolation with Zeng induced/profile/parasite terms."
     )
     print("  2) Faessler drag-constrained DataLink fit")
     print(
-        "       Kaynak: DataLink güç binleri + attitude logdan body C_DA ve rotor-drag lambda."
+        "       Source: DataLink power bins plus body C_DA and rotor-drag lambda from attitude."
     )
     print(
-        "       Fit: f0 ve drag_scale; body drag/lambda ölçümden gelir, serbest fit edilmez."
+        "       Fit: f0 and drag_scale; measured body drag/lambda are held fixed."
     )
     print(
-        "       Kullanım: log tilt bilgisinin yüksek hız drag etkisini sınırlı biçimde taşır."
+        "       Use: carries the measured tilt/drag effect into higher speeds."
     )
     print("  3) Kirschstein component DataLink fit")
     print(
-        "       Kaynak: component model + DataLink güç binleri + attitude-log drag ayrımı."
+        "       Source: component model, DataLink power bins, and attitude-derived drag split."
     )
     print(
-        "       Fit: induced_relief_scale ve extra_cubic_k; component base ayrı raporlanır."
+        "       Fit: induced_relief_scale and extra_cubic_k; base components are reported."
     )
     print(
-        "       Kullanım: Zeng ailesine karşı component benchmark; correction fit'i ayrıca auditlenir."
+        "       Use: component benchmark against Zeng; correction terms are audited separately."
     )
     print("  4) All DataLink-fitted models")
     print(
-        "       Üç model birlikte çizilir; model spread'i extrapolation belirsizliği olarak okunur."
+        "       Plots all three models; their spread indicates extrapolation uncertainty."
     )
     print(
-        "  Her seçimde DataLink interpolasyon, P(V)/P_hover ve menzil/süre grafikleri üretilir."
+        "  Each selection can produce interpolation, P(V)/P_hover, and range/endurance plots."
     )
-    print("  Bauersfeld yalnızca referans marker'dır; fit hedefi değildir.")
+    print("  Bauersfeld is a reference marker, not a fit target.")
 
 
 def run_preset_fit_apply_to_vehicle(
@@ -5371,8 +4554,8 @@ def run_preset_fit_apply_to_vehicle(
             )
         except (KeyError, TypeError, ValueError, ZeroDivisionError) as exc:
             print(
-                f"UYARI: Datasheet Utip hesaplanamadi ({exc}); pervane "
-                "benzerligi fallback'i deneniyor."
+                f"WARNING: Could not calculate datasheet tip speed ({exc}); "
+                "trying the propeller-similarity fallback."
             )
             try:
                 theo = estimate_theoretical_utip_similarity(
@@ -5386,31 +4569,31 @@ def run_preset_fit_apply_to_vehicle(
                 )
             except (KeyError, TypeError, ValueError, ZeroDivisionError) as exc2:
                 print(
-                    f"UYARI: Teorik Utip hesaplanamadi ({exc2}); fit aracinin "
-                    "olculen Utip'i kullanilacak."
+                    f"WARNING: Could not calculate theoretical tip speed ({exc2}); "
+                    "using the fit aircraft's measured value."
                 )
         if theo:
             apply_utip_ms = theo["utip_ms"]
             print(
-                "\n--- TEORIK UTIP (U8 Lite KV190 datasheet, "
-                f"{apply_prop_inch:.0f}\" pervane) ---"
+                "\n--- THEORETICAL TIP SPEED (U8 Lite KV190 datasheet, "
+                f"{apply_prop_inch:.0f}\" propeller) ---"
             )
             print(
-                f"  Rotor basina hover itkisi: {theo['thrust_per_rotor_g']:.0f} g "
-                f"(fit araci: {theo['fit_thrust_per_rotor_g']:.0f} g)"
+                f"  Hover thrust per rotor: {theo['thrust_per_rotor_g']:.0f} g "
+                f"(fit aircraft: {theo['fit_thrust_per_rotor_g']:.0f} g)"
             )
             if "rpm_datasheet" in theo:
                 print(
-                    f"  Datasheet mekanik RPM: {theo['rpm_datasheet']:.0f} "
-                    f"-> mutlak Utip {theo['utip_datasheet_ms']:.1f} m/s"
+                    f"  Datasheet mechanical RPM: {theo['rpm_datasheet']:.0f} "
+                    f"-> absolute tip speed {theo['utip_datasheet_ms']:.1f} m/s"
                 )
             print(
-                f"  Kullanilan (fit olcegine capali) Utip = {theo['utip_ms']:.1f} m/s"
+                f"  Applied fit-anchored tip speed = {theo['utip_ms']:.1f} m/s"
             )
             print(
-                f"  Firfir'in gercek olcumune ({theo['fit_utip_ms']:.1f} m/s, "
+                f"  Difference from the Firfir measurement ({theo['fit_utip_ms']:.1f} m/s, "
                 f"{fit_profile['prop_diameter_inch']:.0f}\" @ "
-                f"{fit_profile['mass_kg']:.1f} kg) gore fark: "
+                f"{fit_profile['mass_kg']:.1f} kg): "
                 f"%{theo['pct_diff_vs_fit']:+.1f}"
             )
             table_range = theo.get("thrust_table_range_g")
@@ -5418,21 +4601,20 @@ def run_preset_fit_apply_to_vehicle(
                 table_range[0] <= theo["thrust_per_rotor_g"] <= table_range[1]
             ):
                 print(
-                    "  UYARI: rotor basina itki datasheet test araliginin "
-                    f"({table_range[0]:.0f}-{table_range[1]:.0f} g) disinda; "
-                    "RPM uc degerde sabitlendi."
+                    "  WARNING: Per-rotor thrust is outside the datasheet range "
+                    f"({table_range[0]:.0f}-{table_range[1]:.0f} g); RPM was clamped."
                 )
             datalink_scale = theo.get("datalink_scale")
             if datalink_scale and not (0.8 <= datalink_scale <= 1.25):
                 print(
-                    "  UYARI: DataLink Utip'i, datasheet mekanik RPM'inin "
-                    f"{datalink_scale:.2f} kati. DATALINK_RPM_SCALE duzeltmesi "
-                    "sonrasi bu oran ~1.0 olmali; buyuk sapma fit aracinin "
-                    "kutle/pervane girdilerinin veya parser olceginin tutarsiz "
-                    "oldugunu gosterir. Datasheet beklentisi: "
+                    "  WARNING: DataLink tip speed is "
+                    f"{datalink_scale:.2f} times the datasheet mechanical value. "
+                    "After DATALINK_RPM_SCALE correction this should be near 1.0; "
+                    "a large difference indicates inconsistent fit-aircraft inputs "
+                    "or parser scaling. Datasheet expectation: "
                     f"~{theo['fit_rpm_datasheet']:.0f} RPM, "
-                    f"Utip ~{theo['fit_utip_datasheet_ms']:.1f} m/s. Teorik Utip "
-                    "fit olcegine capalanmaya devam ediyor."
+                    f"tip speed ~{theo['fit_utip_datasheet_ms']:.1f} m/s. The "
+                    "theoretical value remains anchored to the fit scale."
                 )
     if apply_profile:
         try:
@@ -5441,8 +4623,8 @@ def run_preset_fit_apply_to_vehicle(
             )
         except (KeyError, ValueError, ZeroDivisionError) as exc:
             print(
-                f"UYARI: Fiziksel parametre transferi kurulamadi ({exc}); "
-                "Firfir'e dondurulmus oran egrileri kullanilacak."
+                f"WARNING: Physical parameter transfer failed ({exc}); "
+                "using the frozen Firfir ratio curves."
             )
         else:
             model_functions = transfer["model_functions"]
@@ -5483,10 +4665,10 @@ def run_preset_fit_apply_to_vehicle(
         )
     else:
         result_mode = "entered_vehicle_application"
-        result_basis_label = "Girilen arac application basis"
+        result_basis_label = "Entered-aircraft application basis"
         result_basis_source = (
-            "DataLink gercek/teorik hover olcegi bulunamadigi icin girilen "
-            "hover gucu dogrudan kullanildi."
+            "No DataLink measured/theoretical hover scale was available; "
+            "entered hover power was used directly."
         )
     result_reserve_report = build_battery_reserve_report(
         result_hover_power_w,
@@ -5512,56 +4694,56 @@ def run_preset_fit_apply_to_vehicle(
     print_datalink_fit_suite_summary(suite)
 
     # --- Modelin tune edildigi kaynak (sadece bilgi, sonuc degil) ---
-    print("\n--- MODEL TUNE KAYNAGI (Firfir DataLink) ---")
+    print("\n--- MODEL CALIBRATION SOURCE (Firfir DataLink) ---")
     print(
-        "Model Firfir ucus verisiyle tune edildi; P/Ph oran egrisi bu veriden cikarildi "
-        f"(referans hover {fit_reference_hover_w:.1f} W yalnizca orani normalize eder)."
+        "The model was calibrated from Firfir flight data; the P/Ph curve comes from "
+        f"these measurements (the {fit_reference_hover_w:.1f} W reference only normalizes it)."
     )
     if empirical_curve.get("measured_points"):
         print(
-            "  Fit hedefi: stable DataLink binleri "
+            "  Fit target: stable DataLink bins "
             f"{empirical_curve['min_speed_ms']:.2f}-{empirical_curve['max_speed_ms']:.2f} m/s, "
             f"n={empirical_curve.get('sample_count_total', 0)}"
         )
     print(
-        "  Ana sure/menzil sonucu girilen batarya ve DataLink gercek/teorik "
-        f"hover olcegi ({hover_scale:.3f}) ile hesaplanir."
+        "  Endurance/range uses the entered battery and the DataLink "
+        f"measured/theoretical hover scale ({hover_scale:.3f})."
     )
     if transfer:
         print_transfer_summary(transfer)
         print(
-            "  Not: Empirical interpolation egrisi fit aracina (Firfir) aittir; "
-            "transfer aktifken model egrileri bu noktalardan sapabilir (beklenen)."
+            "  Note: The empirical interpolation belongs to the fit aircraft; "
+            "transferred model curves are expected to depart from those points."
         )
 
     result_usable_wh = result_battery_basis["usable_energy_wh"]
     result_nominal_wh = result_battery_basis.get(
         "datasheet_nominal_energy_wh", apply_battery_wh
     )
-    print(f"\n--- ANA SONUC BASIS ({result_basis_label}) ---")
+    print(f"\n--- PRIMARY RESULT BASIS ({result_basis_label}) ---")
     print(f"  P_hover = {result_hover_power_w:.1f} W")
     print(
-        f"  Batarya = {result_battery_basis.get('label', 'girilen batarya usable')}: "
+        f"  Battery = {result_battery_basis.get('label', 'entered usable battery')}: "
         f"{result_usable_wh:.1f} Wh usable ({result_nominal_wh:.1f} Wh nominal/equivalent)"
     )
     if result_reserve_report.get("hover_20_reserve_min") is not None:
         print(
-            "  Hover kontrol: "
-            f"%20={result_reserve_report['hover_20_reserve_min']:.1f} dk, "
-            f"%10={result_reserve_report['hover_10_reserve_min']:.1f} dk, "
-            f"%5={result_reserve_report['hover_5_reserve_min']:.1f} dk, "
-            f"pratik %0={result_reserve_report['hover_0_practical_min']:.1f} dk"
+            "  Hover check: "
+            f"20%={result_reserve_report['hover_20_reserve_min']:.1f} min, "
+            f"10%={result_reserve_report['hover_10_reserve_min']:.1f} min, "
+            f"5%={result_reserve_report['hover_5_reserve_min']:.1f} min, "
+            f"practical 0%={result_reserve_report['hover_0_practical_min']:.1f} min"
         )
     calibrated_usable_wh = calibrated_battery_basis["usable_energy_wh"]
-    print("\n--- MODEL TUNE-KAYNAGI BASIS (Firfir July3, sadece bilgi) ---")
+    print("\n--- MODEL CALIBRATION BASIS (Firfir, 3 July; information only) ---")
     print(f"  P_hover(Firfir calibrated) = {calibrated_hover_power_w:.1f} W")
     print(
-        f"  Batarya(Firfir) = {calibrated_battery_basis.get('label', 'July3 calibrated usable')}: "
+        f"  Battery(Firfir) = {calibrated_battery_basis.get('label', '3 July calibrated usable')}: "
         f"{calibrated_usable_wh:.1f} Wh usable"
     )
-    print("\nSecilen DataLink-fitted modeller: " + ", ".join(selected))
+    print("\nSelected DataLink-fitted models: " + ", ".join(selected))
 
-    print(f"\nDataLink empirical interpolation kontrolu ({result_basis_label}):")
+    print(f"\nDataLink empirical interpolation check ({result_basis_label}):")
     for speed in speeds:
         evaluation = evaluate_empirical_datalink_power_ratio(empirical_curve, speed)
         if evaluation["available"]:
@@ -5576,22 +4758,22 @@ def run_preset_fit_apply_to_vehicle(
             print(
                 f"  v={speed:.2f} m/s: P/Ph={evaluation['power_ratio']:.4f} "
                 f"({evaluation['basis']}), P={row['power_w']:.1f} W, "
-                f"%20 sure={row['time_20_min']:.1f} dk, "
-                f"%20 menzil={row['range_20_km']:.2f} km"
+                f"20% time={row['time_20_min']:.1f} min, "
+                f"20% range={row['range_20_km']:.2f} km"
             )
         else:
             min_speed_ms = evaluation.get("min_speed_ms")
             max_speed_ms = evaluation.get("max_speed_ms")
             if min_speed_ms is not None and max_speed_ms is not None:
                 print(
-                    f"  v={speed:.2f} m/s: measured interpolation disi "
+                    f"  v={speed:.2f} m/s: outside measured interpolation "
                     f"({min_speed_ms:.2f}-{max_speed_ms:.2f} m/s); "
-                    "model extrapolation kullanilir."
+                    "using model extrapolation."
                 )
             else:
                 print(
-                    f"  v={speed:.2f} m/s: measured interpolation verisi yok; "
-                    "model extrapolation kullanilir."
+                    f"  v={speed:.2f} m/s: no measured interpolation data; "
+                    "using model extrapolation."
                 )
 
     for model_name in selected:
@@ -5636,17 +4818,17 @@ def run_preset_fit_apply_to_vehicle(
                 output_paths["range"],
                 battery_basis=result_battery_basis,
             )
-            print("\nGrafik ciktilari:")
+            print("\nGraph outputs:")
             for path in graph_paths.values():
                 print(f"* {path}")
             import matplotlib.pyplot as plt
 
-            print("plt.show() cagriliyor.")
+            print("Opening plots with plt.show().")
             plt.show()
         except Exception as exc:
-            print(f"Grafik olusturulamadi: {exc}")
+            print(f"Could not create graphs: {exc}")
 
-    print(f"\nFit metodu raporu: {report_path}")
+    print(f"\nFit-method report: {report_path}")
     return {
         "selected_models": selected,
         "suite": suite,
@@ -5661,7 +4843,7 @@ def calculate_real_energy_wh(total_cells, capacity_mah, battery_type="lihv"):
     if battery_type == "lihv":
         nominal_voltage = 3.996
     elif battery_type == "lipo":
-        # LiPo ile LiHV arasında 7/6 kat fark varsayımı
+        # Historical 7/6 energy adjustment between LiPo and LiHV.
         nominal_voltage = 3.7
     elif battery_type == "liion":
         # Bu projedeki solid-state Li-ion paket 4.3V'a sarj ediliyor ve nominal 3.7V kabul ediliyor.
@@ -5674,7 +4856,7 @@ def calculate_real_energy_wh(total_cells, capacity_mah, battery_type="lihv"):
 def run_datalink_raw_data_viewer(log_root, date_hint):
     import matplotlib.pyplot as plt
 
-    print("\n--- DataLink Ham Veri Görselleyici ---")
+    print("\n--- Raw DataLink data viewer ---")
     try:
         # Analiz sonuc["vi_h"] bekler; preset fiziginden hover induklenen hizi
         # hesapla (eski kod bos dict geciriyordu -> KeyError).
@@ -5695,7 +4877,7 @@ def run_datalink_raw_data_viewer(log_root, date_hint):
             make_graph=False,
         )
         if not result:
-            print("Ham veri okunamadı veya analiz edilemedi.")
+            print("Raw data could not be read or analyzed.")
             return
 
         empirical_curve = result.get("empirical_curve", {})
@@ -5712,810 +4894,123 @@ def run_datalink_raw_data_viewer(log_root, date_hint):
             output_path="raw_datalink_battery_voltage.png",
         )
 
-        print("\nHam veri grafikleri (Empirical Curve & Battery Voltage) oluşturuldu.")
-        print("plt.show() çağrılıyor...")
+        print("\nCreated raw-data graphs (empirical curve and battery voltage).")
+        print("Opening plots with plt.show().")
         plt.show()
 
     except Exception as exc:
-        print(f"Ham veri görselleştirici hatası: {exc}")
+        print(f"Raw-data viewer error: {exc}")
 
 
-def drone_simulasyon():
-    print("\n--- DRONE UÇUŞ SÜRESİ HESAPLAYICISI ---")
+def _print_calculation(result):
+    """Print the stable, public calculator output in a script-friendly form."""
+    fields = (
+        ("Induced hover velocity", "vi_h", "m/s"),
+        ("Best-range speed", "optimal_speed_ms", "m/s"),
+        ("Best-range flight time", "flight_time_min_range", "min"),
+        ("Maximum range", "max_range_km", "km"),
+        ("Best-endurance speed", "optimal_endurance_speed_ms", "m/s"),
+        ("Maximum endurance", "max_endurance_min", "min"),
+    )
+    for label, key, unit in fields:
+        print(f"{label}: {result[key]:.3f} {unit}")
 
-    # [ADIM 1] REFERANS (VIBE - P80)
-    ref_agirlik = 19500
-    ref_thrust_per_motor = ref_agirlik / 4.0
-    ref_total_cells = 24  # 4x 6S
-    ref_mah = 17000
 
-    ref_energy_wh = calculate_real_energy_wh(ref_total_cells, ref_mah, "lihv")
-    ref_motor_power = get_power_from_thrust(ref_thrust_per_motor, p80_thrust_power)
-    ref_total_power = ref_motor_power * 4
-    ref_teorik_sure = (ref_energy_wh / ref_total_power) * 60
-
-    # Referans değerler ve Standart CF hesabı
-    ref_gercek_sure = 35.0
-    standart_cf = ref_gercek_sure / ref_teorik_sure
-
-    # [ADIM 2] MOD SEÇİMİ
-    print("\n--- MOD SEÇİMİ ---")
-    print("1) Standart CF ile hesaplama")
-    print("2) Özel CF ile hesaplama")
-    print("3) Tersine Hesaplama (Hover Süresinden Güç Bulma)")
-
-    mod_secim = input("Seçiminiz (1-3): ").strip()
-
-    is_reverse_mode = False
-
-    if mod_secim == "2":
-        while True:
-            try:
-                cf_input = float(input("Özel CF değerini giriniz (0.0 - 1.0 arası): "))
-                if 0.0 <= cf_input <= 1.0:
-                    correction_factor = cf_input
-                    print(
-                        f"--> Correction Factor: {correction_factor} olarak ayarlandı."
-                    )
-                    break
-                else:
-                    print("Lütfen 0 ile 1 arasında bir değer giriniz.")
-            except ValueError:
-                print("Geçersiz değer. Lütfen sayı giriniz.")
-
-    elif mod_secim == "3":
-        is_reverse_mode = True
-        correction_factor = 1.0  # Placeholder, will be calculated in loop
-        print("--> Tersine Hesaplama Modu Seçildi.")
+def _run_calibration_analysis(make_graphs=False):
+    """Run the bundled 3 July 2026 calibration data through the fit pipeline."""
+    profile = build_speed_model_profile("1", 12.4, 4, 28.0, 450.0)
+    hover_power_w = (
+        get_power_from_thrust(12400.0 / 4.0, u8lite_kv190_g29_data) * 4.0
+    )
+    battery_wh = calculate_real_energy_wh(12, 27000, "liion")
+    correction_factor = 0.72
+    reference = BauersfeldRangeCalculator(
+        hover_power_w,
+        correction_factor,
+        battery_wh,
+        profile["mass_kg"],
+        450.0,
+        profile["prop_diameter_inch"],
+        profile["num_rotors"],
+    ).solve()
+    result = run_datalink_measured_curve_analysis(
+        profile,
+        reference,
+        hover_power_w,
+        battery_wh,
+        correction_factor,
+        log_root=find_measured_curve_log_root(),
+        make_graph=make_graphs,
+    )
+    print("Calibration analysis completed.")
+    print(f"Joined samples: {result['joined_sample_count']}")
+    print(f"Measured hover power (one sensed branch): {result['measured_hover_power_w']:.2f} W")
+    print(f"Median propeller tip speed: {result['utip_ms']:.2f} m/s")
+    print(f"Stable speed bins: {len(result['speed_bin_observations'])}")
+    if make_graphs:
+        print(f"Empirical curve: {Path(DATALINK_EMPIRICAL_OUTPUT_PATH).resolve()}")
         print(
-            "--> Bu modda gireceğiniz 'Hover Süresi' baz alınarak motor güç tüketimi hesaplanacaktır."
+            "Diagnostic fits: "
+            f"{Path(DATALINK_DIAGNOSTIC_SURROGATE_OUTPUT_PATH).resolve()}"
         )
 
+
+def main(argv=None):
+    """Command-line entry point for public use."""
+    parser = argparse.ArgumentParser(
+        description="Estimate multicopter endurance/range or validate the bundled flight logs."
+    )
+    subparsers = parser.add_subparsers(dest="command", required=True)
+
+    calculate = subparsers.add_parser(
+        "calculate", help="calculate range and endurance from aircraft inputs"
+    )
+    calculate.add_argument("--hover-power", type=float, required=True, help="measured hover power in W")
+    calculate.add_argument("--battery-energy", type=float, required=True, help="battery energy in Wh")
+    calculate.add_argument("--mass", type=float, required=True, help="total aircraft mass in kg")
+    calculate.add_argument("--drag-area", type=float, required=True, help="reference drag area in cm^2")
+    calculate.add_argument("--prop-diameter", type=float, required=True, help="propeller diameter in inches")
+    calculate.add_argument("--rotors", type=int, required=True, help="number of rotors")
+    calculate.add_argument(
+        "--correction-factor",
+        type=float,
+        default=1.0,
+        help="empirical energy/power correction factor (default: 1.0)",
+    )
+
+    analyze = subparsers.add_parser(
+        "analyze-calibration",
+        help="rebuild fitted models from the bundled July 2026 logs",
+    )
+    analyze.add_argument(
+        "--graphs", action="store_true", help="write empirical and diagnostic PNG files"
+    )
+
+    args = parser.parse_args(argv)
+    if args.command == "calculate":
+        if min(
+            args.hover_power,
+            args.battery_energy,
+            args.mass,
+            args.prop_diameter,
+            args.rotors,
+        ) <= 0:
+            parser.error("power, energy, mass, propeller diameter, and rotor count must be positive")
+        if args.drag_area < 0 or args.correction_factor <= 0:
+            parser.error("drag area must be non-negative and correction factor must be positive")
+        result = BauersfeldRangeCalculator(
+            args.hover_power,
+            args.correction_factor,
+            args.battery_energy,
+            args.mass,
+            args.drag_area,
+            args.prop_diameter,
+            args.rotors,
+        ).solve()
+        _print_calculation(result)
     else:
-        correction_factor = standart_cf
-        print(
-            f"--> Standart mod seçildi. Hesaplanan Standart CF: {correction_factor:.4f}"
-        )
-
-    print(f"\n[REFERANS] Vibe Analizi (P80 Motor):")
-    print(f"   * Teorik Süre: {ref_teorik_sure:.2f} dk")
-    print(f"   * Gerçek Süre: {ref_gercek_sure} dk")
-    if not is_reverse_mode:
-        print(f"   * Correction Factor: {correction_factor:.4f} (Gerçeklik Çarpanı)")
-
-    # YENİ DRONE TASARIMI
-    sonuc = None  # kullanicinin arac cozumu; option-3 fit uygulamasinda kullanilir
-    while True:
-        print("\n--- GÖVDE TİPİ ---")
-        print("1. Quadcopter (4 Motor)")
-        print("2. Hexacopter (6 Motor)")
-        print("3. Octacopter Coaxial (8 Motor)")
-        govde_secim = input("Gövde Tipi Seçimi (1-3): ").strip()
-
-        coaxial_loss_factor = 1.0
-
-        # Eğer kullanıcı 2'yi seçerse 6, 3'ü seçerse 8, diğer her durumda 4 yap
-        if govde_secim == "2":
-            motor_sayisi = 6
-        elif govde_secim == "3":
-            motor_sayisi = 8
-            while True:
-                try:
-                    loss_input = float(
-                        input(
-                            "Coaxial Verim Kaybı Katsayısı (0.0 - 1.0 arası, örn: 0.7): "
-                        )
-                    )
-                    if 0.0 <= loss_input <= 1.0:
-                        coaxial_loss_factor = loss_input
-                        print(
-                            f"--> Coaxial Kayıp Katsayısı: {coaxial_loss_factor} olarak ayarlandı."
-                        )
-                        break
-                    else:
-                        print("Lütfen 0 ile 1 arasında bir değer giriniz.")
-                except ValueError:
-                    print("Geçersiz değer. Lütfen sayı giriniz.")
-        else:
-            motor_sayisi = 4
-
-        print(f"--> Hesaplama {motor_sayisi} motor üzerinden yapılacak.\n")
-        # ----------------------------------------------------
-        print("\n" + "=" * 60)
-        try:
-            print("Motor Seçimi:")
-            print("--- SUAS Motorları ---")
-            print("0. T-MOTOR P80 KV100 + MF3218 (12S)")
-            print("1. MN7005 KV115 24 Pervane (Hacim kuralını karşılıyor)")
-            print(
-                '2. CM-X6-SE 380KV Technical Parameters HF18*6.0" - (Hacim kuralını karşılıyor)'
-            )
-            print('3. CM-X6-SE HF22*7.0" (Hacim kuralını karşılıyor)')
-            print("4. M5208 HP/UL 21x6.3 (Hacim kuralını karşılıyor)")
-            print("5. MN7005 KV230 P24x7.2 (Hacim kuralını karşılıyor)")
-            print("6. U8 Lite KV150 + G29*9.5")
-            print("7. M8108 Light 150KV + MSC 28x9.2")
-            print("8. M6208 155KV + MSC 21x6.3 (Hacim kuralını karşılıyor)")
-            print("9. M8108 Light 150KV + MSC 29x9.5")
-            print("10. MN601S KV170 + P21x6.3 (Hacim kuralını karşılıyor)")
-            print('11. U10II KV100 (8S) + G32x11"')
-            print('12. U10II KV100 (8S) + G30x10.5" ')
-            print('13. MN6007 II KV320 + P22x6.6"')
-            print('14. MN6007 II KV160 + P21x6.3"')
-            print('15. U8 Lite KV150 + G30x10.5"')
-            print('16. U8 Lite KV190 + G29x9.5"')
-            print('17. U8 Lite KV190 + G28x9.2"')
-            print('18. U8II KV85 + G28x9.2"')
-            print("19. T-MOTOR P60 KV170 + P22x6.6 (12S)")
-            print('20. U10II KV100 (12S) + G28x9.2" ')
-            print('21. U8 Lite KV150 (6S) + G29x9.5" ')
-            print("22. U8II-X KV100 (12S) + MF2815 ")
-            print("--- Yıldızlar Motorları ---")
-            print("23. Yıldızlar 24V (6S LIPO) + HQ9x5x3 (İyi Motor)")
-            print("24. Yıldızlar SE 3115 900KV + HQ9x5x3 (6S) (Kötü Motor)")
-            print("25. Yıldızlar Geçen Sene + DAL T5045")
-            print("27. Yıldızlar Sanal Ortalama (İyi & Kötü Motor)")
-
-            m_secim = input("Seçiminiz (0-27): ").strip()
-
-            required_s = 6
-            use_quadratic = False
-
-            if m_secim == "0":
-                data, m_name, secilen_prop_inc = (
-                    mf3218_data,
-                    "T-MOTOR P80 KV100 + MF3218 (12S)",
-                    32.0,
-                )
-                required_s = 12
-            elif m_secim == "1":
-                data, m_name, secilen_prop_inc = (
-                    mn7005_thrust_power,
-                    "MN7005 KV115 (Hacim kuralını karşılıyor)",
-                    24.0,
-                )
-            elif m_secim == "2":
-                data, m_name, secilen_prop_inc = (
-                    cmx6_old_thrust_power,
-                    'CM-X6-SE 380KV Technical Parameters HF18*6.0" -  (Hacim kuralını karşılıyor)',
-                    18.0,
-                )
-            elif m_secim == "3":
-                data, m_name, secilen_prop_inc = (
-                    cmx6_tech_thrust_power,
-                    'CM-X6-SE HF22*7.0" (Hacim kuralını karşılıyor)',
-                    22.0,
-                )
-            elif m_secim == "4":
-                data, m_name, secilen_prop_inc = (
-                    m5208_thrust_power,
-                    "M5208 HP/UL (Hacim kuralını karşılıyor)",
-                    21.0,
-                )
-            elif m_secim == "5":
-                data, m_name, secilen_prop_inc = (
-                    mn7005_kv230_thrust_power,
-                    "MN7005 KV230 (Hacim kuralını karşılıyor)",
-                    24.0,
-                )
-            elif m_secim == "6":
-                data, m_name, secilen_prop_inc = (
-                    u8lite_kv150_thrust_power,
-                    'U8 Lite KV150 + G29*9.5" (Hacim kuralını karşılamıyor)',
-                    29.0,
-                )
-            elif m_secim == "7":
-                data, m_name, secilen_prop_inc = (
-                    m8108_light_data,
-                    "M8108 Light 150KV + MSC 28x9.2 (Hacim kuralını karşılamıyor)",
-                    28.0,
-                )
-            elif m_secim == "8":
-                data, m_name, secilen_prop_inc = (
-                    m6208_12s_data,
-                    "M6208 155KV + MSC 21x6.3 (Hacim kuralını karşılıyor)",
-                    21.0,
-                )
-            elif m_secim == "9":
-                data, m_name, secilen_prop_inc = (
-                    m8108_light_29in_data,
-                    "M8108 Light 150KV + MSC 29x9.5 (Hacim kuralını karşılamıyor)",
-                    29.0,
-                )
-            elif m_secim == "10":
-                data, m_name, secilen_prop_inc = (
-                    mn601s_kv170_data,
-                    "MN601S KV170 + P21x6.3 (Hacim kuralını karşılıyor)",
-                    21.0,
-                )
-            elif m_secim == "11":
-                data, m_name, secilen_prop_inc = (
-                    u10ii_kv100_data,
-                    "U10II KV100 (8S) (Hacim kuralını karşılamıyor)",
-                    32.0,
-                )
-                required_s = 8
-            elif m_secim == "12":
-                data, m_name, secilen_prop_inc = (
-                    u10ii_kv100_30in_data,
-                    'U10II KV100 (8S) + G30x10.5"',
-                    30.0,
-                )
-                required_s = 8
-            elif m_secim == "13":
-                data, m_name, secilen_prop_inc = (
-                    mn6007ii_kv320_data,
-                    "MN6007 II KV320",
-                    22.0,
-                )
-            elif m_secim == "14":
-                data, m_name, secilen_prop_inc = (
-                    mn6007ii_kv160_data,
-                    "MN6007 II KV160",
-                    21.0,
-                )
-            elif m_secim == "15":
-                data, m_name, secilen_prop_inc = (
-                    u8lite_kv150_g30_data,
-                    'U8 Lite KV150 + G30x10.5"',
-                    30.0,
-                )
-            elif m_secim == "16":
-                data, m_name, secilen_prop_inc = (
-                    u8lite_kv190_g29_data,
-                    'U8 Lite KV190 + G29x9.5"',
-                    29.0,
-                )
-            elif m_secim == "17":
-                data, m_name, secilen_prop_inc = (
-                    u8lite_kv190_data,
-                    'U8 Lite KV190 + G28x9.2"',
-                    28.0,
-                )
-            elif m_secim == "18":
-                data, m_name, secilen_prop_inc = (
-                    u8ii_kv85_data,
-                    'U8II KV85 + G28x9.2"',
-                    28.0,
-                )
-            elif m_secim == "19":
-                data, m_name, secilen_prop_inc = (
-                    p60_kv170_data,
-                    "T-MOTOR P60 KV170 + P22x6.6 (12S)",
-                    22.0,
-                )
-                required_s = 12
-            elif m_secim == "20":
-                data, m_name, secilen_prop_inc = (
-                    u10ii_kv100_new_data,
-                    'U10II KV100 (12S) + G28x9.2" (YENİ)',
-                    28.0,
-                )
-                required_s = 12
-            elif m_secim == "21":
-                data, m_name, secilen_prop_inc = (
-                    u8lite_kv150_new_data,
-                    'U8 Lite KV150 (6S) + G29x9.5" (YENİ)',
-                    29.0,
-                )
-                required_s = 6
-            elif m_secim == "22":
-                data, m_name, secilen_prop_inc = (
-                    u8iix_kv100_data,
-                    "U8II-X KV100 (12S) + MF2815 (YENİ)",
-                    28.0,
-                )
-                required_s = 12
-            elif m_secim == "23":
-                data, m_name, secilen_prop_inc = (
-                    yildizlar_iyi_motor_data,
-                    "Yıldızlar 24V (6S LIPO) + HQ9x5x3 (İyi Motor)",
-                    9.0,
-                )
-                required_s = 6
-                use_quadratic = True
-            elif m_secim == "24":
-                data, m_name, secilen_prop_inc = (
-                    yildizlar_kotu_motor_data,
-                    "Yıldızlar SE 3115 900KV + HQ9x5x3 (6S) (Kötü Motor)",
-                    9.0,
-                )
-                required_s = 6
-                use_quadratic = True
-            elif m_secim == "25":
-                data, m_name, secilen_prop_inc = (
-                    yildizlar_gecen_sene_data,
-                    "Yıldızlar Geçen Sene + DAL T5045",
-                    5.0,
-                )
-                required_s = 4
-                use_quadratic = True
-            elif m_secim == "27":
-                data, m_name, secilen_prop_inc = (
-                    yildizlar_sanal_ortalama_data,
-                    "Yıldızlar Sanal Ortalama (İyi & Kötü Motor)",
-                    9.0,
-                )
-                required_s = 6
-                use_quadratic = True
-            else:
-                print("Geçersiz seçim. Varsayılan (1) seçildi.")
-                data, m_name, secilen_prop_inc = (
-                    mn7005_thrust_power,
-                    "MN7005 KV115 (Hacim kuralını karşılıyor)",
-                    24.0,
-                )
-
-            # --- COAXIAL KAYIP KATSAYISINI UYGULA ---
-            if coaxial_loss_factor < 1.0:
-                # Verileri kopyalayarak modifiye et (Global listeyi bozmamak için)
-                # Thrust değerlerini katsayı ile çarp, güç değerlerini sabit bırak
-                data = [[row[0] * coaxial_loss_factor, row[1]] for row in data]
-                print(
-                    f"   [BİLGİ] Coaxial katsayısı ({coaxial_loss_factor}) datasheet verilerine uygulandı."
-                )
-
-            yeni_agirlik = float(input("\nYeni drone ağırlığı (kg)? ")) * 1000
-
-            print("Batarya Bilgileri:")
-            bat_tipi = input("   Tip (LiHV/LiPo/LiIon): ").lower()
-            if bat_tipi not in ["lihv", "lipo", "liion"]:
-                bat_tipi = "lipo"
-
-            p_adet = float(input("   Kaç adet pil (paralel/seri toplam)? "))
-            p_mah = float(input("   Tek pil mAh? "))
-            p_s = int(input("   Tek pil S değeri (örn: 6, 4, 8)? "))
-
-            if required_s % p_s != 0:
-                print("\n" + "!" * 65)
-                print(f" [HATA] UYUMSUZ PİL SEÇİMİ!")
-                print(f" Seçilen Motor: {required_s}S gerilim istiyor.")
-                print(f" Elinizdeki Pil: {p_s}S.")
-                print(
-                    f" Matematiksel olarak {p_s}S pilleri seri bağlayarak {required_s}S ELDE EDEMEZSİNİZ."
-                )
-                print(f" Lütfen {required_s}'in tam böleni olan bir pil kullanın.")
-                print("!" * 65 + "\n")
-                continue  # Hata verip en başa (menüye) döner
-
-            toplam_hucre = p_adet * p_s
-
-            # Voltaj Uyarısı
-            # Kullanıcı 6s motora 8s falan takmaya çalışırsa nazikçe uyaralım
-            if (
-                m_secim == "2"
-                or m_secim == "3"
-                or m_secim == "4"
-                or m_secim == "5"
-                or m_secim == "6"
-                or m_secim == "7"
-                or m_secim == "9"
-                or m_secim == "13"
-                or m_secim == "15"
-                or m_secim == "16"
-                or m_secim == "17"
-            ) and (toplam_hucre / p_adet) > 6:
-                print(
-                    "   [!] DİKKAT: Seçilen motor verileri düşük voltaj (6S vb.) içindir. 12S sistem planlıyorsanız KV değerini kontrol edin!"
-                )
-
-            # Enerji ve Güç Hesabı
-            yeni_enerji = calculate_real_energy_wh(toplam_hucre, p_mah, bat_tipi)
-            yeni_thrust = yeni_agirlik / float(motor_sayisi)
-            # Limit Kontrolü
-            max_thrust = data[-1][0]
-            if yeni_thrust > max_thrust:
-                print(
-                    f"   [!] UYARI: Gereken itki ({yeni_thrust:.0f}g), motor limitini ({max_thrust}g) aşıyor!"
-                )
-
-            if use_quadratic:
-                yeni_power_motor = get_power_from_thrust_quadratic(yeni_thrust, data)
-                if yeni_thrust < data[0][0] or yeni_thrust > data[-1][0]:
-                    print(
-                        f"   [BİLGİ] İstenen itki veri aralığı ({data[0][0]}g - {data[-1][0]}g) dışında. Kuadratik regresyon ile ekstrapolasyon kullanıldı."
-                    )
-                else:
-                    print(
-                        f"   [BİLGİ] İstenen itki veri aralığı ({data[0][0]}g - {data[-1][0]}g) içinde. Lineer interpolasyon kullanıldı."
-                    )
-            else:
-                yeni_power_motor = get_power_from_thrust(yeni_thrust, data)
-            yeni_total_power = yeni_power_motor * motor_sayisi
-
-            # TEORİK SÜRE HESABI (%100 Enerji Tüketimi İçin)
-            teorik_sure = (yeni_enerji / yeni_total_power) * 60
-
-            if is_reverse_mode:
-                # --- MOD 3: TERSİNE HESAPLAMA (Correction Factor Derivation) ---
-                print("\n" + "*" * 60)
-                try:
-                    hover_input = float(
-                        input(
-                            "Hedeflenen/Gerçekleşen Hover Süresi (%20 Batarya Kalana Kadar) [dk]: "
-                        )
-                    )
-                    if hover_input <= 0:
-                        print("Süre 0'dan büyük olmalı! 20 dk varsayılıyor.")
-                        hover_input = 20.0
-                except ValueError:
-                    hover_input = 20.0
-                    print("Geçersiz değer, 20 dk varsayılıyor.")
-
-                correction_factor = hover_input / teorik_sure
-
-                print(f"--> Girilen Süre: {hover_input} dk")
-                print(f"--> Teorik Süre (Datasheet): {teorik_sure:.2f} dk")
-                print(f"--> HESAPLANAN CORRECTION FACTOR: {correction_factor:.4f}")
-                print("*" * 60 + "\n")
-
-            else:
-                # Klasik modlarda CF zaten başta seçilmişti (Standard veya Custom)
-                pass
-
-            # 1. Standart Süre (Vibe gibi %20 Rezerv)
-            tahmini_standart = teorik_sure * correction_factor
-
-            # 2. Yarışma Modu (Agresif %10 Rezerv)
-            tahmini_yarisma = tahmini_standart * 1.125
-
-            # 3. Çok Güvenli Mod (%25 Rezerv -> %75 Kullanım)
-            # Standart süre %80 kullanım (20% rezerv) olduğu için:
-            # 80 birim = standart_sure ise, 75 birim = ?
-            tahmini_cok_guvenli = tahmini_standart * (75.0 / 80.0)
-
-            print("-" * 50)
-            print(f"SONUÇLAR ({m_name} | {yeni_agirlik / 1000} kg):")
-            print(
-                f"   * Motor Başı Güç: {yeni_power_motor:.1f} W (Toplam: {yeni_total_power:.1f} W)"
-            )
-            print(f"   * Ham Teorik Süre: {teorik_sure:.1f} dk")
-            print(f"   * Hesaplanan CF Değeri: {correction_factor:.4f}")
-            print("-" * 50)
-            print(
-                f"   [ÇOK GÜVENLİ] Tahmini Süre (%25 Rezerv):   **{tahmini_cok_guvenli:.2f} dk**"
-            )
-            print(
-                f"   [GÜVENLİ]     Tahmini Süre (%20 Rezerv):   **{tahmini_standart:.2f} dk**"
-            )
-            print(
-                f"   [YARIŞMA]     Tahmini Süre (%10 Rezerv):   **{tahmini_yarisma:.2f} dk**"
-            )
-            print("-" * 50)
-
-            if m_secim == "25":
-                hedef = 10.0
-            elif m_secim in ["23", "24", "27"]:
-                hedef = 15.0
-            else:
-                hedef = 40.0
-
-            print(f"   [HEDEF SÜRE]   Sistemin hedef uçuş süresi: **{hedef} dk**")
-            print("-" * 50)
-
-            # ÖNCE Güvenli modu kontrol et
-            if tahmini_standart >= hedef:
-                print(
-                    f"YORUM: MÜKEMMEL. Güvenli modda bile {hedef} dk hedefini geçiyorsunuz."
-                )
-            # Eğer güvenli yetmediyse, Yarışma modunu kontrol et
-            elif tahmini_yarisma >= hedef:
-                print(
-                    f"YORUM: BAŞARILI. Sadece yarışma modunda {hedef} dk hedefini geçiyorsunuz."
-                )
-            else:
-                fark = hedef - tahmini_yarisma
-                print(
-                    f"YORUM: Pili %10'a kadar bitirseniz bile {hedef} dk hedefine {fark:.1f} dk eksiğiniz var."
-                )
-
-            # --- MENZİL HESABI EKLEMESİ ---
-            try:
-                drag_input = input(
-                    "\nDrone Rüzgar Yiyen Alanı (cm2) [Varsayılan 2000]: "
-                )
-                drag_area = float(drag_input) if drag_input.strip() else 2000.0
-
-            except ValueError:
-                drag_area = 2000.0
-                print("Geçersiz değer, varsayılan 2000 cm2 kullanılıyor.")
-
-            bauersfeld = BauersfeldMenzilHesaplayici(
-                hover_power_w=yeni_total_power,  # Senin koddan gelen
-                correction_factor=correction_factor,  # Senin koddan gelen
-                battery_wh=yeni_enerji,  # Senin hesapladığın enerji
-                total_mass_kg=yeni_agirlik / 1000.0,
-                drag_area_cm2=drag_area,  # Senin girdin
-                prop_diameter_inch=secilen_prop_inc,
-                num_rotors=motor_sayisi,
-            )
-
-            sonuc = bauersfeld.solve()
-
-            print("\n" + "=" * 50)
-            print("%20 ÜZERİNDEN BAUERSFELD (2022) ALGORİTMASI SONUÇLARI")
-            print("=" * 50)
-            print(f"Referans İndüklenen Hız (vi,h): {sonuc['vi_h']:.2f} m/s")
-            print("-" * 50)
-            print(f"MAKSİMUM MENZİL SENARYOSU:")
-            print(
-                f"  * Optimal Hız:       {sonuc['optimal_speed_ms']:.2f} m/s ({sonuc['optimal_speed_ms'] * 3.6:.1f} km/h)"
-            )
-            print(
-                f"  * Tahmini Güç:       {sonuc['power_range_w']:.1f} W (Hover x 1.092)"
-            )
-            print(f"  * Uçuş Süresi:       {sonuc['flight_time_min_range']:.1f} dk")
-            print(f"  * MAKSİMUM MENZİL:   {sonuc['max_range_km']:.2f} km")
-            print("-" * 50)
-            print(f"MAKSİMUM HAVADA KALMA (ENDURANCE) SENARYOSU:")
-            print(
-                f"  * Optimal Hız:       {sonuc['optimal_endurance_speed_ms']:.2f} m/s (İleri sürüklenme)"
-            )
-            print(
-                f"  * Tahmini Güç:       {sonuc['power_endurance_w']:.1f} W (Hover x 0.914)"
-            )
-            print(f"  * Uçuş Süresi:       {sonuc['max_endurance_min']:.1f} dk")
-            print(f"  * TAHMİNİ MENZİL:    {sonuc['max_range_km_endurance']:.2f} km")
-            print("=" * 50)
-
-            print("\n" + "=" * 50)
-            print("%10 ÜZERİNDEN (YARIŞMA MODU) SONUÇLARI")
-            print("=" * 50)
-            print(f"MAKSİMUM MENZİL SENARYOSU:")
-            print(
-                f"  * Uçuş Süresi:       {sonuc['flight_time_min_range'] * 1.125:.1f} dk"
-            )
-            print(f"  * MAKSİMUM MENZİL:   {sonuc['max_range_km'] * 1.125:.2f} km")
-            print("-" * 50)
-            print(f"MAKSİMUM HAVADA KALMA (ENDURANCE) SENARYOSU:")
-            print(f"  * Uçuş Süresi:       {sonuc['max_endurance_min'] * 1.125:.1f} dk")
-            print(
-                f"  * TAHMİNİ MENZİL:    {sonuc['max_range_km_endurance'] * 1.125:.2f} km"
-            )
-            print("=" * 50)
-
-        except ValueError:
-            print("Sayısal hata. Lütfen sayı giriniz.")
-
-        # --- KULLANICI ETKİLEŞİMLİ SEÇENEK ---
-        print("\nNe yapmak istersiniz?")
-        print("   [Enter] Yeni Hesaplama Yap")
-        print("   (3)     Preset/log DataLink fit analizi (3 veya 21 Temmuz seç)")
-        print("   (4)     Birleşik analiz (3 + 21 Temmuz, tek grafik)")
-        print(
-            "   (5)     Sadece DataLink ham verilerini (log) ve batarya grafiğini göster"
-        )
-        print("   (q)     Çıkış")
-
-        son_secim = input("Seçiminiz: ").strip().lower()
-
-        if son_secim == "q":
-            break
-        elif son_secim == "3":
-            try:
-                print("\n--- PRESET/LOG DATALINK FIT ANALIZI ---")
-                print(
-                    "Hangi uçuşun verisiyle fit yapılsın? "
-                    "(arkasındaki matematik her uçuş için aynıdır)"
-                )
-                datalink_log_root, datalink_date_hint = (
-                    prompt_datalink_root_and_hint()
-                )
-
-                raw_speeds = input(
-                    "Uçuş hızı/hızları (m/s, virgülle; örn 6,10,15,20,25) [6,10,15,20,25]: "
-                ).strip()
-                speeds = (
-                    parse_speed_list(raw_speeds)
-                    if raw_speeds
-                    else [6.0, 10.0, 15.0, 20.0, 25.0]
-                )
-                if not speeds:
-                    raise ValueError("En az bir hız girilmeli.")
-
-                print(
-                    "\nFit için araç profili (DataLink/log verisini üreten gerçek uçuş aracı):"
-                )
-                print("1) Fırfır preset")
-                print("   12.4 kg, 4 rotor, U8 Lite KV190 6S + T-MOTOR G28x9.2 CF.")
-                print("   Utip DataLink RPM'den hesaplanır; fallback ~79.8 m/s.")
-                print(
-                    "2) Mevcut girişlerden manual (girdiğiniz araç log verisini de üretmişse kullanın)"
-                )
-                fit_vehicle_choice = (
-                    input("Fit araç profili seçimi (1/2) [1]: ").strip() or "1"
-                )
-                if fit_vehicle_choice not in {"1", "2"}:
-                    fit_vehicle_choice = "1"
-
-                fit_profile = build_speed_model_profile(
-                    fit_vehicle_choice,
-                    yeni_agirlik / 1000.0,
-                    motor_sayisi,
-                    secilen_prop_inc,
-                    drag_area,
-                    require_theoretical=False,
-                )
-                fit_drag_area_cm2 = (
-                    fit_profile.get("body_area_m2", drag_area / 10000.0) * 10000.0
-                    if fit_vehicle_choice == "1"
-                    else drag_area
-                )
-                fit_sonuc = BauersfeldMenzilHesaplayici(
-                    hover_power_w=yeni_total_power,
-                    correction_factor=correction_factor,
-                    battery_wh=yeni_enerji,
-                    total_mass_kg=fit_profile["mass_kg"],
-                    drag_area_cm2=fit_drag_area_cm2,
-                    prop_diameter_inch=fit_profile["prop_diameter_inch"],
-                    num_rotors=fit_profile["num_rotors"],
-                ).solve()
-
-                print_datalink_model_descriptions()
-                model_choice = (
-                    input("Model secimi (1/2/3/4 veya all) [4]: ").strip() or "4"
-                )
-                selected_preview = parse_datalink_model_selection(model_choice)
-                print("Seçilen modeller: " + ", ".join(selected_preview))
-
-                graph_raw = (
-                    input("Seçilen modeller için grafik oluşturulsun mu? (e/h) [e]: ")
-                    .strip()
-                    .lower()
-                )
-                make_graph = graph_raw != "h"
-
-                print(
-                    "\nFiziksel parametre transferi: fitten çözülen boyutsuz aero "
-                    "katsayıları girilen aracın kütle/pervane/rotor değerleriyle "
-                    "yeniden kurulur (eğri şekli araca duyarlı olur)."
-                )
-                transfer_raw = (
-                    input("Transfer uygulansın mı? (e/h) [e]: ").strip().lower()
-                )
-                apply_profile = None
-                apply_utip_ms = None
-                apply_utip_mode = None
-                if transfer_raw != "h":
-                    apply_profile = {
-                        "vehicle_name": "Girilen arac",
-                        "mass_kg": yeni_agirlik / 1000.0,
-                        "num_rotors": motor_sayisi,
-                        "prop_diameter_inch": secilen_prop_inc,
-                        "rho": 1.225,
-                    }
-                    print("\nGirilen araç için Utip kaynağı:")
-                    print(
-                        "1) Fit aracıyla aynı (Fırfır DataLink ölçümü, "
-                        "28\" @ 12.4 kg)"
-                    )
-                    print(
-                        "2) Teorik: KV190 datasheet RPM eğrisinden hesapla "
-                        "(girilen pervaneye göre G28x9.2 / G29x9.5, girilen "
-                        "kütleyle; Fırfır ölçümüne göre % fark raporlanır)"
-                    )
-                    print("3) Elle gir (m/s)")
-                    utip_secim = input("Utip seçimi (1/2/3) [2]: ").strip() or "2"
-                    if utip_secim == "2":
-                        apply_utip_mode = "theoretical_datasheet"
-                    elif utip_secim == "3":
-                        apply_utip_ms = float(input("Utip m/s: ").strip())
-
-                run_preset_fit_apply_to_vehicle(
-                    speeds,
-                    fit_profile,
-                    fit_sonuc,
-                    model_choice,
-                    yeni_total_power,
-                    yeni_enerji,
-                    correction_factor,
-                    make_graph,
-                    datalink_log_root=datalink_log_root,
-                    datalink_date_hint=datalink_date_hint,
-                    apply_sonuc=sonuc,
-                    apply_profile=apply_profile,
-                    apply_utip_ms=apply_utip_ms,
-                    apply_utip_mode=apply_utip_mode,
-                )
-
-                print("\nSonraki adım:")
-                print("   [Enter / 1] Ana menüye dön")
-                print("   (q / 2)     Çıkış")
-                sonraki_adim = input("Seçiminiz: ").strip().lower()
-                if sonraki_adim in {"q", "2", "c", "ç", "exit"}:
-                    break
-
-            except ValueError:
-                print("Lütfen geçerli sayısal değerler giriniz!")
-            except Exception as exc:
-                print(f"Preset fit + uygulama analizi çalıştırılamadı: {exc}")
-
-        elif son_secim == "4":
-            try:
-                print("\n--- BİRLEŞİK ANALİZ (3 + 21 TEMMUZ) ---")
-                print(
-                    "3 Temmuz'un tüm hızları + 21 Temmuz'un ilk 10 kesintisiz turu "
-                    "aynı fit'e katılır; tüm veriler tek grafikte gösterilir."
-                )
-                # Fit bağlamı seçenek-3 ile birebir aynı Fırfır preset akışı.
-                fit_profile = build_speed_model_profile(
-                    "1",
-                    yeni_agirlik / 1000.0,
-                    motor_sayisi,
-                    secilen_prop_inc,
-                    drag_area,
-                    require_theoretical=False,
-                )
-                fit_drag_area_cm2 = (
-                    fit_profile.get("body_area_m2", drag_area / 10000.0) * 10000.0
-                )
-                fit_sonuc = BauersfeldMenzilHesaplayici(
-                    hover_power_w=yeni_total_power,
-                    correction_factor=correction_factor,
-                    battery_wh=yeni_enerji,
-                    total_mass_kg=fit_profile["mass_kg"],
-                    drag_area_cm2=fit_drag_area_cm2,
-                    prop_diameter_inch=fit_profile["prop_diameter_inch"],
-                    num_rotors=fit_profile["num_rotors"],
-                ).solve()
-                graph_raw = (
-                    input("Grafik oluşturulsun mu? (e/h) [e]: ").strip().lower()
-                )
-                make_graph = graph_raw != "h"
-
-                combined = build_combined_july3_july21_fit_suite(
-                    fit_profile,
-                    fit_sonuc,
-                    yeni_total_power,
-                    yeni_enerji,
-                    correction_factor,
-                    make_graph=make_graph,
-                )
-                print_combined_fit_summary(combined)
-
-                # Ek çıktı: 3 Temmuz fiti TEK BAŞINA 21 Temmuz'u ne kadar iyi
-                # öngörüyor? (fit dondurulur, 21 Temmuz dış doğrulama noktaları)
-                validation = run_july21_validation_against_july3(
-                    combined["july3_suite"], make_graph=make_graph
-                )
-                print_july21_validation_summary(validation)
-
-                if make_graph:
-                    import matplotlib.pyplot as plt
-
-                    print("plt.show() cagriliyor.")
-                    plt.show()
-
-                print("\nSonraki adım:")
-                print("   [Enter / 1] Ana menüye dön")
-                print("   (q / 2)     Çıkış")
-                sonraki_adim = input("Seçiminiz: ").strip().lower()
-                if sonraki_adim in {"q", "2", "c", "ç", "exit"}:
-                    break
-
-            except ValueError:
-                print("Lütfen geçerli sayısal değerler giriniz!")
-            except Exception as exc:
-                print(f"Birleşik analiz çalıştırılamadı: {exc}")
-
-        elif son_secim == "5":
-            try:
-                log_root, date_hint = prompt_datalink_root_and_hint()
-                run_datalink_raw_data_viewer(log_root, date_hint)
-
-                sonraki_adim = (
-                    input(
-                        "\nSonraki adım:\n   [Enter / 1] Ana menüye dön\n   (q / 2)     Çıkış\nSeçiminiz: "
-                    )
-                    .strip()
-                    .lower()
-                )
-                if sonraki_adim in {"q", "2", "c", "ç", "exit"}:
-                    break
-
-            except Exception as exc:
-                print(f"Ham veri görselleştirici çalıştırılamadı: {exc}")
+        _run_calibration_analysis(make_graphs=args.graphs)
 
 
 if __name__ == "__main__":
-    drone_simulasyon()
+    main()

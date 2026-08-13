@@ -3,18 +3,18 @@ import math
 
 import pytest
 
-import menzil2
+import multicopter_range
 
 
 def _firfir_context():
-    profile = menzil2.build_speed_model_profile("1", 12.4, 4, 29.0, 450.0)
+    profile = multicopter_range.build_speed_model_profile("1", 12.4, 4, 29.0, 450.0)
     hover_power_w = (
-        menzil2.get_power_from_thrust(12400.0 / 4.0, menzil2.u8lite_kv190_g29_data)
+        multicopter_range.get_power_from_thrust(12400.0 / 4.0, multicopter_range.u8lite_kv190_g29_data)
         * 4.0
     )
-    battery_wh = menzil2.calculate_real_energy_wh(12, 27000, "liion")
+    battery_wh = multicopter_range.calculate_real_energy_wh(12, 27000, "liion")
     correction_factor = 0.72
-    sonuc = menzil2.BauersfeldMenzilHesaplayici(
+    sonuc = multicopter_range.BauersfeldRangeCalculator(
         hover_power_w,
         correction_factor,
         battery_wh,
@@ -27,18 +27,15 @@ def _firfir_context():
 
 
 def _july3_root():
-    roots = [
-        path for path in Path.cwd().iterdir()
-        if path.is_dir() and path.name.startswith("3 Temmuz")
-    ]
-    assert roots
-    return roots[0]
+    root = Path(__file__).resolve().parents[1] / "data/calibration/2026-07-03"
+    assert root.is_dir()
+    return root
 
 
 def test_july3_measured_curve_builds_sync_battery_and_model_reports():
     profile, sonuc, hover_power_w, battery_wh, correction_factor = _firfir_context()
 
-    result = menzil2.run_datalink_measured_curve_analysis(
+    result = multicopter_range.run_datalink_measured_curve_analysis(
         profile,
         sonuc,
         hover_power_w,
@@ -80,10 +77,10 @@ def test_july3_measured_curve_builds_sync_battery_and_model_reports():
     assert empirical_curve["min_speed_ms"] < 3.0
     assert empirical_curve["max_speed_ms"] < 13.0
     assert empirical_curve["raw_sample_count_total"] >= empirical_curve["sample_count_total"]
-    in_range = menzil2.evaluate_empirical_datalink_power_ratio(empirical_curve, 6.0)
+    in_range = multicopter_range.evaluate_empirical_datalink_power_ratio(empirical_curve, 6.0)
     assert in_range["available"] is True
     assert in_range["basis"] in {"measured_bin", "linear_interpolation"}
-    out_of_range = menzil2.evaluate_empirical_datalink_power_ratio(empirical_curve, 20.0)
+    out_of_range = multicopter_range.evaluate_empirical_datalink_power_ratio(empirical_curve, 20.0)
     assert out_of_range["available"] is False
     assert out_of_range["reason"] == "out_of_measured_range"
 
@@ -117,26 +114,26 @@ def test_measured_curve_graph_mode_does_not_emit_voltage_graph(monkeypatch, tmp_
     }
     calls = {}
 
-    monkeypatch.setattr(menzil2, "find_measured_curve_log_root", lambda log_root: tmp_path)
-    monkeypatch.setattr(menzil2, "find_datalink_session_dirs", lambda _root: [])
+    monkeypatch.setattr(multicopter_range, "find_measured_curve_log_root", lambda log_root: tmp_path)
+    monkeypatch.setattr(multicopter_range, "find_datalink_session_dirs", lambda _root: [])
     monkeypatch.setattr(
-        menzil2, "filter_datalink_sessions_by_date_hint", lambda sessions, _hint: sessions
+        multicopter_range, "filter_datalink_sessions_by_date_hint", lambda sessions, _hint: sessions
     )
-    monkeypatch.setattr(menzil2, "find_datalink_bin_overlaps", lambda *_args, **_kwargs: [])
-    monkeypatch.setattr(menzil2, "annotate_joined_sample_stability", lambda samples: samples)
-    monkeypatch.setattr(menzil2, "estimate_datalink_hover_power", lambda _samples: 760.0)
+    monkeypatch.setattr(multicopter_range, "find_datalink_bin_overlaps", lambda *_args, **_kwargs: [])
+    monkeypatch.setattr(multicopter_range, "annotate_joined_sample_stability", lambda samples: samples)
+    monkeypatch.setattr(multicopter_range, "estimate_datalink_hover_power", lambda _samples: 760.0)
     monkeypatch.setattr(
-        menzil2,
+        multicopter_range,
         "build_datalink_speed_observations",
         lambda *_args, **_kwargs: [observation],
     )
     monkeypatch.setattr(
-        menzil2,
+        multicopter_range,
         "build_battery_qc_report",
         lambda *_args, **_kwargs: {"rows": [{"timestamp_utc": None, "voltr_v": 24.0}]},
     )
     monkeypatch.setattr(
-        menzil2,
+        multicopter_range,
         "build_measured_curve_model_fit",
         lambda profile, *_args, **_kwargs: {
             "profile": dict(profile, utip_ms=81.4),
@@ -149,27 +146,27 @@ def test_measured_curve_graph_mode_does_not_emit_voltage_graph(monkeypatch, tmp_
         },
     )
     monkeypatch.setattr(
-        menzil2,
+        multicopter_range,
         "plot_empirical_datalink_power_curve",
         lambda *_args, **_kwargs: calls.setdefault("empirical_power", "empirical.png"),
     )
     monkeypatch.setattr(
-        menzil2,
+        multicopter_range,
         "plot_measured_power_curve",
         lambda *_args, **_kwargs: calls.setdefault("diagnostic", "diagnostic.png"),
     )
     monkeypatch.setattr(
-        menzil2,
+        multicopter_range,
         "write_scientific_fit_audit",
         lambda *_args, **_kwargs: calls.setdefault("audit", "audit.md"),
     )
     monkeypatch.setattr(
-        menzil2,
+        multicopter_range,
         "plot_battery_voltage_timeline",
         lambda *_args, **_kwargs: calls.setdefault("battery", "battery.png"),
     )
 
-    result = menzil2.run_datalink_measured_curve_analysis(
+    result = multicopter_range.run_datalink_measured_curve_analysis(
         {"prop_diameter_inch": 29.0},
         {},
         760.0,
@@ -189,7 +186,7 @@ def test_measured_curve_graph_mode_does_not_emit_voltage_graph(monkeypatch, tmp_
 def test_july3_battery_monitor_is_voltage_sanity_not_direct_power_fit():
     profile, sonuc, hover_power_w, battery_wh, correction_factor = _firfir_context()
 
-    result = menzil2.run_datalink_measured_curve_analysis(
+    result = multicopter_range.run_datalink_measured_curve_analysis(
         profile,
         sonuc,
         hover_power_w,
@@ -208,10 +205,10 @@ def test_july3_battery_monitor_is_voltage_sanity_not_direct_power_fit():
 
 
 def test_datalink_flight_time_uses_july3_6s_usable_capacity_not_legacy_cf():
-    legacy_battery_wh = menzil2.calculate_real_energy_wh(12, 27000, "liion")
-    battery_basis = menzil2.build_july3_firfir_battery_basis()
+    legacy_battery_wh = multicopter_range.calculate_real_energy_wh(12, 27000, "liion")
+    battery_basis = multicopter_range.build_july3_firfir_battery_basis()
 
-    row = menzil2.calculate_flight_for_speed(
+    row = multicopter_range.calculate_flight_for_speed(
         0.1,
         1.0,
         757.891,
@@ -229,7 +226,7 @@ def test_datalink_flight_time_uses_july3_6s_usable_capacity_not_legacy_cf():
     assert legacy_time_10_min > row["time_10_min"] * 1.5
     assert row["time_10_min"] == pytest.approx(39.86, abs=0.05)
     assert row["time_20_min"] == pytest.approx(35.43, abs=0.05)
-    assert row["battery_basis_label"].startswith("6S1P (tek kol")
+    assert row["battery_basis_label"].startswith("6S1P sensed branch")
 
 
 def test_datalink_fit_suite_reports_july3_battery_basis(monkeypatch):
@@ -257,12 +254,12 @@ def test_datalink_fit_suite_reports_july3_battery_basis(monkeypatch):
         "sync_report": [],
     }
     monkeypatch.setattr(
-        menzil2,
+        multicopter_range,
         "run_datalink_measured_curve_analysis",
         lambda *_args, **_kwargs: fake_result,
     )
 
-    suite = menzil2.build_datalink_fitted_model_suite(
+    suite = multicopter_range.build_datalink_fitted_model_suite(
         profile,
         sonuc,
         hover_power_w,
@@ -332,19 +329,19 @@ def test_empirical_datalink_curve_refuses_extrapolation_and_reports_sources():
         },
     ]
 
-    curve = menzil2.build_empirical_datalink_power_curve(observations)
+    curve = multicopter_range.build_empirical_datalink_power_curve(observations)
 
     assert curve["min_speed_ms"] == 5.0
     assert curve["max_speed_ms"] == 7.0
     assert curve["sample_count_total"] == 320
     assert curve["source_bins"] == ["00000076.BIN", "00000077.BIN"]
-    assert menzil2.evaluate_empirical_datalink_power_ratio(curve, 6.0)["power_ratio"] == 0.95
-    assert menzil2.evaluate_empirical_datalink_power_ratio(curve, 4.0)["available"] is False
-    assert menzil2.evaluate_empirical_datalink_power_ratio(curve, 18.0)["available"] is False
+    assert multicopter_range.evaluate_empirical_datalink_power_ratio(curve, 6.0)["power_ratio"] == 0.95
+    assert multicopter_range.evaluate_empirical_datalink_power_ratio(curve, 4.0)["available"] is False
+    assert multicopter_range.evaluate_empirical_datalink_power_ratio(curve, 18.0)["available"] is False
 
 
 def test_scientific_fit_audit_rejects_unphysical_free_parameters():
-    audit = menzil2.audit_scientific_fit_parameters(
+    audit = multicopter_range.audit_scientific_fit_parameters(
         "bad_fit",
         {
             "lambda_n_per_ms": -0.2,
@@ -362,17 +359,17 @@ def test_scientific_fit_audit_rejects_unphysical_free_parameters():
 
 
 def test_datalink_empirical_pv_is_available_from_custom_speed_model_selection():
-    assert menzil2.parse_datalink_model_selection("1") == ["zeng_datalink_fit"]
-    assert menzil2.parse_datalink_model_selection("2") == ["faessler_datalink_fit"]
-    assert menzil2.parse_datalink_model_selection("3") == ["kirschstein_datalink_fit"]
-    assert menzil2.parse_datalink_model_selection("4") == [
+    assert multicopter_range.parse_datalink_model_selection("1") == ["zeng_datalink_fit"]
+    assert multicopter_range.parse_datalink_model_selection("2") == ["faessler_datalink_fit"]
+    assert multicopter_range.parse_datalink_model_selection("3") == ["kirschstein_datalink_fit"]
+    assert multicopter_range.parse_datalink_model_selection("4") == [
         "zeng_datalink_fit",
         "faessler_datalink_fit",
         "kirschstein_datalink_fit",
     ]
-    assert menzil2.parse_datalink_model_selection("all") == menzil2.parse_datalink_model_selection("4")
-    assert menzil2.parse_datalink_model_selection("hepsi") == menzil2.parse_datalink_model_selection("4")
-    assert menzil2.parse_datalink_model_selection("zeng") == ["zeng_datalink_fit"]
+    assert multicopter_range.parse_datalink_model_selection("all") == multicopter_range.parse_datalink_model_selection("4")
+    assert multicopter_range.parse_datalink_model_selection("hepsi") == multicopter_range.parse_datalink_model_selection("4")
+    assert multicopter_range.parse_datalink_model_selection("zeng") == ["zeng_datalink_fit"]
 
 
 def test_preset_fit_console_summary_uses_measured_reference_and_reports_batt(
@@ -405,7 +402,7 @@ def test_preset_fit_console_summary_uses_measured_reference_and_reports_batt(
             "extrapolation_region": "measured",
         },
     ]
-    empirical_curve = menzil2.build_empirical_datalink_power_curve(observations)
+    empirical_curve = multicopter_range.build_empirical_datalink_power_curve(observations)
     suite = {
         "empirical_curve": empirical_curve,
         "observations": observations,
@@ -429,22 +426,22 @@ def test_preset_fit_console_summary_uses_measured_reference_and_reports_batt(
             "datalink_energy_wh": 123.4,
             "battery_energy_delta_raw": 0.2,
         },
-        "battery_basis": menzil2.build_july3_firfir_battery_basis(),
+        "battery_basis": multicopter_range.build_july3_firfir_battery_basis(),
         "source_result": {"graph_paths": {}},
     }
 
     monkeypatch.setattr(
-        menzil2,
+        multicopter_range,
         "build_datalink_fitted_model_suite",
         lambda *_args, **_kwargs: suite,
     )
     monkeypatch.setattr(
-        menzil2,
+        multicopter_range,
         "write_datalink_fit_method_report",
         lambda *_args, **_kwargs: tmp_path / "report.md",
     )
 
-    menzil2.run_preset_fit_apply_to_vehicle(
+    multicopter_range.run_preset_fit_apply_to_vehicle(
         [6.0, 20.0],
         profile,
         sonuc,
@@ -459,7 +456,7 @@ def test_preset_fit_console_summary_uses_measured_reference_and_reports_batt(
     out = capsys.readouterr().out
     assert "DataLink fit suite" in out
     # Olculen hover tek kol (6S1P) olarak etiketlenir
-    assert "P_hover(DataLink, olculen tek kol)=760.0 W" in out
+    assert "P_hover(DataLink, measured branch)=760.0 W" in out
     assert "Utip(DataLink RPM)=81.4 m/s" in out
     assert "BATT QC" in out
     assert "battery_current_scale_suspect" in out
@@ -488,7 +485,7 @@ def test_preset_fit_application_uses_global_hover_scale_and_entered_battery_basi
         },
     ]
     suite = {
-        "empirical_curve": menzil2.build_empirical_datalink_power_curve(observations),
+        "empirical_curve": multicopter_range.build_empirical_datalink_power_curve(observations),
         "observations": observations,
         "power_reference_w": 760.0,
         "measured_hover_power_w": 760.0,
@@ -496,23 +493,23 @@ def test_preset_fit_application_uses_global_hover_scale_and_entered_battery_basi
         "model_functions": {"zeng_datalink_fit": lambda v: 1.0},
         "model_params": {},
         "battery_qc_report": {"warnings": [], "direct_current_fit_enabled": False},
-        "battery_basis": menzil2.build_july3_firfir_battery_basis(),
+        "battery_basis": multicopter_range.build_july3_firfir_battery_basis(),
         "datalink_efficiency_ratio": 1.25,
         "sync_report": [],
         "source_result": {"graph_paths": {}},
     }
     monkeypatch.setattr(
-        menzil2,
+        multicopter_range,
         "build_datalink_fitted_model_suite",
         lambda *_args, **_kwargs: suite,
     )
     monkeypatch.setattr(
-        menzil2,
+        multicopter_range,
         "write_datalink_fit_method_report",
         lambda *_args, **_kwargs: tmp_path / "report.md",
     )
 
-    menzil2.run_preset_fit_apply_to_vehicle(
+    multicopter_range.run_preset_fit_apply_to_vehicle(
         [6.0],
         profile,
         fit_sonuc,
@@ -527,13 +524,13 @@ def test_preset_fit_application_uses_global_hover_scale_and_entered_battery_basi
     out = capsys.readouterr().out
     # Model P/Ph orani Firfir'e tune edilir; ANA tablo/grafik ise girilen aracin
     # bataryasi ve global DataLink hover olcegi ile hesaplanir.
-    expected_usable = battery_wh * menzil2.FIRFIR_BATTERY_USABLE_FRACTION
+    expected_usable = battery_wh * multicopter_range.FIRFIR_BATTERY_USABLE_FRACTION
     assert "P=1250.0 W" in out
     assert "P_hover = 1250.0 W" in out
     assert f"{expected_usable:.1f} Wh usable" in out
     assert "DataLink-calibrated entered vehicle basis" in out
     # Firfir July3 calibrated basis hala tune-kaynagi bilgisi olarak gosterilir.
-    assert "MODEL TUNE-KAYNAGI BASIS" in out
+    assert "MODEL CALIBRATION BASIS" in out
     assert "P_hover(Firfir calibrated) = 760.0 W" in out
 
 
@@ -556,7 +553,7 @@ def test_preset_fit_application_generates_datalink_graphs_with_global_hover_scal
         },
     ]
     suite = {
-        "empirical_curve": menzil2.build_empirical_datalink_power_curve(observations),
+        "empirical_curve": multicopter_range.build_empirical_datalink_power_curve(observations),
         "observations": observations,
         "power_reference_w": 760.0,
         "measured_hover_power_w": 760.0,
@@ -568,38 +565,38 @@ def test_preset_fit_application_generates_datalink_graphs_with_global_hover_scal
             "direct_current_fit_enabled": False,
             "rows": [{"timestamp_utc": None, "voltr_v": 24.0}],
         },
-        "battery_basis": menzil2.build_july3_firfir_battery_basis(),
+        "battery_basis": multicopter_range.build_july3_firfir_battery_basis(),
         "datalink_efficiency_ratio": 1.25,
         "sync_report": [],
         "source_result": {"graph_paths": {}},
     }
     calls = {}
     monkeypatch.setattr(
-        menzil2,
+        multicopter_range,
         "build_datalink_fitted_model_suite",
         lambda *_args, **_kwargs: suite,
     )
     monkeypatch.setattr(
-        menzil2,
+        multicopter_range,
         "write_datalink_fit_method_report",
         lambda *_args, **_kwargs: tmp_path / "report.md",
     )
     monkeypatch.setattr(
-        menzil2,
+        multicopter_range,
         "plot_datalink_empirical_interpolation",
         lambda empirical_curve, output_path, bauersfeld_points=None: calls.setdefault(
             "empirical_output_path", output_path
         ),
     )
     monkeypatch.setattr(
-        menzil2,
+        multicopter_range,
         "plot_datalink_power_ratio_comparison",
         lambda model_functions, empirical_curve, bauersfeld_points, output_path: calls.setdefault(
             "power_output_path", output_path
         ),
     )
     monkeypatch.setattr(
-        menzil2,
+        multicopter_range,
         "plot_datalink_range_time_comparison",
         lambda model_functions, empirical_curve, bauersfeld_points, hover_power_w,
         battery_wh, correction_factor, output_path, battery_basis=None: (
@@ -609,14 +606,14 @@ def test_preset_fit_application_generates_datalink_graphs_with_global_hover_scal
         )[0],
     )
     monkeypatch.setattr(
-        menzil2,
+        multicopter_range,
         "plot_battery_voltage_timeline",
         lambda battery_rows, sync_report, output_path="measured_datalink_battery_voltage.png": calls.setdefault(
             "battery_output_path", output_path
         ),
     )
 
-    menzil2.run_preset_fit_apply_to_vehicle(
+    multicopter_range.run_preset_fit_apply_to_vehicle(
         [6.0],
         profile,
         fit_sonuc,
@@ -637,7 +634,7 @@ def test_preset_fit_application_generates_datalink_graphs_with_global_hover_scal
     # Grafik/hesap girilen aracin hover gucu global DataLink olcegiyle kalibre
     # edilerek ve girilen bataryanin usable enerjisiyle yapilir.
     assert calls["range_power_reference_w"] == 1250.0
-    expected_usable = battery_wh * menzil2.FIRFIR_BATTERY_USABLE_FRACTION
+    expected_usable = battery_wh * multicopter_range.FIRFIR_BATTERY_USABLE_FRACTION
     assert calls["range_battery_basis"]["usable_energy_wh"] == pytest.approx(
         expected_usable, abs=0.01
     )
@@ -663,7 +660,7 @@ def test_preset_fit_application_uses_global_datalink_hover_scale(
         },
     ]
     suite = {
-        "empirical_curve": menzil2.build_empirical_datalink_power_curve(observations),
+        "empirical_curve": multicopter_range.build_empirical_datalink_power_curve(observations),
         "observations": observations,
         "power_reference_w": 757.891,
         "measured_hover_power_w": 757.891,
@@ -671,23 +668,23 @@ def test_preset_fit_application_uses_global_datalink_hover_scale(
         "model_functions": {"zeng_datalink_fit": lambda v: 1.0},
         "model_params": {},
         "battery_qc_report": {"warnings": [], "direct_current_fit_enabled": False},
-        "battery_basis": menzil2.build_july3_firfir_battery_basis(),
+        "battery_basis": multicopter_range.build_july3_firfir_battery_basis(),
         "datalink_efficiency_ratio": hover_scale,
         "sync_report": [],
         "source_result": {"graph_paths": {}},
     }
     monkeypatch.setattr(
-        menzil2,
+        multicopter_range,
         "build_datalink_fitted_model_suite",
         lambda *_args, **_kwargs: suite,
     )
     monkeypatch.setattr(
-        menzil2,
+        multicopter_range,
         "write_datalink_fit_method_report",
         lambda *_args, **_kwargs: tmp_path / "report.md",
     )
 
-    menzil2.run_preset_fit_apply_to_vehicle(
+    multicopter_range.run_preset_fit_apply_to_vehicle(
         [6.0],
         profile,
         fit_sonuc,
@@ -702,12 +699,12 @@ def test_preset_fit_application_uses_global_datalink_hover_scale(
     out = capsys.readouterr().out
     # Ozel arac tanima yok: girilen hover, Firfir DataLink gercek/teorik hover
     # olcegiyle global olarak kalibre edilir; batarya girilen LiIon enerjisinden gelir.
-    expected_usable = battery_wh * menzil2.FIRFIR_BATTERY_USABLE_FRACTION
+    expected_usable = battery_wh * multicopter_range.FIRFIR_BATTERY_USABLE_FRACTION
     assert "DataLink-calibrated entered vehicle basis" in out
     assert "P_hover = 1515.8 W" in out
     assert f"{expected_usable:.1f} Wh usable" in out
     # 1198.8 Wh liion -> 1118.9 Wh usable; 1515.8 W hover -> 44.3 dk pratik %0
-    assert "%20=35.4 dk, %10=39.9 dk" in out
+    assert "20%=35.4 min, 10%=39.9 min" in out
     # Firfir calibrated tek-kol basis hala tune-kaynagi bilgisi olarak gosterilir.
     assert "P_hover(Firfir calibrated) = 757.9 W" in out
 
@@ -732,7 +729,7 @@ def test_global_hover_scale_lowers_16ms_estimate_without_vehicle_special_case(
         },
     ]
     suite = {
-        "empirical_curve": menzil2.build_empirical_datalink_power_curve(observations),
+        "empirical_curve": multicopter_range.build_empirical_datalink_power_curve(observations),
         "observations": observations,
         "power_reference_w": 757.891,
         "measured_hover_power_w": 757.891,
@@ -740,23 +737,23 @@ def test_global_hover_scale_lowers_16ms_estimate_without_vehicle_special_case(
         "model_functions": {"zeng_datalink_fit": lambda _v: 1.1859},
         "model_params": {},
         "battery_qc_report": {"warnings": [], "direct_current_fit_enabled": False},
-        "battery_basis": menzil2.build_july3_firfir_battery_basis(),
+        "battery_basis": multicopter_range.build_july3_firfir_battery_basis(),
         "datalink_efficiency_ratio": hover_scale,
         "sync_report": [],
         "source_result": {"graph_paths": {}},
     }
     monkeypatch.setattr(
-        menzil2,
+        multicopter_range,
         "build_datalink_fitted_model_suite",
         lambda *_args, **_kwargs: suite,
     )
     monkeypatch.setattr(
-        menzil2,
+        multicopter_range,
         "write_datalink_fit_method_report",
         lambda *_args, **_kwargs: tmp_path / "report.md",
     )
 
-    result = menzil2.run_preset_fit_apply_to_vehicle(
+    result = multicopter_range.run_preset_fit_apply_to_vehicle(
         [16.0],
         profile,
         fit_sonuc,
@@ -769,7 +766,7 @@ def test_global_hover_scale_lowers_16ms_estimate_without_vehicle_special_case(
     )
 
     basis = result["result_range_time_basis"]
-    row = menzil2.calculate_flight_for_speed(
+    row = multicopter_range.calculate_flight_for_speed(
         16.0,
         1.1859,
         basis["power_reference_w"],
@@ -777,8 +774,8 @@ def test_global_hover_scale_lowers_16ms_estimate_without_vehicle_special_case(
         correction_factor,
         battery_basis=basis["battery_basis"],
     )
-    old_entered_basis = menzil2.build_applied_battery_basis(battery_wh)
-    old_row = menzil2.calculate_flight_for_speed(
+    old_entered_basis = multicopter_range.build_applied_battery_basis(battery_wh)
+    old_row = multicopter_range.calculate_flight_for_speed(
         16.0,
         1.1859,
         1124.0,
@@ -812,7 +809,7 @@ def test_global_hover_scale_report_and_graph_use_same_result_basis(
         },
     ]
     suite = {
-        "empirical_curve": menzil2.build_empirical_datalink_power_curve(observations),
+        "empirical_curve": multicopter_range.build_empirical_datalink_power_curve(observations),
         "observations": observations,
         "power_reference_w": 757.891,
         "measured_hover_power_w": 757.891,
@@ -820,38 +817,38 @@ def test_global_hover_scale_report_and_graph_use_same_result_basis(
         "model_functions": {"zeng_datalink_fit": lambda _v: 1.0},
         "model_params": {},
         "battery_qc_report": {"warnings": [], "direct_current_fit_enabled": False},
-        "battery_basis": menzil2.build_july3_firfir_battery_basis(),
+        "battery_basis": multicopter_range.build_july3_firfir_battery_basis(),
         "datalink_efficiency_ratio": hover_scale,
         "sync_report": [],
         "source_result": {"graph_paths": {}},
     }
     calls = {}
     monkeypatch.setattr(
-        menzil2,
+        multicopter_range,
         "build_datalink_fitted_model_suite",
         lambda *_args, **_kwargs: suite,
     )
     monkeypatch.setattr(
-        menzil2,
+        multicopter_range,
         "write_datalink_fit_method_report",
-        lambda _suite, _selected, output_path=menzil2.DATALINK_FIT_REPORT_PATH,
+        lambda _suite, _selected, output_path=multicopter_range.DATALINK_FIT_REPORT_PATH,
         range_time_basis_override=None: (
             calls.setdefault("report_basis", range_time_basis_override),
             tmp_path / "report.md",
         )[1],
     )
     monkeypatch.setattr(
-        menzil2,
+        multicopter_range,
         "plot_datalink_empirical_interpolation",
         lambda *_args, **_kwargs: tmp_path / "empirical.png",
     )
     monkeypatch.setattr(
-        menzil2,
+        multicopter_range,
         "plot_datalink_power_ratio_comparison",
         lambda *_args, **_kwargs: tmp_path / "power.png",
     )
     monkeypatch.setattr(
-        menzil2,
+        multicopter_range,
         "plot_datalink_range_time_comparison",
         lambda model_functions, empirical_curve, bauersfeld_points, hover_power_w,
         battery_wh, correction_factor, output_path, battery_basis=None: (
@@ -861,7 +858,7 @@ def test_global_hover_scale_report_and_graph_use_same_result_basis(
         )[2],
     )
 
-    result = menzil2.run_preset_fit_apply_to_vehicle(
+    result = multicopter_range.run_preset_fit_apply_to_vehicle(
         [6.0],
         profile,
         fit_sonuc,
@@ -883,7 +880,7 @@ def test_global_hover_scale_report_and_graph_use_same_result_basis(
     assert report_basis["battery_basis"]["usable_energy_wh"] == pytest.approx(
         basis["battery_basis"]["usable_energy_wh"]
     )
-    report_text = menzil2.format_datalink_fit_method_report(
+    report_text = multicopter_range.format_datalink_fit_method_report(
         suite,
         ["zeng_datalink_fit"],
         range_time_basis_override=basis,
@@ -921,7 +918,7 @@ def test_preset_fit_selection_generates_model_specific_graphs(monkeypatch, tmp_p
             "extrapolation_region": "measured",
         },
     ]
-    empirical_curve = menzil2.build_empirical_datalink_power_curve(observations)
+    empirical_curve = multicopter_range.build_empirical_datalink_power_curve(observations)
     calls = {}
     suite = {
         "empirical_curve": empirical_curve,
@@ -941,13 +938,13 @@ def test_preset_fit_selection_generates_model_specific_graphs(monkeypatch, tmp_p
             "warnings": [],
             "rows": [{"timestamp_utc": None, "voltr_v": 24.0}],
         },
-        "battery_basis": menzil2.build_july3_firfir_battery_basis(),
+        "battery_basis": multicopter_range.build_july3_firfir_battery_basis(),
         "sync_report": [],
         "source_result": {"graph_paths": {}},
     }
 
     monkeypatch.setattr(
-        menzil2,
+        multicopter_range,
         "build_datalink_fitted_model_suite",
         lambda *_args, **_kwargs: suite,
     )
@@ -980,17 +977,17 @@ def test_preset_fit_selection_generates_model_specific_graphs(monkeypatch, tmp_p
         calls["battery_rows"] = battery_rows
         return Path(output_path).resolve()
 
-    monkeypatch.setattr(menzil2, "plot_datalink_empirical_interpolation", fake_empirical_plot)
-    monkeypatch.setattr(menzil2, "plot_datalink_power_ratio_comparison", fake_power_plot)
-    monkeypatch.setattr(menzil2, "plot_datalink_range_time_comparison", fake_range_plot)
-    monkeypatch.setattr(menzil2, "plot_battery_voltage_timeline", fake_battery_plot)
+    monkeypatch.setattr(multicopter_range, "plot_datalink_empirical_interpolation", fake_empirical_plot)
+    monkeypatch.setattr(multicopter_range, "plot_datalink_power_ratio_comparison", fake_power_plot)
+    monkeypatch.setattr(multicopter_range, "plot_datalink_range_time_comparison", fake_range_plot)
+    monkeypatch.setattr(multicopter_range, "plot_battery_voltage_timeline", fake_battery_plot)
     monkeypatch.setattr(
-        menzil2,
+        multicopter_range,
         "write_datalink_fit_method_report",
         lambda *_args, **_kwargs: tmp_path / "report.md",
     )
 
-    menzil2.run_preset_fit_apply_to_vehicle(
+    multicopter_range.run_preset_fit_apply_to_vehicle(
         [6.0, 20.0],
         profile,
         sonuc,
@@ -1012,7 +1009,7 @@ def test_preset_fit_selection_generates_model_specific_graphs(monkeypatch, tmp_p
     assert "battery_output_path" not in calls
     assert calls["range_power_reference_w"] == 760.0
     # Preset akisi girilen bataryayi July3 usable oraniyla olcekler.
-    expected_usable = battery_wh * menzil2.FIRFIR_BATTERY_USABLE_FRACTION
+    expected_usable = battery_wh * multicopter_range.FIRFIR_BATTERY_USABLE_FRACTION
     assert calls["range_battery_basis"]["usable_energy_wh"] == pytest.approx(
         expected_usable, abs=0.01
     )
@@ -1049,7 +1046,7 @@ def test_preset_fit_all_selection_uses_all_three_models(monkeypatch, tmp_path):
         },
     ]
     suite = {
-        "empirical_curve": menzil2.build_empirical_datalink_power_curve(observations),
+        "empirical_curve": multicopter_range.build_empirical_datalink_power_curve(observations),
         "observations": observations,
         "power_reference_w": 760.0,
         "measured_hover_power_w": 760.0,
@@ -1065,18 +1062,18 @@ def test_preset_fit_all_selection_uses_all_three_models(monkeypatch, tmp_path):
             "direct_current_fit_enabled": False,
             "warnings": [],
         },
-        "battery_basis": menzil2.build_july3_firfir_battery_basis(),
+        "battery_basis": multicopter_range.build_july3_firfir_battery_basis(),
         "source_result": {"graph_paths": {}},
     }
     calls = {}
-    monkeypatch.setattr(menzil2, "build_datalink_fitted_model_suite", lambda *_args, **_kwargs: suite)
+    monkeypatch.setattr(multicopter_range, "build_datalink_fitted_model_suite", lambda *_args, **_kwargs: suite)
     monkeypatch.setattr(
-        menzil2,
+        multicopter_range,
         "plot_datalink_empirical_interpolation",
         lambda empirical_curve, output_path, bauersfeld_points=None: Path(output_path).resolve(),
     )
     monkeypatch.setattr(
-        menzil2,
+        multicopter_range,
         "plot_datalink_power_ratio_comparison",
         lambda model_functions, empirical_curve, bauersfeld_points, output_path: (
             calls.setdefault("power_model_names", list(model_functions)),
@@ -1084,7 +1081,7 @@ def test_preset_fit_all_selection_uses_all_three_models(monkeypatch, tmp_path):
         )[1],
     )
     monkeypatch.setattr(
-        menzil2,
+        multicopter_range,
         "plot_datalink_range_time_comparison",
         lambda model_functions, empirical_curve, bauersfeld_points, hover_power_w, battery_wh,
         correction_factor, output_path, battery_basis=None: (
@@ -1094,7 +1091,7 @@ def test_preset_fit_all_selection_uses_all_three_models(monkeypatch, tmp_path):
         )[1],
     )
     monkeypatch.setattr(
-        menzil2,
+        multicopter_range,
         "plot_battery_voltage_timeline",
         lambda battery_rows, sync_report, output_path="measured_datalink_battery_voltage.png": Path(
             output_path
@@ -1102,12 +1099,12 @@ def test_preset_fit_all_selection_uses_all_three_models(monkeypatch, tmp_path):
     )
 
     monkeypatch.setattr(
-        menzil2,
+        multicopter_range,
         "write_datalink_fit_method_report",
         lambda *_args, **_kwargs: tmp_path / "report.md",
     )
 
-    menzil2.run_preset_fit_apply_to_vehicle(
+    multicopter_range.run_preset_fit_apply_to_vehicle(
         [6.0, 20.0],
         profile,
         sonuc,
@@ -1125,7 +1122,7 @@ def test_preset_fit_all_selection_uses_all_three_models(monkeypatch, tmp_path):
         "kirschstein_datalink_fit",
     ]
     assert calls["range_output_path"] == "datalink_all_range_time.png"
-    expected_usable = battery_wh * menzil2.FIRFIR_BATTERY_USABLE_FRACTION
+    expected_usable = battery_wh * multicopter_range.FIRFIR_BATTERY_USABLE_FRACTION
     assert calls["range_battery_basis"]["usable_energy_wh"] == pytest.approx(
         expected_usable, abs=0.01
     )
@@ -1135,7 +1132,7 @@ def test_raw_datalink_viewer_is_the_only_voltage_graph_path(monkeypatch):
     import matplotlib.pyplot as plt
 
     calls = {}
-    empirical_curve = menzil2.build_empirical_datalink_power_curve(
+    empirical_curve = multicopter_range.build_empirical_datalink_power_curve(
         [
             {
                 "label": "DataLink v~6.0",
@@ -1157,19 +1154,19 @@ def test_raw_datalink_viewer_is_the_only_voltage_graph_path(monkeypatch):
         "sync_report": [{"accepted_for_fit": True}],
     }
     monkeypatch.setattr(
-        menzil2,
+        multicopter_range,
         "run_datalink_measured_curve_analysis",
         lambda *_args, **_kwargs: fake_result,
     )
     monkeypatch.setattr(
-        menzil2,
+        multicopter_range,
         "plot_datalink_empirical_interpolation",
         lambda empirical_curve, output_path, bauersfeld_points=None: calls.setdefault(
             "empirical_output_path", output_path
         ),
     )
     monkeypatch.setattr(
-        menzil2,
+        multicopter_range,
         "plot_battery_voltage_timeline",
         lambda battery_rows, sync_report, output_path="measured_datalink_battery_voltage.png": (
             calls.setdefault("battery_rows", battery_rows),
@@ -1179,7 +1176,7 @@ def test_raw_datalink_viewer_is_the_only_voltage_graph_path(monkeypatch):
     )
     monkeypatch.setattr(plt, "show", lambda: None)
 
-    menzil2.run_datalink_raw_data_viewer(None, "260703")
+    multicopter_range.run_datalink_raw_data_viewer(None, "260703")
 
     assert calls["empirical_output_path"] == "raw_datalink_empirical_interpolation.png"
     assert calls["battery_output_path"] == "raw_datalink_battery_voltage.png"

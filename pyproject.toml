@@ -1,0 +1,32 @@
+[build-system]
+requires = ["setuptools>=69"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "multicopter-range"
+version = "0.1.0"
+description = "Multicopter battery endurance and forward-flight range calculator"
+readme = "README.md"
+requires-python = ">=3.10"
+license = { file = "LICENSE" }
+authors = [
+  { name = "Tarik Ziya Inci" },
+  { name = "Furkan Demiryurek" },
+]
+dependencies = [
+  "matplotlib==3.10.8",
+  "pymavlink==2.4.41",
+]
+
+[project.optional-dependencies]
+dev = ["pytest==9.0.3"]
+
+[project.scripts]
+multicopter-range = "multicopter_range:main"
+
+[tool.setuptools]
+py-modules = ["multicopter_range"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+addopts = "--strict-markers"

@@ -2,7 +2,7 @@ import math
 
 import pytest
 
-import menzil2
+import multicopter_range
 
 
 FIT_HOVER_W = 758.0
@@ -14,7 +14,7 @@ FIT_V0_MS = math.sqrt(
 
 
 def _fit_profile():
-    profile = dict(menzil2.FIRFIR_SPEED_PRESET)
+    profile = dict(multicopter_range.FIRFIR_SPEED_PRESET)
     profile["utip_ms"] = FIT_UTIP_MS
     return profile
 
@@ -25,8 +25,8 @@ def _synthetic_observations():
     observations = []
     for speed in [3.0, 4.0, 5.0, 6.0, 7.0, 8.0, 9.0, 10.0, 11.0, 12.0]:
         ratio = (
-            0.82 * menzil2.zeng_profile_ratio(speed, FIT_UTIP_MS)
-            + 0.18 * menzil2.zeng_induced_ratio(speed, FIT_V0_MS)
+            0.82 * multicopter_range.zeng_profile_ratio(speed, FIT_UTIP_MS)
+            + 0.18 * multicopter_range.zeng_induced_ratio(speed, FIT_V0_MS)
             + 6.0e-05 * speed**3
         )
         observations.append(
@@ -44,17 +44,17 @@ def _synthetic_observations():
 def _fitted_suite():
     profile = _fit_profile()
     observations = _synthetic_observations()
-    theoretical = menzil2.build_theoretical_zeng_params(profile, FIT_HOVER_W)
+    theoretical = multicopter_range.build_theoretical_zeng_params(profile, FIT_HOVER_W)
     faessler_attitude = {
         "body_cda_fit_m2": 0.15,
         "body_cd_fit": 0.8,
         "lambda_fit_n_per_ms": 1.3,
         "rho": 1.225,
     }
-    zeng = menzil2.fit_observation_weighted_zeng(
+    zeng = multicopter_range.fit_observation_weighted_zeng(
         FIT_V0_MS, FIT_UTIP_MS, FIT_HOVER_W, theoretical, None, observations
     )
-    faessler = menzil2.fit_faessler_drag_constrained_zeng(
+    faessler = multicopter_range.fit_faessler_drag_constrained_zeng(
         FIT_V0_MS,
         FIT_UTIP_MS,
         FIT_HOVER_W,
@@ -63,7 +63,7 @@ def _fitted_suite():
         None,
         observations=observations,
     )
-    kirschstein = menzil2.fit_kirschstein_all_data(
+    kirschstein = multicopter_range.fit_kirschstein_all_data(
         profile, FIT_HOVER_W, FIT_V0_MS, observations, faessler_fit=faessler_attitude
     )
     return {
@@ -78,15 +78,15 @@ def _fitted_suite():
         },
         "model_functions": {
             "zeng_datalink_fit": (
-                lambda v, p=zeng: menzil2.power_ratio_bauersfeld_anchored_zeng(v, p)
+                lambda v, p=zeng: multicopter_range.power_ratio_bauersfeld_anchored_zeng(v, p)
             ),
             "faessler_datalink_fit": (
                 lambda v, p=faessler: (
-                    menzil2.power_ratio_faessler_drag_constrained_zeng(v, p)
+                    multicopter_range.power_ratio_faessler_drag_constrained_zeng(v, p)
                 )
             ),
             "kirschstein_datalink_fit": (
-                lambda v, p=kirschstein: menzil2.power_ratio_kirschstein_all_data(v, p)
+                lambda v, p=kirschstein: multicopter_range.power_ratio_kirschstein_all_data(v, p)
             ),
         },
     }
@@ -101,9 +101,9 @@ def _grid():
 
 def test_fit_observation_weighted_zeng_empty_observations_has_no_keyerror():
     profile = _fit_profile()
-    theoretical = menzil2.build_theoretical_zeng_params(profile, FIT_HOVER_W)
+    theoretical = multicopter_range.build_theoretical_zeng_params(profile, FIT_HOVER_W)
 
-    params = menzil2.fit_observation_weighted_zeng(
+    params = multicopter_range.fit_observation_weighted_zeng(
         FIT_V0_MS, FIT_UTIP_MS, FIT_HOVER_W, theoretical, None, []
     )
 
@@ -117,10 +117,10 @@ def test_fit_observation_weighted_zeng_empty_observations_has_no_keyerror():
 
 def test_fit_observation_weighted_zeng_empty_observations_prefers_attitude_prior():
     profile = _fit_profile()
-    theoretical = menzil2.build_theoretical_zeng_params(profile, FIT_HOVER_W)
+    theoretical = multicopter_range.build_theoretical_zeng_params(profile, FIT_HOVER_W)
     attitude_fit = {"cda_m2": 0.30, "rho": 1.225, "speed_bins": []}
 
-    params = menzil2.fit_observation_weighted_zeng(
+    params = multicopter_range.fit_observation_weighted_zeng(
         FIT_V0_MS, FIT_UTIP_MS, FIT_HOVER_W, theoretical, attitude_fit, []
     )
 
@@ -131,12 +131,12 @@ def test_resolve_fit_power_reference_prefers_measured_then_fit_profile():
     fit_profile = {"theoretical_hover_power_w": 1124.0}
 
     assert (
-        menzil2.resolve_fit_power_reference(757.9, fit_profile, 999.0) == 757.9
+        multicopter_range.resolve_fit_power_reference(757.9, fit_profile, 999.0) == 757.9
     )
     # Olculen hover yoksa GIRILEN aracin gucu degil, fit aracinin teorik
     # hover'i kullanilmali (yanlis referansla sessiz normalizasyon yok).
-    assert menzil2.resolve_fit_power_reference(None, fit_profile, 999.0) == 1124.0
-    assert menzil2.resolve_fit_power_reference(None, {}, 999.0) == 999.0
+    assert multicopter_range.resolve_fit_power_reference(None, fit_profile, 999.0) == 1124.0
+    assert multicopter_range.resolve_fit_power_reference(None, {}, 999.0) == 999.0
 
 
 # --- Faz 4: fiziksel parametre transferi ------------------------------------
@@ -152,7 +152,7 @@ def test_transfer_identity_reproduces_fit_vehicle_curves():
         "rho": 1.225,
     }
 
-    transfer = menzil2.build_transferred_model_suite(suite, apply_profile)
+    transfer = multicopter_range.build_transferred_model_suite(suite, apply_profile)
 
     assert transfer["apply_utip_ms"] == pytest.approx(FIT_UTIP_MS)
     for name in ("zeng_datalink_fit", "faessler_datalink_fit"):
@@ -178,7 +178,7 @@ def test_transfer_mass_changes_curve_shape_not_just_scale():
         "rho": 1.225,
     }
 
-    transfer = menzil2.build_transferred_model_suite(suite, heavy_profile)
+    transfer = multicopter_range.build_transferred_model_suite(suite, heavy_profile)
 
     zeng = transfer["model_params"]["zeng_datalink_fit"]
     # Kutle 2x -> disk yuku 2x -> v0 sqrt(2) katina cikar.
@@ -202,14 +202,14 @@ def test_transfer_mass_changes_curve_shape_not_just_scale():
 
 
 def test_theoretical_utip_similarity_identity_and_scaling():
-    identity = menzil2.estimate_theoretical_utip_similarity(
+    identity = multicopter_range.estimate_theoretical_utip_similarity(
         12.4, 4, 28.0, 12.4, 4, 28.0, FIT_UTIP_MS
     )
     assert identity["utip_ms"] == pytest.approx(FIT_UTIP_MS)
     assert identity["pct_diff_vs_fit"] == pytest.approx(0.0, abs=1e-9)
 
     # Ayni kutlede 29" pervane: ayni itki icin daha yavas donus -> Utip x 28/29.
-    g29 = menzil2.estimate_theoretical_utip_similarity(
+    g29 = multicopter_range.estimate_theoretical_utip_similarity(
         12.4, 4, 29.0, 12.4, 4, 28.0, FIT_UTIP_MS
     )
     assert g29["utip_ms"] == pytest.approx(FIT_UTIP_MS * 28.0 / 29.0)
@@ -218,7 +218,7 @@ def test_theoretical_utip_similarity_identity_and_scaling():
     )
 
     # Kutle 2x -> rotor basina itki 2x -> Utip sqrt(2) katina cikar.
-    heavy = menzil2.estimate_theoretical_utip_similarity(
+    heavy = multicopter_range.estimate_theoretical_utip_similarity(
         24.8, 4, 28.0, 12.4, 4, 28.0, FIT_UTIP_MS
     )
     assert heavy["utip_ms"] == pytest.approx(FIT_UTIP_MS * math.sqrt(2.0))
@@ -226,7 +226,7 @@ def test_theoretical_utip_similarity_identity_and_scaling():
 
 def test_theoretical_utip_datasheet_identity_and_scale_discovery():
     # Fit noktasinda ozdeslik: ayni arac girilirse fit Utip'i birebir geri doner.
-    identity = menzil2.estimate_theoretical_utip_datasheet(
+    identity = multicopter_range.estimate_theoretical_utip_datasheet(
         12.4, 4, 28.0, 12.4, 4, 28.0, FIT_UTIP_MS
     )
     assert identity["utip_ms"] == pytest.approx(FIT_UTIP_MS)
@@ -239,17 +239,17 @@ def test_theoretical_utip_datasheet_identity_and_scale_discovery():
     assert 0.9 < identity["datalink_scale"] < 1.05
 
     # 29" pervane, ayni kutle: oran datasheet egrilerinden gelir.
-    g29 = menzil2.estimate_theoretical_utip_datasheet(
+    g29 = multicopter_range.estimate_theoretical_utip_datasheet(
         12.4, 4, 29.0, 12.4, 4, 28.0, FIT_UTIP_MS
     )
-    rpm_g29, _ = menzil2.datasheet_rpm_from_thrust(29.0, 3100.0)
+    rpm_g29, _ = multicopter_range.datasheet_rpm_from_thrust(29.0, 3100.0)
     expected_ratio = (rpm_g29 * 29.0) / (identity["fit_rpm_datasheet"] * 28.0)
     assert g29["utip_ms"] == pytest.approx(FIT_UTIP_MS * expected_ratio)
 
 
 def test_datasheet_rpm_table_requires_supported_prop():
     with pytest.raises(ValueError):
-        menzil2.datasheet_rpm_from_thrust(30.0, 3000.0)
+        multicopter_range.datasheet_rpm_from_thrust(30.0, 3000.0)
 
 
 def test_preset_fit_theoretical_datasheet_utip_mode_feeds_transfer(
@@ -262,18 +262,18 @@ def test_preset_fit_theoretical_datasheet_utip_mode_feeds_transfer(
             "observations": [],
             "measured_hover_power_w": FIT_HOVER_W,
             "battery_qc_report": {"warnings": [], "direct_current_fit_enabled": False},
-            "battery_basis": menzil2.build_july3_firfir_battery_basis(),
+            "battery_basis": multicopter_range.build_july3_firfir_battery_basis(),
             "sync_report": [],
             "source_result": {"graph_paths": {}},
         }
     )
     monkeypatch.setattr(
-        menzil2,
+        multicopter_range,
         "build_datalink_fitted_model_suite",
         lambda *_args, **_kwargs: suite,
     )
     monkeypatch.setattr(
-        menzil2,
+        multicopter_range,
         "write_datalink_fit_method_report",
         lambda *_args, **_kwargs: tmp_path / "report.md",
     )
@@ -291,7 +291,7 @@ def test_preset_fit_theoretical_datasheet_utip_mode_feeds_transfer(
         "rho": 1.225,
     }
 
-    result = menzil2.run_preset_fit_apply_to_vehicle(
+    result = multicopter_range.run_preset_fit_apply_to_vehicle(
         [6.0],
         fit_profile,
         fake_sonuc,
@@ -305,20 +305,17 @@ def test_preset_fit_theoretical_datasheet_utip_mode_feeds_transfer(
         apply_utip_mode="theoretical_datasheet",
     )
 
-    expected = menzil2.estimate_theoretical_utip_datasheet(
+    expected = multicopter_range.estimate_theoretical_utip_datasheet(
         18.6, 4, 29.0, 12.4, 4, 28.0, FIT_UTIP_MS
     )
     out = capsys.readouterr().out
-    assert "TEORIK UTIP" in out
-    assert "Datasheet mekanik RPM" in out
-    assert (
-        f"Kullanilan (fit olcegine capali) Utip = {expected['utip_ms']:.1f} m/s"
-        in out
-    )
+    assert "THEORETICAL TIP SPEED" in out
+    assert "Datasheet mechanical RPM" in out
+    assert f"Applied fit-anchored tip speed = {expected['utip_ms']:.1f} m/s" in out
     assert f"%{expected['pct_diff_vs_fit']:+.1f}" in out
     # Parser olcek duzeltmesi sonrasi datalink_scale ~0.97 -> olcek uyarisi
     # artik tetiklenmemeli.
-    assert "UYARI: DataLink Utip'i" not in out
+    assert "WARNING: DataLink tip speed" not in out
     # Teorik Utip transfere girdi olarak gecer.
     assert result["transfer"]["apply_utip_ms"] == pytest.approx(expected["utip_ms"])
     zeng = result["transfer"]["model_params"]["zeng_datalink_fit"]
@@ -335,6 +332,6 @@ def test_transfer_requires_fitted_model_params():
         "model_functions": {},
     }
     with pytest.raises(ValueError):
-        menzil2.build_transferred_model_suite(
+        multicopter_range.build_transferred_model_suite(
             suite, {"mass_kg": 12.4, "num_rotors": 4, "prop_diameter_inch": 28.0}
         )
