@@ -48,6 +48,7 @@ def test_july3_measured_curve_builds_sync_battery_and_model_reports():
 
     accepted = [row for row in result["sync_report"] if row["accepted_for_fit"]]
     assert result["fit_mode"] == "measured_datalink_power_curve"
+    assert Path(result["model_profile"]["attitude_log_csv"]) == _july3_root() / "flight_attitude.csv"
     assert result["joined_sample_count"] == 46175
     assert len(accepted) == 2
     assert {row["bin"] for row in accepted} == {"00000076.BIN", "00000077.BIN"}

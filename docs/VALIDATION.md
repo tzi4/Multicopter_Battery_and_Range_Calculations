@@ -1,5 +1,12 @@
 # Numerical validation
 
+This is a **historical code-equivalence record**, not independent flight
+validation. For the current release candidate's actual reproduction and the
+separate local July 21 comparison, see [Reproducibility](REPRODUCIBILITY.md).
+The later `99e4d27` commit intentionally changed the empirical LiHV energy
+adjustment; the zero-difference battery comparison below applies only to the
+two commits named here, not every subsequent version.
+
 This document records the numerical comparison performed before publishing the
 repository. It prevents a source-code cleanup from being mistaken for evidence
 that the calculations stayed unchanged.

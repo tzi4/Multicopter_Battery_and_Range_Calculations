@@ -9,6 +9,7 @@ htmlcov/
 *.egg-info/
 build/
 dist/
+calibration-output/
 
 # Generated analysis output
 *.log

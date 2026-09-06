@@ -1,0 +1,136 @@
+{
+  "schema_version": 1,
+  "scope": "July 3 calibration reproduction; not independent flight validation",
+  "package_version": "0.1.1rc1",
+  "module_sha256": "48036bd570687456264ac74b4d72789488fc589cddc3b428852c5fce37db839a",
+  "input_sha256": {
+    "00000076.BIN": "9feb424e4fac3ab776af2c1e8a36eb5177cbeb8a525ce8b15bdcfabdb5257bfc",
+    "00000077.BIN": "bb314ffabf7ec03b2c5900b92bf76f5908caf4e068afa9448b2bcf961aba40b0",
+    "Datalink/UART-260703-081042/UART-260703-081043-081050.udat": "5e122ec1be4f0e3295338f9a72591a88661dd589adc19661f7a54b5ff0d409ac",
+    "Datalink/UART-260703-081146/UART-260703-081147-081154.udat": "3b3461dfc6f4508924be60aab04e140f1f52739b1c2692e2cfee034c948b8495",
+    "Datalink/UART-260703-081549/UART-260703-081550-081556.udat": "ad2e0999bfe35ac9b5f7198acb3ca9a2b5c9da3db5d6a6c4835a783d03efe038",
+    "Datalink/UART-260703-082137/UART-260703-082138-082145.udat": "0fbdc00b18aadb3ba9fd47914dc88e62ecf7730d0feb7e70570310c31716c309",
+    "Datalink/UART-260703-083311/UART-260703-083312-083319.udat": "f6c68255e15ffb390d37c0c314d5173bc9e30008fb3928253a70912ddc0b2d31",
+    "Datalink/UART-260703-083830/UART-260703-083831-083837.udat": "65538b52eadf1a337bc0fd61ff237e796074590593e1da0f1e440a531a200409",
+    "Datalink/UART-260703-103606/UART-260703-103607-103614.udat": "2ad6a90373a4461db66facd60c146d40f7e8d6b57fd58b9185e4c24847300da7",
+    "Datalink/UART-260703-103606/UART-260703-121333-121902.udat": "619273ec109fcfd5974cf8417d7373ae0a2dd99b8a8d1dce0557efd2c6c9515c",
+    "Datalink/UART-260703-103606/UART-260703-121902-122432.udat": "dac5a3d0512f2028052ecfddccd7114ec074a60b44b8b72e8eaf8ffc04f23e14",
+    "Datalink/UART-260703-103606/UART-260703-122432-123002.udat": "f67c99c19affb6931ce13b22dc6906da398b5ebb8d47c77170f902b9f673ef6d",
+    "Datalink/UART-260703-103606/UART-260703-123002-123532.udat": "1b6516846ec227754f9b21abffba491dd91bfdfe025469ddef572d50fe417ce8",
+    "Datalink/UART-260703-103606/UART-260703-123532-124102.udat": "8b7fe88dbbee84b55827206ea0cdd5e3b86976d6e0462e8abe3fbc381caad759",
+    "Datalink/UART-260703-103606/UART-260703-124102-124632.udat": "807906f917f37420402d22e899392e13e6055886716a7411f5732001778d38de",
+    "Datalink/UART-260703-103606/UART-260703-124632-125202.udat": "6253260e7da38b1fb6558a15ef474f1a9eed51886819dfdc9db5ab38acf1d851",
+    "Datalink/UART-260703-103606/UART-260703-125202-125732.udat": "5e446f64a81482109ad05e6369af4197286b5c6bfc85f85767720fd15af4e298",
+    "Datalink/UART-260703-103606/UART-260703-125732-130301.udat": "c0b6fcf302f7d3007a389df298c393e7acb628b75af79b01b1e5c83db3e9f8bc",
+    "Datalink/UART-260703-103606/UART-260703-130301-130831.udat": "cffc15b346a617048a171d48eb2461993cbc443f902d41a906e010aa7114db0f",
+    "Datalink/UART-260703-103606/UART-260703-130831-131400.udat": "41a9034ae9a54f59922f63c9e04fa7b09cd7ec5a1068e21ee387d611dea16e6f",
+    "Datalink/UART-260703-103606/UART-260703-131400-131930.udat": "0f3bf29cc6edd495e587ac408ac1da7b75d93e012ab9a68968145949469cf90d",
+    "Datalink/UART-260703-103606/UART-260703-131930-132500.udat": "b72a5995b83fb5d77b5d0a63f63aafefa3a4840afeb2d1649d10534035f24f88",
+    "Datalink/UART-260703-103606/UART-260703-132500-133030.udat": "7ae09bd10690a877e6bb5775c775f43a3085dccf90f51328175983ac45282bbd",
+    "Datalink/UART-260703-103606/UART-260703-133030-133600.udat": "518feed43125cfd360eb03dcb408d04bdb6069d5b89af5f4b82f201b23f97c3f",
+    "Datalink/UART-260703-103606/UART-260703-133600-134130.udat": "1c2ec3c6147c87b3267c07f916090676698ba537a7cd1d960ba2a75e34e28b2f",
+    "Datalink/UART-260703-103606/UART-260703-134130-134700.udat": "642acb4c479e23677ca901ef9df8301242fb971aad3229daaf9dfd3d8e1385d3",
+    "Datalink/UART-260703-103606/UART-260703-134700.udat": "0bb49d1453ef201f0310e754e8ac6f707994207b89d25c4bbce8bf3a20fe9aa5",
+    "Datalink/UART-260703-141448/UART-260703-141449-141456.udat": "5144f230195206b7e383006ca086394b72a30919fce6482fe50250b0b2f52483",
+    "Datalink/UART-260703-141448/UART-260703-150126-150656.udat": "1bdd7b5629d4972b026430f6e985d6ef560e90267bd21e78c92ee87bb6343683",
+    "Datalink/UART-260703-141448/UART-260703-150656-151122.udat": "aad57f5e89c155cad821d5e8d73097662af9f5ac82c6af772599acd6893da4b5",
+    "Datalink/UART-260704-114624/UART-260704-114624.udat": "2f858d66741b2e86c65921469e7dc1de4adf142b80ffb48c77e9e081a5b20dca",
+    "flight_attitude.csv": "55545efcee0b892e1f4c4d62e8b3ffad7946ccd0e23b70a81c08c97591b7dd2e"
+  },
+  "profile": {
+    "mass_kg": 12.4,
+    "num_rotors": 4,
+    "prop_diameter_inch": 28.0
+  },
+  "joined_samples": 46175,
+  "stable_samples": 28095,
+  "rpm_scale": 0.47619047619047616,
+  "tip_speed_ms": 80.05357530658453,
+  "tip_speed_before_rpm_conversion_ms": 168.11250814382754,
+  "parallel_branches": 2,
+  "hover_power_branch_w": 757.8910000000001,
+  "hover_power_vehicle_w": 1515.7820000000002,
+  "usable_energy_branch_wh": 559.44,
+  "usable_energy_vehicle_wh": 1118.88,
+  "integrated_energy_branch_wh": 490.2733438407017,
+  "integrated_energy_vehicle_wh": 980.5466876814035,
+  "hover_10_percent_reserve_min": 39.86029653340652,
+  "battery_direct_current_fit_enabled": false,
+  "battery_warnings": [
+    "battery_current_scale_suspect: BAT.Curr is near zero",
+    "battery_energy_scale_suspect: BAT.EnrgTot disagrees with DataLink energy"
+  ],
+  "calibration_bin_mae": {
+    "zeng_measured_fit": 0.0276649679688276,
+    "faessler_measured_fit": 0.027670920696745635,
+    "kirschstein_measured_fit": 0.02760774802502932
+  },
+  "bins": [
+    {
+      "speed_ms": 2.4624748023768035,
+      "power_ratio": 1.016136885119364,
+      "sample_count": 1303,
+      "raw_sample_count": 1304
+    },
+    {
+      "speed_ms": 3.511285481322351,
+      "power_ratio": 1.0266898538180291,
+      "sample_count": 1107,
+      "raw_sample_count": 1107
+    },
+    {
+      "speed_ms": 4.526273127797663,
+      "power_ratio": 1.0079628864836763,
+      "sample_count": 911,
+      "raw_sample_count": 911
+    },
+    {
+      "speed_ms": 5.594750877597143,
+      "power_ratio": 0.9666264673943878,
+      "sample_count": 1760,
+      "raw_sample_count": 1760
+    },
+    {
+      "speed_ms": 6.4221533884016315,
+      "power_ratio": 1.0035889065841919,
+      "sample_count": 1711,
+      "raw_sample_count": 1711
+    },
+    {
+      "speed_ms": 7.900430308277751,
+      "power_ratio": 0.9550555422877431,
+      "sample_count": 4935,
+      "raw_sample_count": 4935
+    },
+    {
+      "speed_ms": 8.07723560857004,
+      "power_ratio": 0.9523051467823208,
+      "sample_count": 2020,
+      "raw_sample_count": 2020
+    },
+    {
+      "speed_ms": 9.536946761960088,
+      "power_ratio": 1.0839282957575693,
+      "sample_count": 1154,
+      "raw_sample_count": 1154
+    },
+    {
+      "speed_ms": 10.904366283273962,
+      "power_ratio": 0.9918833974806402,
+      "sample_count": 8556,
+      "raw_sample_count": 8556
+    },
+    {
+      "speed_ms": 11.088186985269962,
+      "power_ratio": 1.023626088711965,
+      "sample_count": 4552,
+      "raw_sample_count": 4552
+    },
+    {
+      "speed_ms": 12.338323946638544,
+      "power_ratio": 1.0490848947935785,
+      "sample_count": 86,
+      "raw_sample_count": 86
+    }
+  ]
+}

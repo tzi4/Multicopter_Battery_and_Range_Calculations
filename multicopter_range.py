@@ -903,8 +903,9 @@ DATALINK_CURRENT_SCALE = 100.0
 # The raw .udat RPM field is eRPM/10, not mechanical RPM (U8 Lite 36N42P ->
 # 21 pole pairs): mechanical RPM = raw * 10/21. Datasheet anchor: at Firfir's
 # hover thrust (3100 g/rotor, G28x9.2), the load test gives ~2216 mechanical
-# RPM; raw ~4500 * 10/21 = ~2143, which is consistent. Since the unloaded
-# KV190@6S maximum is ~4218 RPM, raw 4500 could not be mechanical RPM.
+# RPM; raw ~4500 * 10/21 = ~2143, which is consistent with that loaded point.
+# KV times nominal voltage alone is not an absolute RPM bound: a charged 6S
+# pack exceeds nominal voltage, so the loaded datasheet point is the anchor.
 DATALINK_RPM_SCALE = 10.0 / 21.0
 # Mechanical equivalent (~143-5714) of the old raw-field sanity range 300-12000.
 DATALINK_RPM_SANITY_RANGE_MECH = (140.0, 5750.0)
@@ -1984,8 +1985,8 @@ def resolve_fit_power_reference(measured_hover_power_w, profile, entered_hover_p
 
 def find_measured_curve_log_root(log_root=None):
     if log_root:
-        path = Path(log_root)
-        if path.exists():
+        path = Path(log_root).expanduser().resolve()
+        if path.is_dir():
             return path
         raise FileNotFoundError(f"DataLink measured log root not found: {path}")
 
@@ -1993,7 +1994,9 @@ def find_measured_curve_log_root(log_root=None):
     if default_root.is_dir():
         return default_root
     raise FileNotFoundError(
-        f"Bundled calibration log directory not found: {default_root}"
+        "Calibration data is distributed in the source repository, not the wheel. "
+        "Pass --data-root /path/to/repository/data/calibration/2026-07-03 "
+        f"(default directory not found: {default_root})."
     )
 
 
@@ -2304,25 +2307,38 @@ def plot_measured_power_curve(
         )
     if model_functions:
         speeds = [0.1 + i * (24.9 / 249.0) for i in range(250)]
+        support_min = min((obs["speed_ms"] for obs in measured), default=float("inf"))
+        support_max = min(
+            max((obs["speed_ms"] for obs in measured), default=-float("inf")),
+            extrapolation_start_ms,
+        )
+        if support_min <= support_max:
+            speeds = sorted(set(speeds + [support_min, support_max]))
+            ax.axvspan(
+                support_min, support_max, color="gray", alpha=0.1,
+                label="Measured-bin interval (solid fits)",
+            )
         for name, ratio_fn in model_functions.items():
             solid_speeds = [
-                speed for speed in speeds if speed <= extrapolation_start_ms
+                speed for speed in speeds if support_min <= speed <= support_max
             ]
-            dashed_speeds = [
-                speed for speed in speeds if speed >= extrapolation_start_ms
-            ]
-            ax.plot(
+            line, = ax.plot(
                 solid_speeds, [ratio_fn(speed) for speed in solid_speeds], label=name
             )
-            ax.plot(
-                dashed_speeds,
-                [ratio_fn(speed) for speed in dashed_speeds],
-                linestyle="--",
+            outside_intervals = (
+                [[speed for speed in speeds if speed <= support_min],
+                 [speed for speed in speeds if speed >= support_max]]
+                if support_min <= support_max else [speeds]
             )
-    ax.axvline(extrapolation_start_ms, linestyle="--", color="gray", alpha=0.7)
+            for dashed_speeds in outside_intervals:
+                ax.plot(
+                    dashed_speeds,
+                    [ratio_fn(speed) for speed in dashed_speeds],
+                    linestyle="--", color=line.get_color(),
+                )
     ax.set_xlabel("Speed [m/s]")
     ax.set_ylabel("P(V) / P_hover_measured")
-    ax.set_title("Diagnostic surrogate fits; measured bins are the data source")
+    ax.set_title("Diagnostic surrogate fits; dashed outside measured-bin support")
     ax.grid(True, alpha=0.3)
     ax.legend(fontsize=8)
     fig.tight_layout()
@@ -2421,6 +2437,11 @@ def run_datalink_measured_curve_analysis(
     timestamp_mode="filename_trt",
 ):
     log_root = find_measured_curve_log_root(log_root)
+    # Keep the attitude prior with the selected telemetry, including when this
+    # module is installed in site-packages. An explicit profile path wins.
+    attitude_path = log_root / "flight_attitude.csv"
+    if not profile.get("attitude_log_csv") and attitude_path.is_file():
+        profile = dict(profile, attitude_log_csv=str(attitude_path.resolve()))
     datalink_root = resolve_datalink_session_root(log_root)
     bin_paths = sorted(
         path for path in log_root.iterdir() if path.suffix.lower() == ".bin"
@@ -2774,8 +2795,9 @@ def format_datalink_fit_method_report(
         "## Data Sources",
         "",
         f"- DataLink/ArduPilot joined samples: `{result.get('joined_sample_count', 0)}`",
-        f"- Measured hover reference: `{suite.get('power_reference_w', 0.0):.1f} W`",
-        f"- DataLink RPM Utip: `{suite.get('utip_ms', 0.0):.1f} m/s`",
+        f"- Fit power reference (one sensed branch): `{suite.get('power_reference_w', 0.0):.1f} W`",
+        f"- Mechanical-RPM Utip: `{suite.get('utip_ms', 0.0):.1f} m/s`",
+        f"- RPM conversion: raw eRPM/10 multiplied by `10/21 = {DATALINK_RPM_SCALE:.9f}`",
         f"- Measured speed range: `{empirical.get('min_speed_ms')}` - `{empirical.get('max_speed_ms')}` m/s",
         f"- Stable measured-bin samples: `{empirical.get('sample_count_total', 0)}`",
         f"- BATT rows: `{battery.get('bat_rows', 0)}`",
@@ -2928,12 +2950,17 @@ def format_scientific_fit_audit_markdown(result):
     ]
     if result.get("measured_hover_power_w"):
         lines.append(
-            f"Measured DataLink hover reference: `{result['measured_hover_power_w']:.1f} W`"
+            "Measured DataLink hover reference (one sensed branch): "
+            f"`{result['measured_hover_power_w']:.1f} W`"
         )
     if result.get("power_reference_w"):
         lines.append(f"Power reference used: `{result['power_reference_w']:.1f} W`")
     if result.get("utip_ms"):
-        lines.append(f"DataLink RPM Utip: `{result['utip_ms']:.1f} m/s`")
+        lines.append(f"Mechanical-RPM Utip: `{result['utip_ms']:.1f} m/s`")
+        lines.append(
+            "RPM conversion: raw eRPM/10 multiplied by "
+            f"`10/21 = {DATALINK_RPM_SCALE:.9f}`."
+        )
 
     empirical_curve = result.get("empirical_curve", {})
     lines.extend(
@@ -3817,7 +3844,9 @@ def estimate_theoretical_utip_datasheet(
 def build_transferred_model_suite(suite, apply_profile, apply_utip_ms=None):
     """Transfer the Firfir fit to another aircraft using physical parameters.
 
-    Matching geometry and tip speed recover the original curves. Battery
+    Matching geometry and tip speed recover Zeng/Faessler curves analytically;
+    Kirschstein retains a small refit residual (tested below 0.02 in P/Ph).
+    Battery
     capacity does not change P/Ph shape, but battery-induced mass changes must
     be reflected in ``apply_profile``.
     """
@@ -4917,9 +4946,29 @@ def _print_calculation(result):
         print(f"{label}: {result[key]:.3f} {unit}")
 
 
-def _run_calibration_analysis(make_graphs=False):
-    """Run the bundled 3 July 2026 calibration data through the fit pipeline."""
+def _run_calibration_analysis(make_graphs=False, data_root=None):
+    """Run the source repository's 3 July calibration through the fit pipeline."""
+    log_root = find_measured_curve_log_root(data_root)
+    attitude_path = log_root / "flight_attitude.csv"
+    if not attitude_path.is_file():
+        raise FileNotFoundError(
+            f"Calibration attitude CSV not found: {attitude_path}. "
+            "Use the complete data/calibration/2026-07-03 directory from the repository."
+        )
+    has_bin_logs = any(
+        path.is_file() and path.suffix.lower() == ".bin" for path in log_root.iterdir()
+    )
+    sessions = filter_datalink_sessions_by_date_hint(
+        find_datalink_session_dirs(resolve_datalink_session_root(log_root)),
+        DATALINK_MEASURED_CURVE_DATE_HINT,
+    )
+    if not has_bin_logs or not sessions:
+        raise ValueError(
+            "No usable July 3 calibration telemetry found. Check that --data-root "
+            "contains the original .BIN logs and Datalink/UART-260703-* sessions."
+        )
     profile = build_speed_model_profile("1", 12.4, 4, 28.0, 450.0)
+    profile["attitude_log_csv"] = str(attitude_path.resolve())
     hover_power_w = (
         get_power_from_thrust(12400.0 / 4.0, u8lite_kv190_g29_data) * 4.0
     )
@@ -4940,9 +4989,14 @@ def _run_calibration_analysis(make_graphs=False):
         hover_power_w,
         battery_wh,
         correction_factor,
-        log_root=find_measured_curve_log_root(),
+        log_root=log_root,
         make_graph=make_graphs,
     )
+    if not result["measured_hover_power_w"] or not result["speed_bin_observations"]:
+        raise ValueError(
+            "No usable July 3 calibration samples found. Check that --data-root "
+            "contains the original .BIN logs, Datalink sessions, and flight_attitude.csv."
+        )
     print("Calibration analysis completed.")
     print(f"Joined samples: {result['joined_sample_count']}")
     print(f"Measured hover power (one sensed branch): {result['measured_hover_power_w']:.2f} W")
@@ -4959,7 +5013,7 @@ def _run_calibration_analysis(make_graphs=False):
 def main(argv=None):
     """Command-line entry point for public use."""
     parser = argparse.ArgumentParser(
-        description="Estimate multicopter endurance/range or validate the bundled flight logs."
+        description="Estimate multicopter endurance/range or reproduce the July 3 calibration fits."
     )
     subparsers = parser.add_subparsers(dest="command", required=True)
 
@@ -4981,14 +5035,31 @@ def main(argv=None):
 
     analyze = subparsers.add_parser(
         "analyze-calibration",
-        help="rebuild fitted models from the bundled July 2026 logs",
+        help="rebuild fitted models from the July 3 calibration logs",
     )
     analyze.add_argument(
         "--graphs", action="store_true", help="write empirical and diagnostic PNG files"
     )
+    analyze.add_argument(
+        "--data-root",
+        type=Path,
+        help="July 3 directory containing .BIN logs, Datalink/, and flight_attitude.csv; required for wheel installs",
+    )
 
     args = parser.parse_args(argv)
     if args.command == "calculate":
+        if not all(
+            math.isfinite(value)
+            for value in (
+                args.hover_power,
+                args.battery_energy,
+                args.mass,
+                args.drag_area,
+                args.prop_diameter,
+                args.correction_factor,
+            )
+        ):
+            parser.error("all physical inputs must be finite")
         if min(
             args.hover_power,
             args.battery_energy,
@@ -5010,7 +5081,10 @@ def main(argv=None):
         ).solve()
         _print_calculation(result)
     else:
-        _run_calibration_analysis(make_graphs=args.graphs)
+        try:
+            _run_calibration_analysis(make_graphs=args.graphs, data_root=args.data_root)
+        except (FileNotFoundError, ValueError) as exc:
+            parser.error(str(exc))
 
 
 if __name__ == "__main__":

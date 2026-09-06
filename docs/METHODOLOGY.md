@@ -30,19 +30,29 @@ count and plausible electrical/mechanical values, aligned to flight state, and
 reduced to stable speed bins. The resulting normalized `P(V) / P_hover` points
 are fitted with Zeng, Faessler, and Kirschstein model families.
 
-Each fitted family is intentionally limited to two free parameters. Hover
+Each fitted family solves for two coefficients against the speed bins. Hover
 power, induced hover velocity, and propeller tip speed are measured or derived
-inputs rather than additional fit parameters. This constraint prevents an
-apparently close curve from hiding an underdetermined model.
+inputs rather than additional fit parameters. The Faessler/Kirschstein paths
+also use an attitude-derived prior, so this is not a claim that the entire
+measurement pipeline has only two estimated quantities. The audit checks
+parameter bounds and provenance; it does not count arbitrary free parameters
+or automatically remove every model marked rejected.
 
 ## Important calibration assumptions
 
 - Calibration profile: 12.4 kg quadrotor, 28-inch propeller metadata, and an
-  approximately 80 m/s measured hover tip speed.
-- The calibration aircraft had a 6S2P battery. The DataLink current sensor saw
+  approximately 80 m/s tip-speed statistic (the median of stable speed-bin
+  tip-speed medians, not a hover-only RPM measurement).
+- The archive documents a 6S2P battery and a DataLink current sensor that saw
   only one parallel branch, so measured absolute power and energy represent half
-  of the aircraft total. Power ratios are unaffected because the factor cancels.
-- A measured usable capacity of 25.2 Ah is used against a 27 Ah nominal pack.
+  of the aircraft total under that wiring convention. Power ratios are
+  unaffected because the factor cancels. The parser sums the four ESC slots;
+  software tests verify the scaling algebra, not the physical wiring.
+- The archive's measured usable-capacity basis is 25.2 Ah against 27 Ah nominal
+  **per branch**: 559.44 Wh usable at 6 × 3.7 V, or 1118.88 Wh for both branches.
+  The joined-flight energy integral is a separate quantity (490.27 Wh per
+  sensed branch in the current reproduction), not a full-discharge capacity
+  measurement. The public calibration command does not remeasure 25.2 Ah.
 - The raw DataLink RPM field is `eRPM / 10`. For the 42-pole motor, mechanical
   RPM is therefore calculated with a `10 / 21` scale.
 - Forward-flight fitting uses stable samples and does not claim validity outside
@@ -56,7 +66,10 @@ apparently close curve from hiding an underdetermined model.
 The optional transfer logic decomposes a fitted curve into physical terms such
 as induced loss, profile drag, body drag area, and rotor drag. It then rebuilds
 the curve for a new mass, rotor count, propeller diameter, and tip speed. An
-identity transfer back to the calibration aircraft is covered by tests.
+identity transfer back to the calibration aircraft is covered by tests:
+Zeng/Faessler agree within `1e-9` on the test grid, while Kirschstein's refit
+residual is bounded below `0.02` in P/Ph on that fixture. These checks do not
+prove transfer accuracy for a different aircraft.
 
 The three model families are nearly indistinguishable inside the calibration
 speed range. Their separation outside that range is a model-structure effect,

@@ -1,0 +1,235 @@
+{
+  "schema_version": 1,
+  "audit_date": "2026-09-07",
+  "scope": "Local raw-dependent comparison of frozen July 3 calibration against July 21 observations; July 21 inputs are not distributed with this summary.",
+  "source": "User-owned pil research archive; copied scripts executed without modifying the archive.",
+  "archive_source_sha256": {
+    "menzil2.py": "51a13396a005b8731ef1bd4b05dc94cc8606eed314465898d03a41678eff05cc",
+    "compare_july3_fit_july21_validation.py": "a1503fa27f80921cf07516a221cba59a34b788dfbab0c01ce98a87ac2d2f4e4a",
+    "analyze_july21_anomaly.py": "02cb6a372f11b788f6da63d8ba62f0377f53cb57287b8c37de8aa9709bcd7d31",
+    "00000076.BIN": "9feb424e4fac3ab776af2c1e8a36eb5177cbeb8a525ce8b15bdcfabdb5257bfc",
+    "00000077.BIN": "bb314ffabf7ec03b2c5900b92bf76f5908caf4e068afa9448b2bcf961aba40b0",
+    "2026-07-21 11-56-15.bin": "4083795fdf60cecf954ff0e71b831ebb695a42e3274188e3f377039eb68827a6",
+    "UART-260721-103716-103722.udat": "ccfde22dd02fa9038ac2366f2f366ef40341a796bc8d04f5604ed546b5949ae7",
+    "UART-260721-115700-120229.udat": "b4885abd3a9ab25d23a06065f742fa7d5c7337072ceabfec098c49f8138916e9",
+    "UART-260721-120229-120759.udat": "eb102052cdecd1ca4f584b200ab8b40ac615f3a5b26cc6c53b1572aa86034e50",
+    "UART-260721-120759-121329.udat": "1669a84d8b3330b9cadd439247996dfd6d22a6fe015d85d1a91a44dc357e83d5",
+    "UART-260721-121330-121900.udat": "a37a53e43715d2906a3b31eac0e8bdcf137c64b9d377dd5ebe6a03d89144877f",
+    "UART-260721-121900-122430.udat": "5017ffc9e1d0924627350aa72d6ec71d8c487be75c8c8cc0e55a61b69345d31e",
+    "UART-260721-122430-123000.udat": "5df0116abc69128d0238a76d43356c2351c588f426f2aee685b9dfb1cd78fc42",
+    "UART-260721-123000-123530.udat": "b47677d37cc5ca2fcd73a45f9e9f08c0a555f3eadcb9f4ca0a7646af8d2c36d0",
+    "UART-260721-123530-124100.udat": "18d0a64346bd13f052028ac068d01521d9be7db24803fe8f40da9e7e405aed94",
+    "UART-260721-124100-124630.udat": "935e42d91e8e014f36ed55d3c358b87c4235d4eb5e6eae9360a391ae98c2fdfb",
+    "UART-260721-124630-125159.udat": "e8dd01ddcdf9c192a2ee75ea9b0ab6ced65173d7933fd7e31eed3953d71a0eb1",
+    "UART-260721-125159.udat": "6b31c1ea75e03f9e22b3aaf310894ade270f291cf46263ec2f3b839384e16881"
+  },
+  "environment": {
+    "python": "3.12.14 (main, Sep  1 2026, 14:16:52) [Clang 22.1.3 ]",
+    "platform": "Linux-6.6.114.1-microsoft-standard-WSL2-x86_64-with-glibc2.31",
+    "packages": {
+      "matplotlib": "3.10.8",
+      "numpy": "2.5.3",
+      "pymavlink": "2.4.41",
+      "pytest": "9.0.3"
+    }
+  },
+  "archive_tests": {
+    "passed": 41,
+    "failed": 0,
+    "skipped": 0,
+    "elapsed_seconds": 104.24
+  },
+  "calibration": {
+    "date": "2026-07-03",
+    "joined_samples": 46175,
+    "bin_count": 11,
+    "profile_propeller_inch": 28.0,
+    "coefficients_unchanged_by_validation": true,
+    "hover_power_branch_w": 757.8910000000001,
+    "hover_power_vehicle_w": 1515.7820000000002
+  },
+  "validation": {
+    "date": "2026-07-21",
+    "propeller_inch": 28.0,
+    "clock_correction_seconds": -56.18,
+    "joined_samples": 30782,
+    "uninterrupted_laps": 10,
+    "selection": "First 10 uninterrupted mission laps; absolute scalar ground-speed acceleration <= 1 m/s^2; existing stable gate; 2-20 m/s; 1 m/s bins; >=80 selected samples per bin; stable fraction >=0.5.",
+    "excluded": "Post-intervention and off-mission samples.",
+    "residual_definition": "100 * (measured_power_ratio / frozen_model_power_ratio - 1); aggregate mean absolute residual weights each bin equally.",
+    "phase_summary": {
+      "ilk_10_kesintisiz_tur": {
+        "bin_count": 9,
+        "speed_min_ms": 3.7254011892913654,
+        "speed_max_ms": 17.074627726814946,
+        "models": {
+          "zeng_datalink_fit": {
+            "median_residual_percent": 1.8691289979424042,
+            "mean_absolute_residual_percent": 11.842254182090704,
+            "max_absolute_residual_percent": 25.595739291068686
+          },
+          "faessler_datalink_fit": {
+            "median_residual_percent": 1.8819751218231984,
+            "mean_absolute_residual_percent": 11.681264925760853,
+            "max_absolute_residual_percent": 25.586690266743474
+          },
+          "kirschstein_datalink_fit": {
+            "median_residual_percent": 1.8436510188394761,
+            "mean_absolute_residual_percent": 12.092836226141896,
+            "max_absolute_residual_percent": 25.6306487804016
+          }
+        }
+      }
+    },
+    "bins": [
+      {
+        "speed_ms": 3.7254011892913654,
+        "sample_count": 473,
+        "measured_ratio": 1.2381595770368032,
+        "measured_single_arm_power_w": 938.39,
+        "measured_vehicle_power_w": 1876.78,
+        "zeng_datalink_fit_residual_percent": 25.595739291068686,
+        "faessler_datalink_fit_residual_percent": 25.586690266743474,
+        "kirschstein_datalink_fit_residual_percent": 25.59332392105822
+      },
+      {
+        "speed_ms": 4.1730823473562,
+        "sample_count": 138,
+        "measured_ratio": 1.1520337357218913,
+        "measured_single_arm_power_w": 873.116,
+        "measured_vehicle_power_w": 1746.232,
+        "zeng_datalink_fit_residual_percent": 17.179044011015577,
+        "faessler_datalink_fit_residual_percent": 17.175835027900032,
+        "kirschstein_datalink_fit_residual_percent": 17.17276084552395
+      },
+      {
+        "speed_ms": 11.729134115098358,
+        "sample_count": 127,
+        "measured_ratio": 1.0448837629685532,
+        "measured_single_arm_power_w": 791.9079999999999,
+        "measured_vehicle_power_w": 1583.8159999999998,
+        "zeng_datalink_fit_residual_percent": 1.8691289979424042,
+        "faessler_datalink_fit_residual_percent": 1.8819751218231984,
+        "kirschstein_datalink_fit_residual_percent": 1.8436510188394761
+      },
+      {
+        "speed_ms": 12.270032678308949,
+        "sample_count": 418,
+        "measured_ratio": 0.8810257675576039,
+        "measured_single_arm_power_w": 667.7215,
+        "measured_vehicle_power_w": 1335.443,
+        "zeng_datalink_fit_residual_percent": -15.229135136645322,
+        "faessler_datalink_fit_residual_percent": -15.1923326098511,
+        "kirschstein_datalink_fit_residual_percent": -15.28380245606854
+      },
+      {
+        "speed_ms": 13.318547439193317,
+        "sample_count": 364,
+        "measured_ratio": 1.1429413992249544,
+        "measured_single_arm_power_w": 866.2249999999999,
+        "measured_vehicle_power_w": 1732.45,
+        "zeng_datalink_fit_residual_percent": 6.773254346930546,
+        "faessler_datalink_fit_residual_percent": 6.92701553560493,
+        "kirschstein_datalink_fit_residual_percent": 6.5744790460331215
+      },
+      {
+        "speed_ms": 14.459805352564068,
+        "sample_count": 84,
+        "measured_ratio": 1.2432645327626266,
+        "measured_single_arm_power_w": 942.259,
+        "measured_vehicle_power_w": 1884.5179999999998,
+        "zeng_datalink_fit_residual_percent": 11.831349316266127,
+        "faessler_datalink_fit_residual_percent": 12.195059820994224,
+        "kirschstein_datalink_fit_residual_percent": 11.387628127968807
+      },
+      {
+        "speed_ms": 15.64358459590432,
+        "sample_count": 88,
+        "measured_ratio": 0.8711364826868242,
+        "measured_single_arm_power_w": 660.2265,
+        "measured_vehicle_power_w": 1320.453,
+        "zeng_datalink_fit_residual_percent": -25.098545054449552,
+        "faessler_datalink_fit_residual_percent": -24.647681941282272,
+        "kirschstein_datalink_fit_residual_percent": -25.6306487804016
+      },
+      {
+        "speed_ms": 16.91460024634095,
+        "sample_count": 4256,
+        "measured_ratio": 1.2193501440180712,
+        "measured_single_arm_power_w": 924.1345,
+        "measured_vehicle_power_w": 1848.2690000000002,
+        "zeng_datalink_fit_residual_percent": -0.71887643016596,
+        "faessler_datalink_fit_residual_percent": 0.27913526202656413,
+        "kirschstein_datalink_fit_residual_percent": -1.869024010874143
+      },
+      {
+        "speed_ms": 17.074627726814946,
+        "sample_count": 3442,
+        "measured_ratio": 1.208870404847135,
+        "measured_single_arm_power_w": 916.192,
+        "measured_vehicle_power_w": 1832.3840000000002,
+        "zeng_datalink_fit_residual_percent": -2.285215054332157,
+        "faessler_datalink_fit_residual_percent": -1.2456587456218915,
+        "kirschstein_datalink_fit_residual_percent": -3.4802078285092075
+      }
+    ]
+  },
+  "historical_comparison_script_rerun": {
+    "selection_difference": "Original compare_july3_fit_july21_validation.py has no additional 1 m/s^2 scalar acceleration gate and also summarizes post-intervention samples. Its original full-script rerun exactly agrees with its selection functions applied to the current joined samples.",
+    "phase_summary": {
+      "ilk_10_kesintisiz_tur": {
+        "bin_count": 16,
+        "speed_min_ms": 2.476215020578151,
+        "speed_max_ms": 17.077284475009662,
+        "models": {
+          "zeng_datalink_fit": {
+            "median_residual_percent": 8.820829079871084,
+            "mean_absolute_residual_percent": 10.820358082520723,
+            "max_absolute_residual_percent": 21.777636311756975
+          },
+          "faessler_datalink_fit": {
+            "median_residual_percent": 8.814543778628892,
+            "mean_absolute_residual_percent": 10.947517035339331,
+            "max_absolute_residual_percent": 21.768862377231258
+          },
+          "kirschstein_datalink_fit": {
+            "median_residual_percent": 8.823063824883114,
+            "mean_absolute_residual_percent": 10.861729006258603,
+            "max_absolute_residual_percent": 21.775294368850705
+          }
+        }
+      },
+      "pilot_mudahalesi_sonrasi": {
+        "bin_count": 16,
+        "speed_min_ms": 2.5027204150165123,
+        "speed_max_ms": 17.081476605719267,
+        "models": {
+          "zeng_datalink_fit": {
+            "median_residual_percent": 13.22712047644089,
+            "mean_absolute_residual_percent": 13.684260982750839,
+            "max_absolute_residual_percent": 35.502431341974216
+          },
+          "faessler_datalink_fit": {
+            "median_residual_percent": 13.21598371810706,
+            "mean_absolute_residual_percent": 13.652072092857178,
+            "max_absolute_residual_percent": 36.3665925103066
+          },
+          "kirschstein_datalink_fit": {
+            "median_residual_percent": 13.237723116350274,
+            "mean_absolute_residual_percent": 13.716186701998746,
+            "max_absolute_residual_percent": 34.48541305630084
+          }
+        }
+      }
+    }
+  },
+  "limitations": [
+    "Small aggregate summary only; no raw logs, coordinates or aircraft identity telemetry. July 21 reproduction requires local archive inputs and scripts.",
+    "Date separation and frozen coefficients are verified; filtering and clock offset were previously developed with this flight, so this is not a prospectively blinded validation.",
+    "The high-speed bins alone have small residuals; all nine retained bins have mean absolute residuals approximately 11.7-12.1 percent and maxima approximately 25.6 percent.",
+    "Scalar speed-acceleration and attitude gates do not establish straight, wind-free, unsaturated flight.",
+    "Current July 3 and July 21 executed profiles both use 28-inch metadata; historical handoff text saying July 3 uses 29 inches is inconsistent with the current preset. Actual historical hardware is not established by this software audit.",
+    "Vehicle power uses the archive-documented single-branch convention times two. The parser sums four ESC-slot powers; software tests do not verify physical wiring.",
+    "The separate combined July 3 + July 21 fit trains on the same selected July 21 phase and cannot use that phase as held-out evidence."
+  ]
+}

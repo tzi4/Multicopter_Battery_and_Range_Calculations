@@ -22,22 +22,24 @@ DataLink flight logs.
 ## Requirements
 
 - Python 3.10 or newer
-- About 300 MB of free space for the repository, virtual environment, and plots
+- Space for the repository history, the 126 MB calibration inputs, and a Python
+  environment (allow at least 1 GB for a fresh clone and installation)
 
 ## Installation
 
 ```bash
-git clone https://github.com/tzi4/Multicopter-Battery-and-Range-Calculations.git
-cd Multicopter-Battery-and-Range-Calculations
+git clone https://github.com/tzi4/Multicopter_Battery_and_Range_Calculations.git
+cd Multicopter_Battery_and_Range_Calculations
 python3 -m venv .venv
 source .venv/bin/activate
 python -m pip install --upgrade pip
 python -m pip install -e .
 ```
 
-On Windows PowerShell, activate the environment with:
+On Windows PowerShell, create and activate the environment with:
 
 ```powershell
+py -3 -m venv .venv
 .\.venv\Scripts\Activate.ps1
 ```
 
@@ -89,7 +91,7 @@ The same command works without installation:
 
 ```bash
 python multicopter_range.py calculate --hover-power 1500 --battery-energy 1200 \
-  --mass 12.4 --drag-area 450 --prop-diameter 28 --rotors 4
+  --mass 12.4 --drag-area 450 --prop-diameter 28 --rotors 4 --correction-factor 0.93
 ```
 
 Rebuild the fitted models from the included raw logs:
@@ -99,7 +101,32 @@ multicopter-range analyze-calibration
 ```
 
 Add `--graphs` to write `empirical_datalink_power_curve.png` and
-`diagnostic_datalink_surrogate_fits.png` in the current directory.
+`diagnostic_datalink_surrogate_fits.png`, plus `scientific_model_fit_audit.md`,
+in the current directory. These are calibration diagnostics.
+
+For a compact audit with input hashes, branch/vehicle power and energy, and
+per-model residuals:
+
+```bash
+python examples/reproduce_calibration.py \
+  --data-root data/calibration/2026-07-03 --output-dir calibration-output
+```
+
+Expected results include 46,175 joined samples, 11 stable speed bins, a tip speed
+of 80.053575 m/s, and 39.860297 minutes of modeled hover at 10% reserve.
+See the [reproduction and research audit](docs/REPRODUCIBILITY.md) for measured
+results, the old 168.1 m/s report discrepancy, and the separate July 21 check.
+
+Wheels and source distributions contain the calculator code but omit the large
+flight logs. After installing a wheel, point to the data in a repository clone:
+
+```bash
+multicopter-range analyze-calibration --data-root /path/to/repository/data/calibration/2026-07-03
+```
+
+The directory must include both BIN logs, the DataLink sessions, and
+`flight_attitude.csv`. This command uses the fixed July 3 aircraft profile;
+the option relocates that data set and does not configure a new aircraft.
 
 ## Calibration data
 
@@ -121,6 +148,8 @@ per-motor voltage, current, and RPM. Both sources are needed because the
 pipeline time-aligns them before creating stable speed bins. See
 [the data notes](data/calibration/2026-07-03/README.md) and
 [the methodology](docs/METHODOLOGY.md) for assumptions and known limitations.
+The summed electrical measurements represent the **one sensed battery branch**;
+whole-aircraft power and energy both require a factor of two for this 6S2P setup.
 
 > [!IMPORTANT]
 > The raw ArduPilot logs contain the original flight's GPS positions and
@@ -159,6 +188,9 @@ input grids and the complete bundled telemetry set. See
 - `tests/test_calibration.py` — end-to-end tests against the included logs.
 - `docs/METHODOLOGY.md` — model basis, calibration decisions, and limitations.
 - `docs/VALIDATION.md` — old-versus-public numerical equivalence evidence.
+- `examples/reproduce_calibration.py` — compact calibration audit and input hashes.
+- `docs/REPRODUCIBILITY.md` — current calibration and local July 21 audit scope.
+- `CHANGELOG.md` — release candidate notes.
 
 ## Contributing and security
 

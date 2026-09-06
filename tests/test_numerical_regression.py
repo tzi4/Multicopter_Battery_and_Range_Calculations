@@ -1,4 +1,8 @@
-"""Golden values captured from pre-cleanup commit 3d338ab33209d168a8393f167b96a316b7cd10ce."""
+"""Reference values from pre-cleanup commit 3d338ab.
+
+The LiHV energy reference was intentionally updated in 99e4d27; see
+docs/VALIDATION.md for the scope of the historical equivalence comparison.
+"""
 
 import pytest
 
@@ -40,7 +44,7 @@ def test_bauersfeld_public_example_matches_legacy_result():
         (12, 27000, "liion", 1198.8),
     ],
 )
-def test_battery_energy_matches_legacy_result(
+def test_battery_energy_matches_maintained_reference(
     cells, capacity_mah, chemistry, expected_wh
 ):
     assert multicopter_range.calculate_real_energy_wh(

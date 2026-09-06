@@ -23,3 +23,22 @@ jobs:
       - run: python -m pip install --upgrade pip
       - run: python -m pip install -e '.[dev]'
       - run: MPLBACKEND=Agg python -m pytest -q
+      - name: Build wheel and install in a clean environment
+        run: |
+          python -m pip wheel . --no-deps --wheel-dir dist
+          python -m venv "$RUNNER_TEMP/wheel-env"
+          "$RUNNER_TEMP/wheel-env/bin/python" -m pip install dist/*.whl
+      - name: Reproduce calibration with the installed wheel outside the checkout
+        env:
+          MPLBACKEND: Agg
+        working-directory: ${{ runner.temp }}
+        run: |
+          "$RUNNER_TEMP/wheel-env/bin/multicopter-range" calculate \
+            --hover-power 1500 --battery-energy 1200 --mass 12.4 \
+            --drag-area 450 --prop-diameter 28 --rotors 4 --correction-factor 0.93
+          "$RUNNER_TEMP/wheel-env/bin/multicopter-range" analyze-calibration \
+            --data-root "$GITHUB_WORKSPACE/data/calibration/2026-07-03"
+          "$RUNNER_TEMP/wheel-env/bin/python" "$GITHUB_WORKSPACE/examples/reproduce_calibration.py" \
+            --data-root "$GITHUB_WORKSPACE/data/calibration/2026-07-03" \
+            --output-dir "$RUNNER_TEMP/calibration-output" \
+            --check-summary "$GITHUB_WORKSPACE/docs/results/calibration-summary.json"
