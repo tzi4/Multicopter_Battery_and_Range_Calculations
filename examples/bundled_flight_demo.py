@@ -30,17 +30,16 @@ def main():
     print("Example aircraft only: fit your own logs before using these curves.")
     suite = build_calibration_suite(DATA_ROOT, mass_kg=MASS_KG, prop_diameter_inch=PROPELLER_INCH)
     fit = from_calibration_suite(suite)
-    OUTPUT_DIR.mkdir(parents=True, exist_ok=True)
-    fit.save(OUTPUT_DIR / "aircraft-fit.json")
-    fit.plot(
+    outputs = fit.export(
         OUTPUT_DIR,
         hover_power_w=HOVER_POWER_W,
         usable_energy_wh=USABLE_ENERGY_WH,
+        speed_ms=PLANNED_SPEED_MS,
         max_speed_ms=20.0,
     )
 
     # Subsequent estimates need only this JSON and the electrical inputs.
-    saved_fit = FlightFit.load(OUTPUT_DIR / "aircraft-fit.json")
+    saved_fit = FlightFit.load(outputs["fit"])
     predictions = saved_fit.predict(
         speed_ms=PLANNED_SPEED_MS,
         hover_power_w=HOVER_POWER_W,
@@ -52,7 +51,7 @@ def main():
             f"{row['endurance_min']:.2f} min, {row['range_km']:.2f} km "
             f"(within fitted speed range: {row['within_fitted_speed_range']})"
         )
-    print(f"Fit and figures: {OUTPUT_DIR}")
+    print(f"Fit, figures and report: {OUTPUT_DIR}")
     return predictions
 
 

@@ -1,0 +1,68 @@
+{
+  "schema_version": 1,
+  "scope": "Real-flight CSV for teaching the custom-log workflow; not the published calibration or independent validation",
+  "csv_sha256": "353c2bcfc54655474a3421b8373ff1102a3f44cd0d6ab659386c5dd6c250bcd7",
+  "csv_bytes": 178975,
+  "source_date": "2026-07-03",
+  "source_bin": "00000076.BIN",
+  "source_session": "UART-260703-103606",
+  "input_sha256": {
+    "00000076.BIN": "9feb424e4fac3ab776af2c1e8a36eb5177cbeb8a525ce8b15bdcfabdb5257bfc",
+    "Datalink/UART-260703-103606/UART-260703-103607-103614.udat": "2ad6a90373a4461db66facd60c146d40f7e8d6b57fd58b9185e4c24847300da7",
+    "Datalink/UART-260703-103606/UART-260703-121333-121902.udat": "619273ec109fcfd5974cf8417d7373ae0a2dd99b8a8d1dce0557efd2c6c9515c",
+    "Datalink/UART-260703-103606/UART-260703-121902-122432.udat": "dac5a3d0512f2028052ecfddccd7114ec074a60b44b8b72e8eaf8ffc04f23e14",
+    "Datalink/UART-260703-103606/UART-260703-122432-123002.udat": "f67c99c19affb6931ce13b22dc6906da398b5ebb8d47c77170f902b9f673ef6d",
+    "Datalink/UART-260703-103606/UART-260703-123002-123532.udat": "1b6516846ec227754f9b21abffba491dd91bfdfe025469ddef572d50fe417ce8",
+    "Datalink/UART-260703-103606/UART-260703-123532-124102.udat": "8b7fe88dbbee84b55827206ea0cdd5e3b86976d6e0462e8abe3fbc381caad759",
+    "Datalink/UART-260703-103606/UART-260703-124102-124632.udat": "807906f917f37420402d22e899392e13e6055886716a7411f5732001778d38de",
+    "Datalink/UART-260703-103606/UART-260703-124632-125202.udat": "6253260e7da38b1fb6558a15ef474f1a9eed51886819dfdc9db5ab38acf1d851",
+    "Datalink/UART-260703-103606/UART-260703-125202-125732.udat": "5e446f64a81482109ad05e6369af4197286b5c6bfc85f85767720fd15af4e298",
+    "Datalink/UART-260703-103606/UART-260703-125732-130301.udat": "c0b6fcf302f7d3007a389df298c393e7acb628b75af79b01b1e5c83db3e9f8bc",
+    "Datalink/UART-260703-103606/UART-260703-130301-130831.udat": "cffc15b346a617048a171d48eb2461993cbc443f902d41a906e010aa7114db0f",
+    "Datalink/UART-260703-103606/UART-260703-130831-131400.udat": "41a9034ae9a54f59922f63c9e04fa7b09cd7ec5a1068e21ee387d611dea16e6f",
+    "Datalink/UART-260703-103606/UART-260703-131400-131930.udat": "0f3bf29cc6edd495e587ac408ac1da7b75d93e012ab9a68968145949469cf90d",
+    "Datalink/UART-260703-103606/UART-260703-131930-132500.udat": "b72a5995b83fb5d77b5d0a63f63aafefa3a4840afeb2d1649d10534035f24f88",
+    "Datalink/UART-260703-103606/UART-260703-132500-133030.udat": "7ae09bd10690a877e6bb5775c775f43a3085dccf90f51328175983ac45282bbd",
+    "Datalink/UART-260703-103606/UART-260703-133030-133600.udat": "518feed43125cfd360eb03dcb408d04bdb6069d5b89af5f4b82f201b23f97c3f",
+    "Datalink/UART-260703-103606/UART-260703-133600-134130.udat": "1c2ec3c6147c87b3267c07f916090676698ba537a7cd1d960ba2a75e34e28b2f",
+    "Datalink/UART-260703-103606/UART-260703-134130-134700.udat": "642acb4c479e23677ca901ef9df8301242fb971aad3229daaf9dfd3d8e1385d3",
+    "Datalink/UART-260703-103606/UART-260703-134700.udat": "0bb49d1453ef201f0310e754e8ac6f707994207b89d25c4bbce8bf3a20fe9aa5"
+  },
+  "export_script_sha256": "21449ecdcd036b77d70023aa09fee3b5c307eb3a42b1cc686872c88766196406",
+  "model_sha256": "a83164577ef3ceee347cf4239875c9028f01a8628bf2521f42fa30f14e315a99",
+  "source_joined_samples": 36299,
+  "selection": {
+    "rule": "First actual joined record in each fixed elapsed-time bucket; no speed, power, attitude, or model-error selection",
+    "bucket_width_s": 0.75,
+    "numeric_decimal_places": 6,
+    "missing_buckets": "Omitted; original elapsed times and gaps are preserved"
+  },
+  "clock": {
+    "time_origin": "First GPS anchor in the selected BIN, expressed in the legacy join coordinate; not takeoff time",
+    "legacy_origin": "2026-07-03T09:13:40+00:00",
+    "source_timeus_s_at_origin": 5848.518645,
+    "timestamp_mode": "filename_trt",
+    "nearest_flight_sample_max_dt_s": 0.35,
+    "limitation": "The retained GPS helper omits the 18-second GPS-to-UTC correction applicable to July 2026. This reproduces the existing alignment; it does not establish independently verified UTC synchronization."
+  },
+  "measurements": {
+    "vx_ms": "XKF1.VN, EKF core 0",
+    "vy_ms": "XKF1.VE, EKF core 0",
+    "vertical_speed_ms": "-XKF1.VD; positive upward",
+    "pitch_deg": "XKF1.Pitch",
+    "roll_deg": "XKF1.Roll",
+    "power_w": "Sum of voltage times current from four valid DataLink ESC slots; no historical x2 multiplier and no BAT current",
+    "rpm": "Median of the four ESC mechanical RPM readings after the retained 10/21 conversion",
+    "rpm_scale": 0.47619047619047616
+  },
+  "hover_reference": {
+    "power_w": 757.891,
+    "basis": "Published July 3 two-flight hover median on the same recorded ESC-sum basis; not re-estimated from this thinned single-flight CSV",
+    "source": "docs/results/calibration-summary.json#hover_esc_sum_power_w"
+  },
+  "sample_count": 2527,
+  "first_time_s": 4.67484,
+  "last_time_s": 3339.798323,
+  "gaps_over_1_second": 23,
+  "max_gap_s": 1043.5936069999998
+}

@@ -18,6 +18,24 @@ You can also download the [standalone HTML](https://raw.githubusercontent.com/tz
 interface, with the current G29 source fit and explicit power/energy settings.
 It explores a supplied model; it does not fit uploaded logs. See [Browser demo](AIRCRAFT_DEMO.md).
 
+## Start with a small real-flight CSV
+
+The [CSV starter](CSV_STARTER.md) includes a compact real-flight CSV and an
+editable Python example. A small downloadable ZIP contains the necessary
+source files, so the full calibration archive is optional for this workflow.
+After installation, run:
+
+```bash
+python examples/csv_starter.py
+```
+
+The script calls `load_flight_csv`, `fit_flight` and `export`, then reloads the
+JSON for a prediction. It writes both figures and a short `fit-report.md` along
+with the reusable fit. Edit `CSV_PATH`, the electrical references and the
+requested speed in the example, and the shared geometry in `aircraft_inputs.py`.
+The CSV's source and sampling rule are recorded in
+[its provenance](../data/starter/README.md).
+
 ## Before flight: geometry, hover power and energy
 
 Edit the inputs in [`examples/aircraft_inputs.py`](../examples/aircraft_inputs.py).
@@ -156,11 +174,11 @@ fit = fit_flight(
     hover_power_w=1485.6942539603501,  # Author scenario; replace with your measured log reference.
     options=FitOptions(min_speed_ms=2.0, max_speed_ms=20.0, min_bin_samples=80),
 )
-fit.save("my-flight-output/aircraft-fit.json")
-fit.plot(
+outputs = fit.export(
     "my-flight-output",
     hover_power_w=1485.6942539603501,
     usable_energy_wh=1006.992,  # Already excludes reserve; no extra deduction.
+    speed_ms=10.0,
     max_speed_ms=20.0,
 )
 ```
@@ -174,6 +192,39 @@ Rotor solidity, blade drag, induced correction and hotel-power
 assumptions are configurable in `Aircraft`; the defaults are modeling
 assumptions, not measurements inferred for every new aircraft. See the
 [workflow methodology](WORKFLOW_METHOD.md) for filtering and fit requirements.
+
+### Read the automatic fit report
+
+`export()` writes `aircraft-fit.json`, `power_ratio.png`, `range_endurance.png`
+and `fit-report.md`. The CSV starter, own-log example and bundled demonstration
+all call it automatically. It returns a dictionary of paths with keys `fit`,
+`power_ratio`, `range_endurance` and `report`.
+
+The English report records the aircraft configuration, input and retained
+sample counts, fitted speed-bin range, selection thresholds and predictions at
+the requested speed. Log-normalization hover power is separate from the supplied
+whole-aircraft prediction hover and energy after reserve. Any existing fit
+warnings and extrapolation status remain visible. Its output links are relative,
+so the folder can be moved or shared.
+
+For a saved fit, you can regenerate just the report without loading logs or
+redrawing the figures:
+
+```python
+from flight_workflow import FlightFit
+
+fit = FlightFit.load("my-flight-output/aircraft-fit.json")
+fit.write_report(
+    "my-flight-output/next-estimate.md",
+    hover_power_w=1485.6942539603501, usable_energy_wh=1006.992,
+    speed_ms=10.0,
+)
+```
+
+Legacy saved fits may lack overall sample counts or selection metadata; the
+report marks those fields as not recorded. A report describes the calibration
+and entered prediction scenario, not independent flight accuracy. The separate
+`save()` and `plot()` methods remain available.
 
 ### Reuse the fit on a later day
 
@@ -224,6 +275,7 @@ coefficients, predicts at 17 m/s and writes:
 | `aircraft-fit.json` | Reusable model parameters, calibration observations and fit metadata. |
 | `power_ratio.png` | Three fitted `P/P_hover` curves and measured bins versus speed. |
 | `range_endurance.png` | Range and endurance versus speed using the explicit power/energy inputs. |
+| `fit-report.md` | Aircraft and electrical inputs, retained data, a 17 m/s prediction and output links. |
 
 Edit the shared aircraft and battery settings in `examples/aircraft_inputs.py`,
 and the log/output paths in the demonstration file. The postflight defaults are

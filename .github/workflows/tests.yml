@@ -26,6 +26,15 @@ jobs:
       - run: python -m pip install --upgrade pip
       - run: python -m pip install -e '.[dev]'
       - run: MPLBACKEND=Agg python -m pytest -q
+      - name: Install and run the compact starter independently
+        env:
+          MPLBACKEND: Agg
+        working-directory: ${{ runner.temp }}
+        run: |
+          python -m zipfile -e "$GITHUB_WORKSPACE/docs/downloads/csv-starter.zip" "$RUNNER_TEMP/csv-starter"
+          python -m venv "$RUNNER_TEMP/starter-env"
+          "$RUNNER_TEMP/starter-env/bin/python" -m pip install "$RUNNER_TEMP/csv-starter/multicopter-csv-starter"
+          "$RUNNER_TEMP/starter-env/bin/python" "$RUNNER_TEMP/csv-starter/multicopter-csv-starter/examples/csv_starter.py"
       - name: Build wheel and install in a clean environment
         run: |
           python -m pip wheel . --no-deps --wheel-dir dist

@@ -37,6 +37,22 @@ fit your own logs and compare all three models.
 [Download for offline use](https://raw.githubusercontent.com/tzi4/Multicopter_Battery_and_Range_Calculations/main/docs/aircraft-demo.html) ·
 [Demo notes](docs/AIRCRAFT_DEMO.md)
 
+## Try the small CSV starter
+
+[Download the starter ZIP](https://tzi4.github.io/Multicopter_Battery_and_Range_Calculations/downloads/csv-starter.zip)
+to try the Python workflow without the full log archive. Extract it, open the
+folder in a Python 3.10+ environment, and run:
+
+```bash
+python -m pip install -e .
+python examples/csv_starter.py
+```
+
+It fits a compact real-flight CSV and writes `aircraft-fit.json`, both main
+plots and **`fit-report.md`** into `starter-output/`. The report shows the
+inputs, retained data, fitted speed range and a prediction at your chosen speed.
+[Starter guide, editable inputs and expected outputs](docs/CSV_STARTER.md).
+
 ## Install
 
 Python 3.10 or newer is required. The clone includes 126 MB of calibration
@@ -127,14 +143,20 @@ aircraft = Aircraft(
     hover_rpm=2149.761904761904,
 )
 fit = fit_flight(samples, aircraft, hover_power_w=1485.6942539603501)
-fit.save("my-flight-output/aircraft-fit.json")
-fit.plot("my-flight-output", hover_power_w=1485.6942539603501, usable_energy_wh=1006.992)
+outputs = fit.export(
+    "my-flight-output", hover_power_w=1485.6942539603501,
+    usable_energy_wh=1006.992, speed_ms=10.0,
+)
 ```
 
 These values follow the author's saved scenario. Replace the log path and
 electrical reference with your own measurements before fitting a new flight.
 The loader also accepts ESC telemetry; a documented CSV format supports synchronized data from other loggers. See the [usage guide](docs/USAGE.md)
 for exact fields, units, power-source selection and log requirements.
+
+`export()` saves the fit, generates both figures and writes a short Markdown
+report with relative links to the output files. It distinguishes the log's
+normalization power from the power and usable energy used for predictions.
 
 For subsequent estimates, load the JSON without reading the logs again:
 
@@ -171,7 +193,8 @@ Dashed curves identify speeds outside the fitted bin range.
 
 To make them yourself, run `python examples/bundled_flight_demo.py`. Change its
 shared inputs in `examples/aircraft_inputs.py` to explore speed and energy.
-It rebuilds the published fit and writes the two figures plus `aircraft-fit.json` into `flight-output/`.
+It rebuilds the published fit and writes the two figures, `aircraft-fit.json`
+and `fit-report.md` into `flight-output/`.
 
 ## Flight results
 

@@ -2,6 +2,9 @@
 
 ## 0.1.2rc1 — 2026-09-07
 
+- Add a compact real-flight CSV starter and a downloadable Python example
+  bundle. Export each fit's JSON, two plots and a short Markdown report together,
+  including separate calibration/prediction power references and speed coverage.
 - Add a prominent live browser-demo link before installation instructions and
   publish the standalone aircraft explorer through GitHub Pages.
 - Recover the author's standard CF (0.6159319356) and latest saved aircraft

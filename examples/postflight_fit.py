@@ -45,11 +45,13 @@ def main():
     # from flight_workflow import load_flight_csv
     # samples = load_flight_csv("my-logs/synchronized.csv")
     fit = fit_flight(samples, AIRCRAFT, LOG_HOVER_POWER_W, options=FitOptions())
-    fit_path = fit.save(OUTPUT_DIR / "aircraft-fit.json")
-    figures = fit.plot(OUTPUT_DIR, PREDICTION_HOVER_POWER_W, USABLE_ENERGY_WH, max_speed_ms=20.0)
-    print(f"Saved fit: {fit_path}")
+    outputs = fit.export(
+        OUTPUT_DIR, PREDICTION_HOVER_POWER_W, USABLE_ENERGY_WH,
+        speed_ms=PLANNED_SPEED_MS, max_speed_ms=20.0,
+    )
+    fit_path = outputs["fit"]
     print(f"Fitted speed-bin range: {fit.fitted_speed_range}")
-    for name, path in figures.items():
+    for name, path in outputs.items():
         print(f"{name}: {path}")
 
     # On later runs, start here. No raw log parsing or fitting is required.

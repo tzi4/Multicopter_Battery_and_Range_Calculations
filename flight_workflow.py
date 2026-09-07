@@ -9,10 +9,13 @@ from bisect import bisect_left
 import csv
 from dataclasses import asdict, dataclass
 import hashlib
+import html
 import json
 import math
+import os
 from pathlib import Path
 from statistics import median
+from urllib.parse import quote
 
 import multicopter_range as model
 
@@ -35,6 +38,12 @@ def _positive(value, name, *, zero=False):
     if not isinstance(value, (int, float)) or isinstance(value, bool) or not math.isfinite(value) or (value < 0 if zero else value <= 0):
         raise ValueError(f"{name} must be finite and {'nonnegative' if zero else 'positive'}")
     return value
+
+
+def _report_text(value):
+    """Keep metadata literal in Markdown, including tables and link labels."""
+    text = html.escape(str(value), quote=False).replace("\r", " ").replace("\n", " ")
+    return text.translate(str.maketrans({character: f"&#{ord(character)};" for character in "\\|`*_[]#"}))
 
 
 @dataclass(frozen=True)
@@ -432,6 +441,126 @@ class FlightFit:
             plt.close(figure)
             paths[key] = path
         return paths
+
+    def write_report(self, path, hover_power_w, usable_energy_wh, *, speed_ms=10.0, artifacts=None):
+        """Write a short English calibration report from this fit alone.
+
+        The supplied prediction hover and after-reserve energy are independent
+        of the recorded sensor reference used to normalize the calibration.
+        Artifact paths are filesystem paths; links are relative to the report.
+        """
+        predictions = self.predict(speed_ms, hover_power_w, usable_energy_wh)
+        path = Path(path)
+        low, high = self.fitted_speed_range
+        unavailable = "Not recorded in this saved fit"
+        metadata = self.metadata
+        sources = metadata.get("source_files") or sorted({
+            str(source)
+            for observation in self.observations
+            for field in ("source_bins", "source_udats")
+            for source in observation.get(field, [])
+            if source
+        })
+        counts = [observation.get("sample_count") for observation in self.observations]
+        retained = sum(counts) if all(isinstance(count, int) and count >= 0 for count in counts) else unavailable
+
+        def table(rows):
+            def display(value):
+                # Keep binary floating-point tails out of the human-readable
+                # summary; the saved JSON retains the original precision.
+                return f"{value:.12g}" if isinstance(value, float) and not value.is_integer() else value
+            return ["| Input | Value |", "| --- | --- |", *[
+                f"| {_report_text(label)} | {_report_text(display(value))} |" for label, value in rows
+            ], ""]
+
+        profile_labels = (
+            ("mass_kg", "Mass [kg]"), ("num_rotors", "Rotors"),
+            ("prop_diameter_inch", "Propeller diameter [inch]"),
+            ("body_area_m2", "Reference area [m²]"), ("rho", "Air density [kg/m³]"),
+            ("utip_ms", "Representative rotor tip speed [m/s]"),
+            ("rotor_solidity_s", "Rotor solidity"),
+            ("blade_profile_drag_delta", "Blade profile drag coefficient"),
+            ("induced_correction_k", "Induced correction"), ("p_hotel_w", "Hotel power [W]"),
+        )
+        lines = ["# Flight fit report", "", f"Aircraft: {_report_text(self.profile.get('vehicle_name', 'Aircraft'))}", "",
+                 "This report describes a calibration and model predictions, not independent validation.", "",
+                 "## Aircraft and power inputs", ""]
+        lines += table([(label, self.profile.get(key, unavailable)) for key, label in profile_labels] + [
+            ("Calibration normalization hover [W; log sensor basis]", metadata.get("hover_reference_w", unavailable)),
+            ("Prediction hover [W; supplied whole-aircraft basis]", hover_power_w),
+            ("Usable prediction energy [Wh; after reserve]", usable_energy_wh),
+        ])
+        lines += ["The supplied energy is the budget remaining after reserve. No additional CF, battery multiplier or reserve is applied.", "",
+                  "## Calibration data", "", "Source files: " + (", ".join(_report_text(source) for source in sources) if sources else unavailable) + ".", ""]
+        lines += table([
+            ("Input samples", metadata.get("sample_count", unavailable)),
+            ("Stable samples across the input flight", metadata.get("stable_sample_count", unavailable)),
+            ("Samples contributing to retained bin medians", retained),
+            ("Retained speed bins", len(self.observations)),
+            ("Fitted speed-bin range [m/s]", f"{low:.3f}–{high:.3f}"),
+            ("Speed basis", metadata.get("speed_basis", unavailable)),
+            ("Rotor speed source", metadata.get("rpm_source", unavailable)),
+        ])
+        lines += ["Stable samples across the flight can include speeds outside the fit selection. Only samples contributing to retained bin medians are summarized by the fitted curves.", "",
+                  "## Requested operating point", "", f"Speed: {speed_ms:.3f} m/s.", ""]
+        if low <= speed_ms <= high:
+            lines += ["This point is inside the fitted speed-bin range. That span is not an independently validated operating envelope.", ""]
+        else:
+            lines += ["**Extrapolation:** this point is outside the fitted speed-bin range. Its prediction has not been validated by these calibration bins.", ""]
+        lines += ["| Model | P / P_hover | Power [W] | Endurance [min] | Still-air range [km] |",
+                  "| --- | ---: | ---: | ---: | ---: |"]
+        for name, prediction in predictions.items():
+            lines.append(f"| {MODEL_LABELS[name]} | {prediction['power_ratio']:.6f} | {prediction['power_w']:.3f} | {prediction['endurance_min']:.3f} | {prediction['range_km']:.3f} |")
+        lines += ["", "Constant speed, the fitted aircraft configuration and comparable conditions are assumed. Ground-speed-based distance is a still-air estimate; wind and mission segments require separate treatment.", "",
+                  "## Fit selection and limitations", ""]
+        selection = metadata.get("selection")
+        if selection:
+            lines += table(list(selection.items()))
+        else:
+            lines += ["Selection thresholds: " + unavailable + ".", ""]
+        for configuration in metadata.get("log_configurations", []):
+            lines += ["Telemetry alignment and scaling: " + _report_text(json.dumps(configuration, sort_keys=True)) + ".", ""]
+        for field in ("scope", "limitations"):
+            if metadata.get(field):
+                lines += [_report_text(metadata[field]), ""]
+        lines += ["Freeze these coefficients and evaluate them on later flights before making accuracy claims. Use your own logs for a different aircraft or configuration.", ""]
+        warnings = metadata.get("parameter_warnings", [])
+        if warnings:
+            lines += ["Recorded parameter warnings:", "", *[f"- {_report_text(warning)}" for warning in warnings], ""]
+        provenance = dict(metadata.get("implementation", {}))
+        if metadata.get("samples_sha256"):
+            provenance["samples_sha256"] = metadata["samples_sha256"]
+        if provenance:
+            lines += ["## Saved fit provenance", "", "Hashes recorded when the fit was created:", ""]
+            lines += [f"- {_report_text(key)}: {_report_text(value)}" for key, value in provenance.items()]
+            lines.append("")
+        if artifacts:
+            labels = {"fit": "Saved fit (JSON)", "power_ratio": "Normalized power plot",
+                      "range_endurance": "Range and endurance plot", "report": "This report"}
+            lines += ["## Output files", ""]
+            for key, artifact in artifacts.items():
+                relative = os.path.relpath(Path(artifact).resolve(), path.parent.resolve())
+                target = quote(Path(relative).as_posix(), safe="/.-_~")
+                lines.append(f"- [{_report_text(labels.get(key, key))}]({target})")
+            lines.append("")
+        path.parent.mkdir(parents=True, exist_ok=True)
+        path.write_text("\n".join(lines), encoding="utf-8")
+        return path
+
+    def export(self, output_dir, hover_power_w, usable_energy_wh, *, speed_ms=10.0, max_speed_ms=25.0):
+        """Save reusable coefficients, both figures and a report in one directory."""
+        _positive(max_speed_ms, "max_speed_ms")
+        self.predict(speed_ms, hover_power_w, usable_energy_wh)
+        # Fail on nonphysical extrapolation before creating partial output files.
+        for index in range(251):
+            self.predict(index * max_speed_ms / 250.0, hover_power_w, usable_energy_wh)
+        output_dir = Path(output_dir)
+        artifacts = {"fit": self.save(output_dir / "aircraft-fit.json")}
+        artifacts.update(self.plot(output_dir, hover_power_w, usable_energy_wh, max_speed_ms=max_speed_ms))
+        artifacts["report"] = output_dir / "fit-report.md"
+        self.write_report(artifacts["report"], hover_power_w, usable_energy_wh,
+                          speed_ms=speed_ms, artifacts=artifacts)
+        return artifacts
 
 
 def from_calibration_suite(suite):

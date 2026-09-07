@@ -13,7 +13,7 @@ what the inputs and predictions mean. The supplied July 3/July 21 experiment has
 additional historical assumptions documented in [Methodology](METHODOLOGY.md);
 those assumptions are not defaults to adopt for another aircraft.
 
-## The two outputs after fitting
+## The figures and report after fitting
 
 The first figure, `power_ratio.png`, compares **normalized electrical power**,
 `P(v) / P_hover`, against horizontal speed in metres per second. A ratio of 1.2
@@ -35,6 +35,13 @@ speed, not an outbound mission radius. Climb, descent, acceleration, loiter,
 return legs and changing winds require their own energy allowance or a mission
 calculation. An optimum read from a curve is the best point in the evaluated
 speed interval, not proof that the aircraft can safely fly at that speed.
+
+`FlightFit.export()` also writes the reusable JSON fit and `fit-report.md`.
+The report records the aircraft, retained data and selection thresholds, then
+evaluates a requested speed using explicit prediction power and energy. It
+distinguishes the log's normalization reference from those prediction inputs,
+marks extrapolation and preserves fit diagnostics. It can be regenerated from
+the saved JSON without the raw flight logs.
 
 ## Record a useful calibration flight
 

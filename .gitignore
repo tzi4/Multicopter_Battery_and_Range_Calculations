@@ -15,6 +15,7 @@ showcase-output/
 mass-sensitivity-output/
 flight-output/
 my-flight-output/
+starter-output/
 
 # Generated analysis output
 *.log
