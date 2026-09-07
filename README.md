@@ -1,5 +1,9 @@
 # Multicopter Battery and Range Calculator
 
+**[Live HTML demo](https://tzi4.github.io/Multicopter_Battery_and_Range_Calculations/aircraft-demo.html)** ·
+**[HTML code: docs/aircraft-demo.html](docs/aircraft-demo.html)** ·
+**[Which Python file should I run?](#start-here)**
+
 **Start with a preflight estimate. Refine it with your own flight data.**
 
 Before the first flight, estimate range and endurance from the aircraft's
@@ -7,9 +11,9 @@ geometry, hover power and battery energy. After a representative flight, use
 its logs to fit three power models and compare the speeds, power demands and
 flight times you can expect on subsequent flights of the same aircraft.
 
-The project brings these two stages together in Python. Edit a few inputs in
-the shared input file, run both stages together, and keep the fitted model for
-your next calculation.
+The project brings these two stages together in Python. Edit the example
+inputs for your aircraft and logs, then keep the fitted model for your next
+calculation.
 
 | Stage | What you provide | What you get |
 |---|---|---|
@@ -28,14 +32,38 @@ your next calculation.
 
 **[Open the interactive demo in your browser →](https://tzi4.github.io/Multicopter_Battery_and_Range_Calculations/aircraft-demo.html)**
 
+The complete HTML, JavaScript and styles are in
+**[`docs/aircraft-demo.html`](docs/aircraft-demo.html)**.
+In GitHub's **Code** tab, open **docs → aircraft-demo.html** to find the file.
+Use the live-demo link above to open the running interface.
+
 Explore the author's aircraft by changing its mass, motor, propeller and battery
 inputs, and watch the Zeng power, range and endurance plots update. No installation
 is needed. The demo uses the current G29 fit; use the Python workflow below to
 fit your own logs and compare all three models.
 
-[HTML source](docs/aircraft-demo.html) ·
+[HTML source: docs/aircraft-demo.html](docs/aircraft-demo.html) ·
 [Download for offline use](https://raw.githubusercontent.com/tzi4/Multicopter_Battery_and_Range_Calculations/main/docs/aircraft-demo.html) ·
 [Demo notes](docs/AIRCRAFT_DEMO.md)
+
+## Start here
+
+Most users should start with `csv_starter.py` to learn the workflow, then use
+`postflight_fit.py` for their own ArduPilot BIN logs. For a first estimate
+before collecting logs, run `preflight_estimate.py`.
+
+| What you want to do | Python file to edit and run | Main output |
+|---|---|---|
+| Try the workflow, or fit your own synchronized CSV | [`examples/csv_starter.py`](examples/csv_starter.py) | Saved fit, two plots and `fit-report.md` |
+| Get a first estimate before flight | [`examples/preflight_estimate.py`](examples/preflight_estimate.py) | Best-range and best-endurance speeds, time and range |
+| Fit your own ArduPilot BIN flight | [`examples/postflight_fit.py`](examples/postflight_fit.py) | Saved fit, two plots and `fit-report.md` |
+| Reproduce the author's full two-stage example | [`examples/analyze_aircraft.py`](examples/analyze_aircraft.py) | First estimate and fit of the bundled July 3 archive |
+
+Shared geometry and battery defaults are in
+[`examples/aircraft_inputs.py`](examples/aircraft_inputs.py). For your own logs,
+also set the file path and calibrated electrical references in the selected
+example. Run it with `python examples/<filename>.py` after installation.
+See the [examples directory guide](examples/README.md) for the complete file map.
 
 ## Try the small CSV starter
 
@@ -261,10 +289,14 @@ battery-energy and current-sensor interpretation described in
 
 ## Which code does what?
 
+The scripts users normally edit and run are in **[`examples/`](examples/README.md)**.
+The two Python files at the repository root provide the calculation libraries:
+
 - [`multicopter_range.py`](multicopter_range.py) contains the Bauersfeld
   calculator, original log parsers, model equations, fitting and transfer routines.
 - [`flight_workflow.py`](flight_workflow.py) provides the Python interface for
-  your own logs, saved fits, predictions and the two main plots.
+  your own logs, saved fits, predictions, plots and reports. Import it into your
+  own program to reuse a saved fit without reading the logs again.
 - [`examples/aircraft_inputs.py`](examples/aircraft_inputs.py) holds the shared
   editable inputs; [`examples/analyze_aircraft.py`](examples/analyze_aircraft.py)
   runs both stages. Separate stage and research-reproduction scripts remain available.
