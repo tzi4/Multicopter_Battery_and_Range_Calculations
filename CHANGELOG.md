@@ -2,6 +2,8 @@
 
 ## 0.1.2rc1 — 2026-09-07
 
+- Add a prominent live browser-demo link before installation instructions and
+  publish the standalone aircraft explorer through GitHub Pages.
 - Recover the author's standard CF (0.6159319356) and latest saved aircraft
   power/energy settings; share editable inputs across a combined Python example.
   Add the original browser explorer in English with the current G29 source fit

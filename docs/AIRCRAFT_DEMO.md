@@ -1,6 +1,8 @@
 # Interactive aircraft example
 
-Download [`aircraft-demo.html`](https://raw.githubusercontent.com/tzi4/Multicopter_Battery_and_Range_Calculations/main/docs/aircraft-demo.html), save it as an HTML file, and open it in a browser. It contains its own plotting library, styles and fonts, so it works offline without Python or a server. It does not upload inputs or read flight logs.
+[Open the interactive demo](https://tzi4.github.io/Multicopter_Battery_and_Range_Calculations/aircraft-demo.html) directly in your browser. For offline use, download [`aircraft-demo.html`](https://raw.githubusercontent.com/tzi4/Multicopter_Battery_and_Range_Calculations/main/docs/aircraft-demo.html), save it as an HTML file, and open it locally. It contains its own plotting library, styles and fonts, so it works offline without Python or a server. It does not upload inputs or read flight logs.
+
+The live copy is published from the repository's `main` branch, `/docs` directory, through GitHub Pages. It serves the same standalone HTML as the download.
 
 This is an English adaptation of the author's existing July 28 aircraft dashboard. It keeps the original controls and two Zeng-based plots: power relative to hover, and range/endurance versus speed. Use the [Python workflow](USAGE.md) to fit your own logs and compare all three models.
 

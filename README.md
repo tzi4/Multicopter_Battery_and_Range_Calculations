@@ -24,6 +24,19 @@ your next calculation.
 
 **46,175 calibration samples · 30,782 later-flight samples · 3 fitted model families · 4 research papers**
 
+## Interactive aircraft demo
+
+**[Open the interactive demo in your browser →](https://tzi4.github.io/Multicopter_Battery_and_Range_Calculations/aircraft-demo.html)**
+
+Explore the author's aircraft by changing its mass, motor, propeller and battery
+inputs, and watch the Zeng power, range and endurance plots update. No installation
+is needed. The demo uses the current G29 fit; use the Python workflow below to
+fit your own logs and compare all three models.
+
+[HTML source](docs/aircraft-demo.html) ·
+[Download for offline use](https://raw.githubusercontent.com/tzi4/Multicopter_Battery_and_Range_Calculations/main/docs/aircraft-demo.html) ·
+[Demo notes](docs/AIRCRAFT_DEMO.md)
+
 ## Install
 
 Python 3.10 or newer is required. The clone includes 126 MB of calibration
@@ -53,12 +66,6 @@ logs, saves the coefficients and generates the two main plots. The defaults
 follow the author's saved working setup: **12.4 kg, U8 Lite KV190 / G29, four
 rotors, 450 cm², two 6S 27 Ah Li-ion packs, and empirical CF ≈ 0.616**.
 The stages remain available separately, as shown below.
-
-For a more intuitive view, try the author's [browser explorer](docs/aircraft-demo.html):
-an interactive Zeng-model view of the aircraft with adjustable speed, mass,
-propulsion and battery inputs. [Download the HTML](https://raw.githubusercontent.com/tzi4/Multicopter_Battery_and_Range_Calculations/main/docs/aircraft-demo.html)
-and open it in a browser; Python is not required. The public copy is in English
-and uses the current G29 source fit. [Demo notes](docs/AIRCRAFT_DEMO.md).
 
 ## 1. Before flight: get a first estimate
 

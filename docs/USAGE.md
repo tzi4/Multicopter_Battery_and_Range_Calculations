@@ -12,8 +12,9 @@ Install with `python -m pip install -e .` from a repository clone in a Python
 [`multicopter_range.py`](../multicopter_range.py); the custom-log and saved-fit
 interface lives in [`flight_workflow.py`](../flight_workflow.py).
 
-For an interactive view without Python, download the [standalone browser
-explorer](aircraft-demo.html) and open it locally. It keeps the author's Zeng-only
+For an interactive view without Python, [open the browser
+explorer](https://tzi4.github.io/Multicopter_Battery_and_Range_Calculations/aircraft-demo.html).
+You can also download the [standalone HTML](https://raw.githubusercontent.com/tzi4/Multicopter_Battery_and_Range_Calculations/main/docs/aircraft-demo.html) for offline use. It keeps the author's Zeng-only
 interface, with the current G29 source fit and explicit power/energy settings.
 It explores a supplied model; it does not fit uploaded logs. See [Browser demo](AIRCRAFT_DEMO.md).
 
