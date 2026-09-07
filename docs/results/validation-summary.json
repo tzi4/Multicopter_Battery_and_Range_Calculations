@@ -2,7 +2,7 @@
   "schema_version": 1,
   "scope": "Public replay of derived July 21 telemetry against current July 3 fitted curves; raw extraction remains a separate provenance step.",
   "package_version": "0.1.2rc1",
-  "module_sha256": "a83164577ef3ceee347cf4239875c9028f01a8628bf2521f42fa30f14e315a99",
+  "module_sha256": "1afc51df82d69eb7614fb83b0691a18a29c3a675af350f87061a35ae3352ec38",
   "reproduction_script_sha256": "c1bbf9e42d20bb252554599063892785123bb13822a00abb0e99c3402248a793",
   "calibration_script_sha256": "6527ce6cf15bda285030c8b920ef1871aae2b3912bd25b3538a6f67d6dbfc004",
   "profile": {

@@ -3,7 +3,7 @@
 This is a **historical code-equivalence record**, not independent flight
 validation. For the current release candidate's actual reproduction and the
 public July 21 derived-data replay, see [Reproducibility](REPRODUCIBILITY.md).
-The later `99e4d27` commit intentionally changed the empirical LiHV energy
+The later `0f57a75` commit intentionally changed the empirical LiHV energy
 adjustment; the zero-difference battery comparison below applies only to the
 two commits named here, not every subsequent version.
 Version `0.1.2rc1` also corrects Kirschstein's rotor-area term; the historical
@@ -15,9 +15,9 @@ that the calculations stayed unchanged.
 
 ## Versions compared
 
-- Previous implementation: commit `3d338ab33209d168a8393f167b96a316b7cd10ce`,
+- Previous implementation: commit `1ff6fa56b4cccd59f63fb22547b1c167ce3a7996`,
   entry point `menzil2.py`.
-- Public cleanup: commit `1ebe0df9da7608b6014052156742f6ecb726b96d`,
+- Public cleanup: commit `b87c1f1d2e8fb415fcfec209f771f2a7cb7ca8c9`,
   entry point `multicopter_range.py`.
 
 Both modules were imported from isolated Git worktrees and called with the same

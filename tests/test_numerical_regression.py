@@ -1,6 +1,6 @@
-"""Reference values from pre-cleanup commit 3d338ab.
+"""Reference values from pre-cleanup commit 1ff6fa5.
 
-The LiHV energy reference was intentionally updated in 99e4d27; see
+The LiHV energy reference was intentionally updated in 0f57a75; see
 docs/VALIDATION.md for the scope of the historical equivalence comparison.
 """
 

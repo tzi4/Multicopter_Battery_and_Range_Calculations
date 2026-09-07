@@ -94,7 +94,7 @@ the extra acceleration gate. They are not whole-flight errors, an average over
 all selected bins, or results for the newly corrected G29 model. Other bins
 had materially larger errors: the same historical selection's Zeng mean
 absolute residual over all sixteen bins was about 10.82%, as recorded in the
-[source-pinned historical summary](https://github.com/tzi4/Multicopter_Battery_and_Range_Calculations/blob/75910210d87618c88f8d1ef094bfcf8bf01b946e/docs/results/july21-local-summary.json).
+[source-pinned historical summary](https://github.com/tzi4/Multicopter_Battery_and_Range_Calculations/blob/081da67771f68ab89b6d1f057c58684456ed8c3e/docs/results/july21-local-summary.json).
 The public replay reports complete selections with current predictions.
 
 July 3 MAE is a dimensionless absolute error in normalized power. July 21

@@ -720,7 +720,7 @@ u8iix_kv100_data = [
 ]
 
 # 23. Yildizlar high-performing motor - 24 V (6S LiPo) + HQ9x5x3
-yildizlar_iyi_motor_data = [
+yildizlar_good_motor_data = [
     [784, 129],
     [1263, 267],
     [1736, 435],
@@ -731,7 +731,7 @@ yildizlar_iyi_motor_data = [
 ]
 
 # 24. Yildizlar low-performing motor - SE 3115 900KV + HQ9x5x3
-yildizlar_kotu_motor_data = [
+yildizlar_poor_motor_data = [
     [265, 45.36],
     [835, 189.00],
     [1321, 332.64],
@@ -743,7 +743,7 @@ yildizlar_kotu_motor_data = [
 ]
 
 # 25. Previous-year Yildizlar motor - DAL T5045 tri-blade
-yildizlar_gecen_sene_data = [
+yildizlar_previous_year_data = [
     [96, 16.00],
     [221, 49.60],
     [326, 81.60],
@@ -764,7 +764,7 @@ yildizlar_gecen_sene_data = [
 ]
 
 # 26. Virtual average of the two Yildizlar motor data sets
-yildizlar_sanal_ortalama_data = [
+yildizlar_virtual_average_data = [
     [265, 22.68],
     [784, 152.57],
     [835, 166.35],
@@ -3947,7 +3947,7 @@ def print_transfer_summary(transfer):
         elif "lift_power_per_newton" in info:
             line += (
                 f", lift/N={info['lift_power_per_newton']:.3f} W/N, "
-                f"P_profil={info['p_profile_hover_new_w']:.0f} W"
+                f"P_profile={info['p_profile_hover_new_w']:.0f} W"
             )
         print(line)
     print(

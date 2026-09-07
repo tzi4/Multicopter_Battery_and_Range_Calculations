@@ -124,7 +124,7 @@ An owner with a trusted copy of the original source and data can repeat this
 additional audit:
 
 ```bash
-python examples/compare_local_archive.py /path/to/original/pil
+python examples/compare_local_archive.py /path/to/original/archive
 ```
 
 That directory must contain `menzil2.py`, its original July 3 data directory,

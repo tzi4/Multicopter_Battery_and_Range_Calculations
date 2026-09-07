@@ -1,7 +1,7 @@
 # Historical audit — 0.1.1rc1
 
 This document preserves the audit text from source commit
-[`75910210d87618c88f8d1ef094bfcf8bf01b946e`](https://github.com/tzi4/Multicopter_Battery_and_Range_Calculations/blob/75910210d87618c88f8d1ef094bfcf8bf01b946e/docs/REPRODUCIBILITY.md).
+[`081da67771f68ab89b6d1f057c58684456ed8c3e`](https://github.com/tzi4/Multicopter_Battery_and_Range_Calculations/blob/081da67771f68ab89b6d1f057c58684456ed8c3e/docs/REPRODUCIBILITY.md).
 Internal document/result links below are pinned to that commit. References to
 “current” code or results in the archived text mean that historical source.
 Use [the current reproduction guide](REPRODUCIBILITY.md) for `0.1.2rc1`.
@@ -48,8 +48,8 @@ python examples/reproduce_calibration.py \
 python -m pytest -q
 ```
 
-The example writes a [JSON summary](https://github.com/tzi4/Multicopter_Battery_and_Range_Calculations/blob/75910210d87618c88f8d1ef094bfcf8bf01b946e/docs/results/calibration-summary.json) and a
-[generated scientific audit](https://github.com/tzi4/Multicopter_Battery_and_Range_Calculations/blob/75910210d87618c88f8d1ef094bfcf8bf01b946e/docs/results/calibration-audit.md). The JSON records
+The example writes a [JSON summary](https://github.com/tzi4/Multicopter_Battery_and_Range_Calculations/blob/081da67771f68ab89b6d1f057c58684456ed8c3e/docs/results/calibration-summary.json) and a
+[generated scientific audit](https://github.com/tzi4/Multicopter_Battery_and_Range_Calculations/blob/081da67771f68ab89b6d1f057c58684456ed8c3e/docs/results/calibration-audit.md). The JSON records
 the installed module's SHA-256 and a complete inventory of all 32 telemetry
 and support files in the supplied directory, including sessions not accepted
 for fitting. The scientific report lists the accepted BIN logs and DataLink
@@ -168,15 +168,15 @@ historical propeller hardware from that inconsistent prose. The archive's
 combined July 3 + July 21 fit is training on both dates, so it is not a held-out
 validation result. The selection and clock alignment were developed after
 examining the later flight, so this is not a prospectively blinded experiment.
-The [local comparison summary](https://github.com/tzi4/Multicopter_Battery_and_Range_Calculations/blob/75910210d87618c88f8d1ef094bfcf8bf01b946e/docs/results/july21-local-summary.json) records all
+The [local comparison summary](https://github.com/tzi4/Multicopter_Battery_and_Range_Calculations/blob/081da67771f68ab89b6d1f057c58684456ed8c3e/docs/results/july21-local-summary.json) records all
 nine bins, the historical script's alternative selection, and source hashes.
 
 ## Source, attribution, and release scope
 
-The starting public source was `99e4d27` (version `0.1.0`). Retained numerical
+The starting public source was `0f57a75` (version `0.1.0`). Retained numerical
 models and raw calibration data are unchanged in `0.1.1rc1`; external data
 selection and CLI input/error handling are corrected. The prior
-[code-equivalence record](https://github.com/tzi4/Multicopter_Battery_and_Range_Calculations/blob/75910210d87618c88f8d1ef094bfcf8bf01b946e/docs/VALIDATION.md) applies to its named commits and is
+[code-equivalence record](https://github.com/tzi4/Multicopter_Battery_and_Range_Calculations/blob/081da67771f68ab89b6d1f057c58684456ed8c3e/docs/VALIDATION.md) applies to its named commits and is
 not being presented as a new rerun of every historical comparison grid.
 
 A fresh, separate comparison imported the current Windows archive and the
@@ -188,11 +188,11 @@ curve outputs, not removed menus or the July 21 path. Of the 32 corresponding
 source files, 31 are byte-identical; the attitude CSV differs only by CRLF/LF
 line endings (13,790 lines). It is therefore text-equivalent, not byte-identical
 to the Windows copy. The repository's own 32-file hashes are recorded as-is.
-The [compact comparison record](https://github.com/tzi4/Multicopter_Battery_and_Range_Calculations/blob/75910210d87618c88f8d1ef094bfcf8bf01b946e/docs/results/archive-package-comparison.json)
+The [compact comparison record](https://github.com/tzi4/Multicopter_Battery_and_Range_Calculations/blob/081da67771f68ab89b6d1f057c58684456ed8c3e/docs/results/archive-package-comparison.json)
 identifies the compared module hashes and the scope of the numeric traversal.
 
 The MIT license and both authors in `pyproject.toml` are retained. The
-Bauersfeld/Scaramuzza reference remains in [Methodology](https://github.com/tzi4/Multicopter_Battery_and_Range_Calculations/blob/75910210d87618c88f8d1ef094bfcf8bf01b946e/docs/METHODOLOGY.md).
+Bauersfeld/Scaramuzza reference remains in [Methodology](https://github.com/tzi4/Multicopter_Battery_and_Range_Calculations/blob/081da67771f68ab89b6d1f057c58684456ed8c3e/docs/METHODOLOGY.md).
 Local July research scripts and reports supplied the audit context. Secondary
 battery-selection material was inspected locally; manufacturer PDFs and raw
 July 21 logs were not copied into this repository. The existing published
@@ -200,5 +200,5 @@ July 3 files are unchanged. Remote Drive access was unnecessary because the
 needed sources were present locally.
 
 The release candidate is `0.1.1rc1`, proposed tag `v0.1.1rc1`; see
-[release notes](https://github.com/tzi4/Multicopter_Battery_and_Range_Calculations/blob/75910210d87618c88f8d1ef094bfcf8bf01b946e/CHANGELOG.md). A prepared candidate is not evidence of a
+[release notes](https://github.com/tzi4/Multicopter_Battery_and_Range_Calculations/blob/081da67771f68ab89b6d1f057c58684456ed8c3e/CHANGELOG.md). A prepared candidate is not evidence of a
 published GitHub release, a PyPI upload, downloads, or user adoption.

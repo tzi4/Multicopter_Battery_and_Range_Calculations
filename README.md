@@ -32,6 +32,10 @@ calculation.
 
 **[Open the interactive demo in your browser →](https://tzi4.github.io/Multicopter_Battery_and_Range_Calculations/aircraft-demo.html)**
 
+<a href="https://tzi4.github.io/Multicopter_Battery_and_Range_Calculations/aircraft-demo.html">
+  <img src="docs/assets/aircraft-demo-preview.png" alt="Aircraft demo with editable inputs, power and range plots" width="640">
+</a>
+
 Explore the author's aircraft by changing its mass, motor, propeller and battery
 inputs, and watch the Zeng power, range and endurance plots update. No installation
 is needed. The demo uses the current G29 fit; use the Python workflow below to

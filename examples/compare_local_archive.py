@@ -2,7 +2,7 @@
 
 This audit reads the archive and its July 3 logs without changing them. It is
 not needed for normal use; the public result records the author's comparison.
-Run from a clone: python examples/compare_local_archive.py /path/to/pil
+Run from a clone: python examples/compare_local_archive.py /path/to/archive
 """
 
 import argparse
