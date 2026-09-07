@@ -2,6 +2,9 @@
 
 ## 0.1.2rc1 — 2026-09-07
 
+- Highlight the current G29 model's two highest-speed comparison bins beyond
+  its fitted speed-bin range, while retaining all nine comparison bins and
+  their errors. Add command/output and Python API usage documentation.
 - Evaluate all 49 source/target mass combinations from 12.4 to 13.0 kg against
   the same nine comparison bins. Report model and bench hover assumptions,
   transfer identity checks and explicitly retrospective best-grid scores.

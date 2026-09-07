@@ -85,6 +85,16 @@ def validation_figure(calibration, validation, output_dir):
                       color=color, linestyle=style, marker="o", markersize=4)
     ax.scatter(speeds, [r["measured_ratio"] for r in bins], s=38, color="#202a35", zorder=4,
                label="July 21 bin medians")
+    # Highlight the two highest-speed bins without removing any comparison data.
+    highlighted = sorted(bins, key=lambda row: row["speed_ms"])[-2:]
+    ax.scatter([r["speed_ms"] for r in highlighted], [r["measured_ratio"] for r in highlighted],
+               s=105, facecolors="none", edgecolors="#bc541a", linewidths=1.5, zorder=5)
+    callout = "Faessler · selected bins\nAbsolute residual:\n" + "\n".join(
+        f"{r['speed_ms']:.2f} m/s: {abs(r['percent_residual']['faessler_datalink_fit']):.2f}%"
+        for r in highlighted
+    )
+    ax.text(0.98, 0.96, callout, transform=ax.transAxes, va="top", ha="right",
+            fontsize=9, color="#8d3e13", bbox={"boxstyle": "round,pad=0.5", "facecolor": "white", "edgecolor": "#bc541a"})
     ax.legend(loc="upper left", fontsize=9, frameon=False, ncols=2)
     ax.text(0.02, 0.03, "Shading: July 3 calibration speed interval", transform=ax.transAxes,
             fontsize=9, color="#4e5964")

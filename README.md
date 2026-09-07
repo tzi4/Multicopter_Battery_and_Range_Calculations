@@ -25,6 +25,25 @@ publication-ready figures, and the scripts that connect them.
 reproducible calculation. Flight-specific mass is an explicit analysis input;
 see the [configuration audit](docs/FLIGHT_CONFIGURATION.md).
 
+### High-speed prediction beyond the fitted range
+
+**Fitted at 2.46–12.34 m/s; checked at approximately 17 m/s on a later flight.**
+The frozen Faessler-inspired model achieves **0.81% and 0.70% absolute residuals**
+in the two highest-speed comparison bins, about **37–38% above the highest
+speed-bin median used for fitting**. Both results use the same July 3 model,
+without fitting its coefficients to the July 21 power observations.
+
+| July 21 speed | Retained samples | Zeng absolute residual | Faessler-inspired | Kirschstein-inspired |
+|---|---:|---:|---:|---:|
+| 16.91 m/s | 4,256 | **0.27%** | **0.81%** | 1.43% |
+| 17.07 m/s | 3,442 | 1.83% | **0.70%** | 3.03% |
+
+These are two selected **bin-median power comparisons**, not a claim that every
+sample or every higher speed has sub-percent error. July 3's raw telemetry
+contains sparse higher-speed records; those did not enter the fitted power
+bins. The complete nine-bin comparison and its wider error distribution are
+shown below. [Exact results and selection](docs/results/validation-summary.json).
+
 ![July 3 measured speed bins, fitted curves and calibration residuals](docs/assets/calibration.png)
 
 **Calibration:** 46,175 joined telemetry samples; 28,095 retained samples in
@@ -51,20 +70,6 @@ and [30,782 derived telemetry rows](data/validation/2026-07-21/).
 The residual is `100 × (observation / prediction − 1)`; the table averages
 its absolute value equally over the nine bins.
 
-**Mass sensitivity:** a separate sweep tests all 49 combinations of July 3 and
-July 21 masses from 12.4 to 13.0 kg. The lowest mean absolute residuals using
-the models' transferred hover power are **10.96% / 10.80% / 11.27%** for
-Zeng / Faessler / Kirschstein, at 12.4 kg → 13.0 kg. These masses were selected
-against the comparison data; they are exploratory scenarios, not measured
-flight weights. [All combinations, assumptions and reproduction](docs/MASS_SENSITIVITY.md).
-Some bins worsen: the largest absolute residuals at those choices are
-28.2–28.9%, so the lower mean is not an improvement at every speed.
-
-An earlier G28 analysis recorded **absolute residuals of 0.27% and 0.61% in two
-approximately 17 m/s bins**. Those are individual-bin results under an older selection,
-rather than an overall accuracy score. Both selections are available in the
-public replay; see [reproduction and error definitions](docs/REPRODUCIBILITY.md).
-
 Reproduce the data tables and figures after installation:
 
 ```bash
@@ -72,10 +77,37 @@ python examples/reproduce_showcase.py --prop-diameter 29 --mass 12.4 \
   --output-dir showcase-output --check-results docs/results
 ```
 
-To compare mass scenarios, change `--mass` and omit `--check-results`. The plots report
-normalized electrical power; absolute endurance additionally depends on the
+The plots report normalized electrical power; absolute endurance additionally depends on the
 battery-energy and current-sensor interpretation described in
 [Methodology](docs/METHODOLOGY.md).
+
+## Main code and workflow
+
+The main implementation is **[`multicopter_range.py`](multicopter_range.py)**.
+The installed `multicopter-range` command calls that same file.
+
+| Task | Entry point | Output |
+|---|---|---|
+| Estimate range/endurance for aircraft inputs | `multicopter-range calculate` | Best-range and best-endurance speeds, flight times, and maximum range in the terminal |
+| Rebuild the bundled historical calibration | `multicopter-range analyze-calibration --graphs` | Joined-sample/bin counts, hover-power and tip-speed statistics, two PNG diagnostics and a fit audit |
+| Reproduce the current G29 flight results | `python examples/reproduce_showcase.py` | Calibration/comparison JSON, bin CSV tables, Markdown audit, and PNG/SVG figures |
+
+`calculate` uses the Bauersfeld range/endurance relationships with **your
+aircraft's hover power and battery energy**. It does not automatically load
+the three log-fitted curves. The showcase fits those curves from the included
+July 3 data and evaluates them against July 21 observations. Python callers
+can use `build_transferred_model_suite` to rebuild fitted curves for another
+configuration. See the [usage guide](docs/USAGE.md) for commands, output files
+and the fitted-model API.
+
+### Applying the calculator to another aircraft
+
+Mass, rotor count, propeller diameter, hover power, battery energy and reference
+area are configurable. This supports **aircraft-specific design studies,
+including 1–25 kg configurations**, when those inputs describe the actual
+aircraft. The supplied fit comes from a nominal 12.4 kg configuration; it does
+not establish accuracy throughout the 1–25 kg range. A new aircraft needs its
+own measured electrical inputs and validation of any transferred model.
 
 ## Requirements
 
@@ -111,7 +143,7 @@ multicopter-range calculate \
   --battery-energy 1200 \
   --mass 12.4 \
   --drag-area 450 \
-  --prop-diameter 28 \
+  --prop-diameter 29 \
   --rotors 4 \
   --correction-factor 0.93
 ```
@@ -137,11 +169,11 @@ Input definitions:
 The example above produces:
 
 ```text
-Induced hover velocity: 5.590 m/s
-Best-range speed: 10.934 m/s
+Induced hover velocity: 5.397 m/s
+Best-range speed: 10.723 m/s
 Best-range flight time: 40.879 min
-Maximum range: 26.819 km
-Best-endurance speed: 6.711 m/s
+Maximum range: 26.302 km
+Best-endurance speed: 6.589 m/s
 Maximum endurance: 48.840 min
 ```
 
@@ -149,7 +181,7 @@ The same command works without installation:
 
 ```bash
 python multicopter_range.py calculate --hover-power 1500 --battery-energy 1200 \
-  --mass 12.4 --drag-area 450 --prop-diameter 28 --rotors 4 --correction-factor 0.93
+  --mass 12.4 --drag-area 450 --prop-diameter 29 --rotors 4 --correction-factor 0.93
 ```
 
 Rebuild the fitted models from the included raw logs:
@@ -250,8 +282,8 @@ input grids and the complete bundled telemetry set. See
 - `docs/METHODOLOGY.md` — model basis, calibration decisions, and limitations.
 - `docs/VALIDATION.md` — old-versus-public numerical equivalence evidence.
 - `examples/reproduce_calibration.py` — compact calibration audit and input hashes.
-- `examples/analyze_mass_sensitivity.py` — separate flight-mass sweep with all 49 combinations.
-- `docs/REPRODUCIBILITY.md` — current calibration and local July 21 audit scope.
+- `docs/REPRODUCIBILITY.md` — current calibration and July 21 replay scope.
+- `docs/USAGE.md` — commands, outputs, and the fitted-model Python API.
 - `CHANGELOG.md` — release candidate notes.
 
 ## Contributing and security
