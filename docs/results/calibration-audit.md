@@ -1,3 +1,5 @@
+> Interpretation: legacy branch/vehicle labels below assume an unverified sensor layout. The directly parsed quantity is the four-ESC electrical sum. Geometry and mass are declared experiment inputs.
+
 # Scientific Model Fit Audit
 
 Fit mode: `measured_datalink_power_curve`
@@ -6,7 +8,7 @@ Joined samples accepted for fit: `46175`
 
 Measured DataLink hover reference (one sensed branch): `757.9 W`
 Power reference used: `757.9 W`
-Mechanical-RPM Utip: `80.1 m/s`
+Mechanical-RPM Utip: `82.9 m/s`
 RPM conversion: raw eRPM/10 multiplied by `10/21 = 0.476190476`.
 
 ## Empirical DataLink P(v)
@@ -37,14 +39,14 @@ These are low-dimensional diagnostic fits against measured DataLink bins; they a
 
 | model | status | MAE | reasons | warnings |
 |---|---|---:|---|---|
-| zeng_measured_fit | accepted | 0.02766 |  |  |
-| faessler_measured_fit | accepted | 0.02767 |  |  |
-| kirschstein_measured_fit | accepted | 0.02761 |  |  |
+| zeng_measured_fit | accepted | 0.02776 |  |  |
+| faessler_measured_fit | accepted | 0.02778 |  |  |
+| kirschstein_measured_fit | accepted | 0.02769 |  |  |
 
 ### Key fitted and derived parameters
 
 | model | parameters |
 |---|---|
-| zeng_measured_fit | v0_ms=5.58979; utip_ms=80.0536; f0=0.787906; induced_fraction=0.212094; k_par=5.47734e-05 |
-| faessler_measured_fit | v0_ms=5.58979; utip_ms=80.0536; f0=0.741212; induced_fraction=0.258788; body_cda_fit_m2=0.154656; body_cd_fit=3.4368; lambda_n_per_ms=1.32527; lambda_source=attitude_log; k_body=0.000124987; k_rotor=0.00174863; drag_scale=0.262816 |
-| kirschstein_measured_fit | v0_ms=5.58979; utip_ms=80.0536; body_cda_fit_m2=0.154656; body_cd_fit=3.4368; induced_relief_scale=0.17509; extra_cubic_k=-5.76343e-05; p_profile_hover_w=67.0442; lift_power_per_newton=5.67925 |
+| zeng_measured_fit | v0_ms=5.39704; utip_ms=82.9126; f0=0.802551; induced_fraction=0.197449; k_par=5.31637e-05 |
+| faessler_measured_fit | v0_ms=5.39704; utip_ms=82.9126; f0=0.760324; induced_fraction=0.239676; body_cda_fit_m2=0.154656; body_cd_fit=3.4368; lambda_n_per_ms=1.32527; lambda_source=attitude_log; k_body=0.000124987; k_rotor=0.00174863; drag_scale=0.251749 |
+| kirschstein_measured_fit | v0_ms=5.39704; utip_ms=82.9126; body_cda_fit_m2=0.154656; body_cd_fit=3.4368; induced_relief_scale=0.165545; extra_cubic_k=-6.01683e-05; p_profile_hover_w=89.2633; lift_power_per_newton=5.49659 |

@@ -1,0 +1,74 @@
+{
+  "schema_version": 1,
+  "source_date": "2026-07-21",
+  "row_count": 30782,
+  "compressed_sha256": "1dd0a70134eb52e227449cbe5c2ce6d4ed74aaddbe4abd811e5e43bd5410e3b9",
+  "uncompressed_sha256": "b394c672a670172e7855af0a63ee11880155cdee5ade30163ef9a2b9300f57c1",
+  "source_code": {
+    "filename": "menzil2.py",
+    "sha256": "51a13396a005b8731ef1bd4b05dc94cc8606eed314465898d03a41678eff05cc",
+    "function": "build_july21_joined_samples",
+    "extractor_sha256": "adf9440c362397a027ee4d4c0b04fdd3d1b4f58a22bbb144285c2cebf762be7e"
+  },
+  "source_input_sha256": {
+    "2026-07-21 11-56-15.bin": "4083795fdf60cecf954ff0e71b831ebb695a42e3274188e3f377039eb68827a6",
+    "UART-260721-103716-103722.udat": "ccfde22dd02fa9038ac2366f2f366ef40341a796bc8d04f5604ed546b5949ae7",
+    "UART-260721-115700-120229.udat": "b4885abd3a9ab25d23a06065f742fa7d5c7337072ceabfec098c49f8138916e9",
+    "UART-260721-120229-120759.udat": "eb102052cdecd1ca4f584b200ab8b40ac615f3a5b26cc6c53b1572aa86034e50",
+    "UART-260721-120759-121329.udat": "1669a84d8b3330b9cadd439247996dfd6d22a6fe015d85d1a91a44dc357e83d5",
+    "UART-260721-121330-121900.udat": "a37a53e43715d2906a3b31eac0e8bdcf137c64b9d377dd5ebe6a03d89144877f",
+    "UART-260721-121900-122430.udat": "5017ffc9e1d0924627350aa72d6ec71d8c487be75c8c8cc0e55a61b69345d31e",
+    "UART-260721-122430-123000.udat": "5df0116abc69128d0238a76d43356c2351c588f426f2aee685b9dfb1cd78fc42",
+    "UART-260721-123000-123530.udat": "b47677d37cc5ca2fcd73a45f9e9f08c0a555f3eadcb9f4ca0a7646af8d2c36d0",
+    "UART-260721-123530-124100.udat": "18d0a64346bd13f052028ac068d01521d9be7db24803fe8f40da9e7e405aed94",
+    "UART-260721-124100-124630.udat": "935e42d91e8e014f36ed55d3c358b87c4235d4eb5e6eae9360a391ae98c2fdfb",
+    "UART-260721-124630-125159.udat": "e8dd01ddcdf9c192a2ee75ea9b0ab6ced65173d7933fd7e31eed3953d71a0eb1",
+    "UART-260721-125159.udat": "6b31c1ea75e03f9e22b3aaf310894ade270f291cf46263ec2f3b839384e16881"
+  },
+  "time_basis": {
+    "elapsed_us": "Integer microseconds since the first exported joined sample; preserves intervals only.",
+    "legacy_gps_clock_minus_utc_s": 18.0,
+    "datalink_correction_in_legacy_gps_clock_s": -56.18,
+    "equivalent_datalink_correction_in_utc_s": -74.18,
+    "note": "Original join used GPS week/ms epoch arithmetic without the GPS-to-UTC leap-second subtraction. The relative timeline preserves that historical join. UTC-equivalent values relabel both clocks without claiming a newly estimated physical offset."
+  },
+  "extraction": {
+    "max_match_dt_s": 0.35,
+    "rpm_scale": 0.47619047619047616,
+    "uninterrupted_lap_count": 10,
+    "mission_lap_items": [
+      2,
+      3,
+      4,
+      5
+    ],
+    "phase_bounds_elapsed_us": {
+      "flight_start_us": -2903533,
+      "flight_end_us": 1586701189,
+      "clean_start_us": 35443488,
+      "clean_end_us": 1056486969
+    },
+    "phase_policy": "first_10_laps includes both clean-window endpoints; post_intervention is after the clean end through flight end; remaining joined samples are off_mission.",
+    "exported_selection": "All joined flight samples, before stability/acceleration/speed-bin selection; no fit-dependent row selection."
+  },
+  "columns": {
+    "elapsed_us": "microseconds",
+    "speed_ms": "m/s ground speed",
+    "vx_ms": "m/s north velocity",
+    "vy_ms": "m/s east velocity",
+    "vertical_speed_ms": "m/s upward velocity",
+    "roll_deg": "degrees",
+    "pitch_deg": "degrees",
+    "esc_sum_power_w": "sum of four decoded ESC voltage*current values in watts; electrical scale/branch interpretation is not established by this derived file",
+    "mechanical_rpm": "median of four ESC mechanical RPM values after raw*10/21 conversion",
+    "voltage_v": "median ESC voltage in volts",
+    "match_dt_s": "absolute nearest-neighbor timestamp difference in seconds",
+    "phase": "first_10_laps, post_intervention, or off_mission"
+  },
+  "limitations": [
+    "Derived telemetry replay cannot independently audit the private raw decoder, clock estimation or phase identification.",
+    "Ground speed and estimated attitude/velocity are not wind-free airspeed or measured thrust.",
+    "No propeller diameter or takeoff mass is measured by this CSV; reproduction configuration is an explicit assumption.",
+    "July 21 filtering and clock offset were developed after observing this flight, not prospectively blinded."
+  ]
+}

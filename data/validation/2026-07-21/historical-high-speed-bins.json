@@ -1,0 +1,58 @@
+{
+  "schema_version": 1,
+  "scope": "Historical values reproduced from the archived code; not current G29 predictions or overall accuracy.",
+  "source_code": {
+    "filename": "menzil2.py",
+    "sha256": "51a13396a005b8731ef1bd4b05dc94cc8606eed314465898d03a41678eff05cc"
+  },
+  "selection_script": {
+    "filename": "compare_july3_fit_july21_validation.py",
+    "sha256": "a1503fa27f80921cf07516a221cba59a34b788dfbab0c01ce98a87ac2d2f4e4a"
+  },
+  "configuration": {
+    "mass_kg": 12.4,
+    "prop_diameter_inch": 28.0,
+    "num_rotors": 4,
+    "rpm_scale": 0.47619047619047616,
+    "july3_esc_sum_hover_reference_w": 757.891
+  },
+  "selection": "First 10 uninterrupted July21 laps, original stability gate, without the additional 1 m/s^2 acceleration threshold. These are only 2 of 16 retained bins.",
+  "vehicle_equivalent_note": "Historical power labels multiply ESC-sum power by 2 under the archive branch convention; they do not independently prove sensor placement.",
+  "model_version_note": "Archive implementation predates the currently corrected Kirschstein profile-area term; exact old values are provenance evidence, not the output of current replay.",
+  "bins": [
+    {
+      "speed_ms": 16.908069531837278,
+      "sample_count": 5204,
+      "measured_ratio": 1.2311559313938283,
+      "measured_esc_sum_power_w": 933.082,
+      "archived_vehicle_equivalent_power_w": 1866.164,
+      "predicted_ratio": {
+        "zeng_datalink_fit": 1.2278171507733786,
+        "faessler_datalink_fit": 1.2156258513548457,
+        "kirschstein_datalink_fit": 1.242175235110732
+      },
+      "percent_residual": {
+        "zeng_datalink_fit": 0.27192816278438503,
+        "faessler_datalink_fit": 1.277537823144681,
+        "kirschstein_datalink_fit": -0.8870973599728438
+      }
+    },
+    {
+      "speed_ms": 17.077284475009662,
+      "sample_count": 4041,
+      "measured_ratio": 1.2448505128046117,
+      "measured_esc_sum_power_w": 943.461,
+      "archived_vehicle_equivalent_power_w": 1886.922,
+      "predicted_ratio": {
+        "zeng_datalink_fit": 1.237292012342433,
+        "faessler_datalink_fit": 1.2242554538377093,
+        "kirschstein_datalink_fit": 1.2526244444320103
+      },
+      "percent_residual": {
+        "zeng_datalink_fit": 0.6108905890266803,
+        "faessler_datalink_fit": 1.682251763906173,
+        "kirschstein_datalink_fit": -0.6206115218295616
+      }
+    }
+  ]
+}

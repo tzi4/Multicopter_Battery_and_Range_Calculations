@@ -142,6 +142,37 @@ def test_resolve_fit_power_reference_prefers_measured_then_fit_profile():
 # --- Phase 4: physical parameter transfer ---------------------------------
 
 
+def test_kirschstein_hover_profile_power_uses_same_disc_area_as_zeng():
+    profile = _fit_profile()
+    kirschstein = multicopter_range.build_kirschstein_params(profile, FIT_HOVER_W)
+    zeng = multicopter_range.build_theoretical_zeng_params(profile, FIT_HOVER_W)
+
+    # Both models share rho * total_disc_area * Utip^3 * solidity * drag / 8.
+    # Using a radius instead of area in either path violates their common
+    # dimensional power basis and this cross-model consistency check.
+    assert kirschstein["p_profile_hover_w"] == pytest.approx(zeng["p0_mech"])
+    assert multicopter_range.power_kirschstein_component(0.0, kirschstein) == pytest.approx(FIT_HOVER_W)
+
+
+@pytest.mark.parametrize("diameter_factor", [0.5, 2.0])
+def test_kirschstein_profile_power_scales_with_disc_area_in_build_and_transfer(diameter_factor):
+    profile = _fit_profile()
+    suite = _fitted_suite()
+    fitted = suite["model_params"]["kirschstein_datalink_fit"]
+    resized = dict(profile, prop_diameter_inch=profile["prop_diameter_inch"] * diameter_factor)
+
+    rebuilt = multicopter_range.build_kirschstein_params(resized, FIT_HOVER_W)
+    transferred = multicopter_range.transfer_kirschstein_params_to_vehicle(
+        fitted, FIT_HOVER_W * 2, resized, FIT_UTIP_MS
+    )
+
+    # At fixed tip speed, doubling radius quadruples profile power. Both the
+    # direct builder and the transfer must obey this law, independent of lift.
+    expected_ratio = diameter_factor**2
+    assert rebuilt["p_profile_hover_w"] / fitted["p_profile_hover_w"] == pytest.approx(expected_ratio)
+    assert transferred["p_profile_hover_w"] / fitted["p_profile_hover_w"] == pytest.approx(expected_ratio)
+
+
 def test_transfer_identity_reproduces_fit_vehicle_curves():
     suite = _fitted_suite()
     apply_profile = {

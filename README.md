@@ -1,14 +1,13 @@
 # Multicopter Battery and Range Calculator
 
-An engineering toolkit for estimating multicopter endurance and forward-flight
-range. It includes a general Bauersfeld-based calculator and a reproducible
-power-versus-speed calibration pipeline built from real ArduPilot and T-MOTOR
-DataLink flight logs.
+**From real flight telemetry to reproducible multicopter power and range estimates.**
 
-> [!CAUTION]
-> This is an experimental engineering model, not certified flight-planning
-> software. Validate the estimates on your own aircraft and retain appropriate
-> battery reserves.
+Fit and compare three power–speed models, estimate endurance and range, and
+trace the results back to ArduPilot and T-MOTOR DataLink measurements. The
+repository includes the calibration logs, later-flight comparison data,
+publication-ready figures, and the scripts that connect them.
+
+**46,175 calibration samples · 30,782 later-flight samples · 3 model families · 4 research papers**
 
 ## Features
 
@@ -18,6 +17,56 @@ DataLink flight logs.
 - Includes the complete 3 July 2026 calibration data set used by the tests.
 - Transfers fitted physical parameters to another mass/rotor/propeller setup.
 - Produces empirical and diagnostic plots for audit and comparison.
+
+## Flight results
+
+**Aircraft scenario:** T-MOTOR U8 Lite KV190 · G29×9.5 CF · four rotors ·
+6S · 12.4 kg assumed. Every plotted observation has downloadable data and a
+reproducible calculation. Flight-specific mass is an explicit analysis input;
+see the [configuration audit](docs/FLIGHT_CONFIGURATION.md).
+
+![July 3 measured speed bins, fitted curves and calibration residuals](docs/assets/calibration.png)
+
+**Calibration:** 46,175 joined telemetry samples; 28,095 retained samples in
+11 speed bins spanning 2.46–12.34 m/s. All retained bins are shown. Errors here
+are measured on the data used to fit the curves. [Bin data](docs/results/calibration-bins.csv)
+and [source hashes and full results](docs/results/calibration-summary.json).
+
+![July 21 observations compared with fixed July 3 models, with residuals for every retained bin](docs/assets/validation.png)
+
+**Later-flight comparison:** the July 3 coefficients remain fixed. All nine
+bins retained by the documented July 21 selection are shown. This is a
+retrospective comparison using ground speed; its timing and filters were
+developed after inspecting the flight. Both dates use July 3's hover reference;
+flight-specific mass changes have not been compensated.
+[All bin results](docs/results/validation-bins.csv)
+and [30,782 derived telemetry rows](data/validation/2026-07-21/).
+
+| Fixed July 3 model | July 21 mean absolute percent residual, all nine bins |
+|---|---:|
+| Zeng | 11.76% |
+| Faessler-inspired | 11.70% |
+| Kirschstein-inspired | 12.01% |
+
+The residual is `100 × (observation / prediction − 1)`; the table averages
+its absolute value equally over the nine bins.
+
+An earlier G28 analysis recorded **absolute residuals of 0.27% and 0.61% in two
+approximately 17 m/s bins**. Those are individual-bin results under an older selection,
+rather than an overall accuracy score. Both selections are available in the
+public replay; see [reproduction and error definitions](docs/REPRODUCIBILITY.md).
+
+Reproduce the data tables and figures after installation:
+
+```bash
+python examples/reproduce_showcase.py --prop-diameter 29 --mass 12.4 \
+  --output-dir showcase-output --check-results docs/results
+```
+
+To compare mass scenarios, change `--mass` and omit `--check-results`. The plots report
+normalized electrical power; absolute endurance additionally depends on the
+battery-energy and current-sensor interpretation described in
+[Methodology](docs/METHODOLOGY.md).
 
 ## Requirements
 
@@ -104,7 +153,7 @@ Add `--graphs` to write `empirical_datalink_power_curve.png` and
 `diagnostic_datalink_surrogate_fits.png`, plus `scientific_model_fit_audit.md`,
 in the current directory. These are calibration diagnostics.
 
-For a compact audit with input hashes, branch/vehicle power and energy, and
+For a compact audit with input hashes, electrical measurements, and
 per-model residuals:
 
 ```bash
@@ -112,8 +161,9 @@ python examples/reproduce_calibration.py \
   --data-root data/calibration/2026-07-03 --output-dir calibration-output
 ```
 
-Expected results include 46,175 joined samples, 11 stable speed bins, a tip speed
-of 80.053575 m/s, and 39.860297 minutes of modeled hover at 10% reserve.
+The example defaults to the G29 / 12.4 kg scenario shown above: 46,175 joined
+samples, 11 stable speed bins and a tip-speed statistic of 82.912632 m/s.
+The legacy `analyze-calibration` command retains its fixed G28 / 12.4 kg preset.
 See the [reproduction and research audit](docs/REPRODUCIBILITY.md) for measured
 results, the old 168.1 m/s report discrepancy, and the separate July 21 check.
 
@@ -148,8 +198,10 @@ per-motor voltage, current, and RPM. Both sources are needed because the
 pipeline time-aligns them before creating stable speed bins. See
 [the data notes](data/calibration/2026-07-03/README.md) and
 [the methodology](docs/METHODOLOGY.md) for assumptions and known limitations.
-The summed electrical measurements represent the **one sensed battery branch**;
-whole-aircraft power and energy both require a factor of two for this 6S2P setup.
+The directly parsed power is the sum of four ESC `voltage × current` records.
+The archive's additional factor of two assumes a particular sensor layout;
+the physical wiring has not been established from these logs. Parallel battery
+count alone does not justify doubling ESC power.
 
 > [!IMPORTANT]
 > The raw ArduPilot logs contain the original flight's GPS positions and
@@ -198,6 +250,36 @@ Bug reports and pull requests are welcome. Please read [CONTRIBUTING.md](CONTRIB
 before submitting a change. For private vulnerability reports, follow
 [SECURITY.md](SECURITY.md).
 
+## Engineering scope
+
+This is an experimental engineering model. Validate estimates on the target
+aircraft and retain flight reserves. The G29 selection comes from the aircraft
+owner; masses of approximately 12.4–13 kg varied between flights and have not
+been established individually from telemetry. Timing, wind and electrical
+calibration limits are documented in [Methodology](docs/METHODOLOGY.md).
+
 ## License
 
 Released under the [MIT License](LICENSE).
+
+## Research references
+
+The general range/endurance calculator follows Bauersfeld and Scaramuzza.
+Flight calibration uses Zeng-type power curves, a Faessler-inspired drag prior,
+and a Kirschstein-inspired component model. These locally fitted adaptations
+do not inherit the original papers' accuracy claims.
+
+- Bauersfeld & Scaramuzza (2022), *Range, Endurance, and Optimal Speed Estimates
+  for Multicopters*. [Paper](https://doi.org/10.1109/LRA.2022.3145063).
+- Zeng, Xu & Zhang (2019), *Energy Minimization for Wireless Communication With
+  Rotary-Wing UAV*. [Paper](https://doi.org/10.1109/TWC.2019.2902559).
+- Faessler, Franchi & Scaramuzza (2018), *Differential Flatness of Quadrotor
+  Dynamics Subject to Rotor Drag for Accurate Tracking of High-Speed
+  Trajectories*. [Paper](https://doi.org/10.1109/LRA.2017.2776353).
+- Kirschstein (2020), *Comparison of energy demands of drone-based and
+  ground-based parcel delivery services*.
+  [Paper](https://doi.org/10.1016/j.trd.2019.102209) and
+  [2022 corrigendum](https://doi.org/10.1016/j.trd.2022.103457).
+
+See the [equation-to-code mapping and technical sources](docs/REFERENCES.md)
+and [downloadable BibTeX](docs/references.bib).

@@ -38,7 +38,8 @@ jobs:
             --drag-area 450 --prop-diameter 28 --rotors 4 --correction-factor 0.93
           "$RUNNER_TEMP/wheel-env/bin/multicopter-range" analyze-calibration \
             --data-root "$GITHUB_WORKSPACE/data/calibration/2026-07-03"
-          "$RUNNER_TEMP/wheel-env/bin/python" "$GITHUB_WORKSPACE/examples/reproduce_calibration.py" \
+          "$RUNNER_TEMP/wheel-env/bin/python" "$GITHUB_WORKSPACE/examples/reproduce_showcase.py" \
             --data-root "$GITHUB_WORKSPACE/data/calibration/2026-07-03" \
-            --output-dir "$RUNNER_TEMP/calibration-output" \
-            --check-summary "$GITHUB_WORKSPACE/docs/results/calibration-summary.json"
+            --validation-root "$GITHUB_WORKSPACE/data/validation/2026-07-21" \
+            --output-dir "$RUNNER_TEMP/showcase-output" \
+            --check-results "$GITHUB_WORKSPACE/docs/results"

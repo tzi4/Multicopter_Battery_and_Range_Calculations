@@ -3469,8 +3469,13 @@ def build_kirschstein_params(profile, hover_power_reference_w, faessler_fit=None
     if faessler_fit and faessler_fit.get("body_cda_fit_m2") is not None:
         body_cda_fit_m2 = faessler_fit["body_cda_fit_m2"]
         body_cd_fit = faessler_fit.get("body_cd_fit")
+    # Kirschstein (2020), Eq. (5) and Appendix A: R is total rotor disc area,
+    # pi*r^2*n_rotor, not rotor radius (doi:10.1016/j.trd.2019.102209).
+    # The 2022 corrigendum retains this area and specifies the factor 3 in
+    # the forward-speed term below (doi:10.1016/j.trd.2022.103457).
+    area_total_m2 = num_rotors * math.pi * radius_m**2
     p_profile_hover_w = (
-        num_rotors * rho * radius_m * utip_ms**3 * solidity_s * blade_drag / 8.0
+        rho * area_total_m2 * utip_ms**3 * solidity_s * blade_drag / 8.0
     )
     lift_power_per_newton = max(
         0.0,
@@ -3705,9 +3710,11 @@ def transfer_kirschstein_params_to_vehicle(
     apply_radius_m = apply_profile["prop_diameter_inch"] * 0.0254 / 2.0
     apply_weight_n = apply_profile["mass_kg"] * 9.81
     apply_area_m2 = _disc_area_total_m2(apply_profile)
+    # Profile power scales with total disc area and tip speed cubed. Density,
+    # solidity and blade drag retain the fitted configuration's values.
     geometry_ratio = (
-        apply_profile["num_rotors"] * apply_radius_m * apply_utip_ms**3
-    ) / (kp["num_rotors"] * kp["radius_m"] * kp["utip_ms"] ** 3)
+        apply_profile["num_rotors"] * apply_radius_m**2 * apply_utip_ms**3
+    ) / (kp["num_rotors"] * kp["radius_m"]**2 * kp["utip_ms"] ** 3)
     p_profile_new_w = kp["p_profile_hover_w"] * geometry_ratio
     params_new = {
         "rho": rho,

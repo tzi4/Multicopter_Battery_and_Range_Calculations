@@ -1,0 +1,914 @@
+{
+  "schema_version": 1,
+  "scope": "Public replay of derived July 21 telemetry against current July 3 fitted curves; raw extraction remains a separate provenance step.",
+  "package_version": "0.1.2rc1",
+  "module_sha256": "222f17eeee0fd28befdbac21f663da5664bd3f7ac92ec46bb11415a600d58923",
+  "reproduction_script_sha256": "c1bbf9e42d20bb252554599063892785123bb13822a00abb0e99c3402248a793",
+  "calibration_script_sha256": "6527ce6cf15bda285030c8b920ef1871aae2b3912bd25b3538a6f67d6dbfc004",
+  "profile": {
+    "mass_kg": 12.4,
+    "num_rotors": 4,
+    "prop_diameter_inch": 29.0
+  },
+  "calibration_input_sha256": {
+    "00000076.BIN": "9feb424e4fac3ab776af2c1e8a36eb5177cbeb8a525ce8b15bdcfabdb5257bfc",
+    "00000077.BIN": "bb314ffabf7ec03b2c5900b92bf76f5908caf4e068afa9448b2bcf961aba40b0",
+    "Datalink/UART-260703-081042/UART-260703-081043-081050.udat": "5e122ec1be4f0e3295338f9a72591a88661dd589adc19661f7a54b5ff0d409ac",
+    "Datalink/UART-260703-081146/UART-260703-081147-081154.udat": "3b3461dfc6f4508924be60aab04e140f1f52739b1c2692e2cfee034c948b8495",
+    "Datalink/UART-260703-081549/UART-260703-081550-081556.udat": "ad2e0999bfe35ac9b5f7198acb3ca9a2b5c9da3db5d6a6c4835a783d03efe038",
+    "Datalink/UART-260703-082137/UART-260703-082138-082145.udat": "0fbdc00b18aadb3ba9fd47914dc88e62ecf7730d0feb7e70570310c31716c309",
+    "Datalink/UART-260703-083311/UART-260703-083312-083319.udat": "f6c68255e15ffb390d37c0c314d5173bc9e30008fb3928253a70912ddc0b2d31",
+    "Datalink/UART-260703-083830/UART-260703-083831-083837.udat": "65538b52eadf1a337bc0fd61ff237e796074590593e1da0f1e440a531a200409",
+    "Datalink/UART-260703-103606/UART-260703-103607-103614.udat": "2ad6a90373a4461db66facd60c146d40f7e8d6b57fd58b9185e4c24847300da7",
+    "Datalink/UART-260703-103606/UART-260703-121333-121902.udat": "619273ec109fcfd5974cf8417d7373ae0a2dd99b8a8d1dce0557efd2c6c9515c",
+    "Datalink/UART-260703-103606/UART-260703-121902-122432.udat": "dac5a3d0512f2028052ecfddccd7114ec074a60b44b8b72e8eaf8ffc04f23e14",
+    "Datalink/UART-260703-103606/UART-260703-122432-123002.udat": "f67c99c19affb6931ce13b22dc6906da398b5ebb8d47c77170f902b9f673ef6d",
+    "Datalink/UART-260703-103606/UART-260703-123002-123532.udat": "1b6516846ec227754f9b21abffba491dd91bfdfe025469ddef572d50fe417ce8",
+    "Datalink/UART-260703-103606/UART-260703-123532-124102.udat": "8b7fe88dbbee84b55827206ea0cdd5e3b86976d6e0462e8abe3fbc381caad759",
+    "Datalink/UART-260703-103606/UART-260703-124102-124632.udat": "807906f917f37420402d22e899392e13e6055886716a7411f5732001778d38de",
+    "Datalink/UART-260703-103606/UART-260703-124632-125202.udat": "6253260e7da38b1fb6558a15ef474f1a9eed51886819dfdc9db5ab38acf1d851",
+    "Datalink/UART-260703-103606/UART-260703-125202-125732.udat": "5e446f64a81482109ad05e6369af4197286b5c6bfc85f85767720fd15af4e298",
+    "Datalink/UART-260703-103606/UART-260703-125732-130301.udat": "c0b6fcf302f7d3007a389df298c393e7acb628b75af79b01b1e5c83db3e9f8bc",
+    "Datalink/UART-260703-103606/UART-260703-130301-130831.udat": "cffc15b346a617048a171d48eb2461993cbc443f902d41a906e010aa7114db0f",
+    "Datalink/UART-260703-103606/UART-260703-130831-131400.udat": "41a9034ae9a54f59922f63c9e04fa7b09cd7ec5a1068e21ee387d611dea16e6f",
+    "Datalink/UART-260703-103606/UART-260703-131400-131930.udat": "0f3bf29cc6edd495e587ac408ac1da7b75d93e012ab9a68968145949469cf90d",
+    "Datalink/UART-260703-103606/UART-260703-131930-132500.udat": "b72a5995b83fb5d77b5d0a63f63aafefa3a4840afeb2d1649d10534035f24f88",
+    "Datalink/UART-260703-103606/UART-260703-132500-133030.udat": "7ae09bd10690a877e6bb5775c775f43a3085dccf90f51328175983ac45282bbd",
+    "Datalink/UART-260703-103606/UART-260703-133030-133600.udat": "518feed43125cfd360eb03dcb408d04bdb6069d5b89af5f4b82f201b23f97c3f",
+    "Datalink/UART-260703-103606/UART-260703-133600-134130.udat": "1c2ec3c6147c87b3267c07f916090676698ba537a7cd1d960ba2a75e34e28b2f",
+    "Datalink/UART-260703-103606/UART-260703-134130-134700.udat": "642acb4c479e23677ca901ef9df8301242fb971aad3229daaf9dfd3d8e1385d3",
+    "Datalink/UART-260703-103606/UART-260703-134700.udat": "0bb49d1453ef201f0310e754e8ac6f707994207b89d25c4bbce8bf3a20fe9aa5",
+    "Datalink/UART-260703-141448/UART-260703-141449-141456.udat": "5144f230195206b7e383006ca086394b72a30919fce6482fe50250b0b2f52483",
+    "Datalink/UART-260703-141448/UART-260703-150126-150656.udat": "1bdd7b5629d4972b026430f6e985d6ef560e90267bd21e78c92ee87bb6343683",
+    "Datalink/UART-260703-141448/UART-260703-150656-151122.udat": "aad57f5e89c155cad821d5e8d73097662af9f5ac82c6af772599acd6893da4b5",
+    "Datalink/UART-260704-114624/UART-260704-114624.udat": "2f858d66741b2e86c65921469e7dc1de4adf142b80ffb48c77e9e081a5b20dca",
+    "flight_attitude.csv": "55545efcee0b892e1f4c4d62e8b3ffad7946ccd0e23b70a81c08c97591b7dd2e"
+  },
+  "validation_input_sha256": {
+    "joined-samples.csv.gz": "1dd0a70134eb52e227449cbe5c2ce6d4ed74aaddbe4abd811e5e43bd5410e3b9",
+    "provenance.json": "6998f1214bea2162952f8ca31f30053f050cfc20e6146291d37d4669f027850c"
+  },
+  "configuration_assumptions": {
+    "calibration_mass_kg": 12.4,
+    "prop_diameter_inch": 29.0,
+    "rotor_count": 4,
+    "motor": "U8 Lite KV190",
+    "comparison": "Untransferred frozen July 3 ratio curves. July 21 mass/propeller identity is not measured by this file; treating the configuration as shared is an assumption."
+  },
+  "calibration": {
+    "joined_samples": 46175,
+    "bin_count": 11,
+    "hover_esc_sum_reference_w": 757.8910000000001,
+    "tip_speed_ms": 82.91263156753398,
+    "parameters_unchanged_by_validation": true
+  },
+  "normalization": "Every July 21 measurement and model prediction uses the July 3 ESC-sum hover reference. This is not normalization by a newly measured July 21 hover. A common multiplicative scale cancels only if it applies consistently to both dates; changes in sensor gain or offset do not cancel.",
+  "derived_telemetry": {
+    "row_count": 30782,
+    "phase_counts": {
+      "first_10_laps": 19808,
+      "off_mission": 708,
+      "post_intervention": 10266
+    },
+    "source_date": "2026-07-21"
+  },
+  "common_selection": {
+    "speed_range_ms": [
+      2.0,
+      20.0
+    ],
+    "bin_width_ms": 1.0,
+    "minimum_samples": 80,
+    "minimum_stable_fraction": 0.5,
+    "stable_gate": "Package defaults: scalar speed acceleration <=8 m/s^2, |vertical speed|<=1.5 m/s, |roll|/|pitch|<=28 degrees."
+  },
+  "residual_definition": "100 * (measured_power_ratio / predicted_power_ratio - 1); aggregate mean absolute residual weights each retained bin equally.",
+  "variants": {
+    "current_scalar_accel_gate": {
+      "selection": {
+        "phase": "first_10_laps",
+        "max_scalar_acceleration_ms2": 1.0
+      },
+      "selected_before_stable_gate_count": 9564,
+      "bin_count": 9,
+      "bins": [
+        {
+          "speed_ms": 3.7254011892913654,
+          "sample_count": 473,
+          "raw_sample_count": 473,
+          "stable_fraction": 1.0,
+          "measured_esc_sum_power_w": 938.39,
+          "measured_ratio": 1.2381595770368032,
+          "predicted_ratio": {
+            "zeng_datalink_fit": 0.9856294223551247,
+            "faessler_datalink_fit": 0.9856606230723924,
+            "kirschstein_datalink_fit": 0.985687648094164
+          },
+          "percent_residual": {
+            "zeng_datalink_fit": 25.621207012902182,
+            "faessler_datalink_fit": 25.61723052071909,
+            "kirschstein_datalink_fit": 25.613786419135522
+          }
+        },
+        {
+          "speed_ms": 4.1730823473562,
+          "sample_count": 138,
+          "raw_sample_count": 138,
+          "stable_fraction": 1.0,
+          "measured_esc_sum_power_w": 873.116,
+          "measured_ratio": 1.1520337357218913,
+          "predicted_ratio": {
+            "zeng_datalink_fit": 0.9829148612097932,
+            "faessler_datalink_fit": 0.9828986909674595,
+            "kirschstein_datalink_fit": 0.9830092495623245
+          },
+          "percent_residual": {
+            "zeng_datalink_fit": 17.205851817515793,
+            "faessler_datalink_fit": 17.207780039665476,
+            "kirschstein_datalink_fit": 17.19459773494738
+          }
+        },
+        {
+          "speed_ms": 11.729134115098358,
+          "sample_count": 127,
+          "raw_sample_count": 127,
+          "stable_fraction": 1.0,
+          "measured_esc_sum_power_w": 791.9079999999999,
+          "measured_ratio": 1.0448837629685532,
+          "predicted_ratio": {
+            "zeng_datalink_fit": 1.0254809100203577,
+            "faessler_datalink_fit": 1.025293676230201,
+            "kirschstein_datalink_fit": 1.0257539181882873
+          },
+          "percent_residual": {
+            "zeng_datalink_fit": 1.8920735392149224,
+            "faessler_datalink_fit": 1.9106805389048187,
+            "kirschstein_datalink_fit": 1.8649545900885744
+          }
+        },
+        {
+          "speed_ms": 12.270032678308949,
+          "sample_count": 418,
+          "raw_sample_count": 418,
+          "stable_fraction": 1.0,
+          "measured_esc_sum_power_w": 667.7215,
+          "measured_ratio": 0.8810257675576039,
+          "predicted_ratio": {
+            "zeng_datalink_fit": 1.038810318604719,
+            "faessler_datalink_fit": 1.0382490448919584,
+            "kirschstein_datalink_fit": 1.0395103990040029
+          },
+          "percent_residual": {
+            "zeng_datalink_fit": -15.188966476482824,
+            "faessler_datalink_fit": -15.143117935708316,
+            "kirschstein_datalink_fit": -15.246084271811956
+          }
+        },
+        {
+          "speed_ms": 13.318547439193317,
+          "sample_count": 364,
+          "raw_sample_count": 366,
+          "stable_fraction": 0.994535519125683,
+          "measured_esc_sum_power_w": 866.2249999999999,
+          "measured_ratio": 1.1429413992249544,
+          "predicted_ratio": {
+            "zeng_datalink_fit": 1.0692560122016226,
+            "faessler_datalink_fit": 1.0674765303061684,
+            "kirschstein_datalink_fit": 1.071302128590264
+          },
+          "percent_residual": {
+            "zeng_datalink_fit": 6.891276381192557,
+            "faessler_datalink_fit": 7.069463990664193,
+            "kirschstein_datalink_fit": 6.687121095237747
+          }
+        },
+        {
+          "speed_ms": 14.459805352564068,
+          "sample_count": 84,
+          "raw_sample_count": 88,
+          "stable_fraction": 0.9545454545454546,
+          "measured_esc_sum_power_w": 942.259,
+          "measured_ratio": 1.2432645327626266,
+          "predicted_ratio": {
+            "zeng_datalink_fit": 1.1095161889351313,
+            "faessler_datalink_fit": 1.1054910868608243,
+            "kirschstein_datalink_fit": 1.1139972134975522
+          },
+          "percent_residual": {
+            "zeng_datalink_fit": 12.05465455676331,
+            "faessler_datalink_fit": 12.462646469002902,
+            "kirschstein_datalink_fit": 11.603917648880046
+          }
+        },
+        {
+          "speed_ms": 15.64358459590432,
+          "sample_count": 88,
+          "raw_sample_count": 109,
+          "stable_fraction": 0.8073394495412844,
+          "measured_esc_sum_power_w": 660.2265,
+          "measured_ratio": 0.8711364826868242,
+          "predicted_ratio": {
+            "zeng_datalink_fit": 1.1594369316799793,
+            "faessler_datalink_fit": 1.1518305339630388,
+            "kirschstein_datalink_fit": 1.1677759762651396
+          },
+          "percent_residual": {
+            "zeng_datalink_fit": -24.865556816050262,
+            "faessler_datalink_fit": -24.369387943766895,
+            "kirschstein_datalink_fit": -25.40208906566549
+          }
+        },
+        {
+          "speed_ms": 16.91460024634095,
+          "sample_count": 4256,
+          "raw_sample_count": 4301,
+          "stable_fraction": 0.9895373169030458,
+          "measured_esc_sum_power_w": 924.1345,
+          "measured_ratio": 1.2193501440180712,
+          "predicted_ratio": {
+            "zeng_datalink_fit": 1.2227103196550735,
+            "faessler_datalink_fit": 1.2095588398871056,
+            "kirschstein_datalink_fit": 1.237023035238931
+          },
+          "percent_residual": {
+            "zeng_datalink_fit": -0.2748137136807882,
+            "faessler_datalink_fit": 0.8094938260200246,
+            "kirschstein_datalink_fit": -1.4286630658778665
+          }
+        },
+        {
+          "speed_ms": 17.074627726814946,
+          "sample_count": 3442,
+          "raw_sample_count": 3468,
+          "stable_fraction": 0.9925028835063437,
+          "measured_esc_sum_power_w": 916.192,
+          "measured_ratio": 1.208870404847135,
+          "predicted_ratio": {
+            "zeng_datalink_fit": 1.2314108948566784,
+            "faessler_datalink_fit": 1.2174218451716534,
+            "kirschstein_datalink_fit": 1.2466272994522885
+          },
+          "percent_residual": {
+            "zeng_datalink_fit": -1.830460498903319,
+            "faessler_datalink_fit": -0.7024221192049263,
+            "kirschstein_datalink_fit": -3.0287235504743104
+          }
+        }
+      ],
+      "residual_summary": {
+        "zeng_datalink_fit": {
+          "median_percent": 1.8920735392149224,
+          "unweighted_mean_absolute_percent": 11.758317868078441,
+          "max_absolute_percent": 25.621207012902182
+        },
+        "faessler_datalink_fit": {
+          "median_percent": 1.9106805389048187,
+          "unweighted_mean_absolute_percent": 11.699135931517405,
+          "max_absolute_percent": 25.61723052071909
+        },
+        "kirschstein_datalink_fit": {
+          "median_percent": 1.8649545900885744,
+          "unweighted_mean_absolute_percent": 12.007770826902098,
+          "max_absolute_percent": 25.613786419135522
+        }
+      }
+    },
+    "historical_first10": {
+      "selection": {
+        "phase": "first_10_laps",
+        "max_scalar_acceleration_ms2": null
+      },
+      "selected_before_stable_gate_count": 19467,
+      "bin_count": 16,
+      "bins": [
+        {
+          "speed_ms": 2.476215020578151,
+          "sample_count": 209,
+          "raw_sample_count": 209,
+          "stable_fraction": 1.0,
+          "measured_esc_sum_power_w": 777.415,
+          "measured_ratio": 1.0257609603491793,
+          "predicted_ratio": {
+            "zeng_datalink_fit": 0.9928504353231066,
+            "faessler_datalink_fit": 0.9929462918459661,
+            "kirschstein_datalink_fit": 0.9928377378052301
+          },
+          "percent_residual": {
+            "zeng_datalink_fit": 3.314751533080873,
+            "faessler_datalink_fit": 3.3047777883543183,
+            "kirschstein_datalink_fit": 3.3160728375141613
+          }
+        },
+        {
+          "speed_ms": 3.7254011892913654,
+          "sample_count": 805,
+          "raw_sample_count": 805,
+          "stable_fraction": 1.0,
+          "measured_esc_sum_power_w": 909.863,
+          "measured_ratio": 1.2005195997841378,
+          "predicted_ratio": {
+            "zeng_datalink_fit": 0.9856294223551247,
+            "faessler_datalink_fit": 0.9856606230723924,
+            "kirschstein_datalink_fit": 0.985687648094164
+          },
+          "percent_residual": {
+            "zeng_datalink_fit": 21.802329816366584,
+            "faessler_datalink_fit": 21.798474209308537,
+            "kirschstein_datalink_fit": 21.795134808207585
+          }
+        },
+        {
+          "speed_ms": 4.444261571271413,
+          "sample_count": 1002,
+          "raw_sample_count": 1002,
+          "stable_fraction": 1.0,
+          "measured_esc_sum_power_w": 889.264,
+          "measured_ratio": 1.1733402296636322,
+          "predicted_ratio": {
+            "zeng_datalink_fit": 0.9813115186072108,
+            "faessler_datalink_fit": 0.9812634754247176,
+            "kirschstein_datalink_fit": 0.9814279816074012
+          },
+          "percent_residual": {
+            "zeng_datalink_fit": 19.568578113601532,
+            "faessler_datalink_fit": 19.574432254882268,
+            "kirschstein_datalink_fit": 19.554389283043825
+          }
+        },
+        {
+          "speed_ms": 5.463724546736126,
+          "sample_count": 831,
+          "raw_sample_count": 831,
+          "stable_fraction": 1.0,
+          "measured_esc_sum_power_w": 898.717,
+          "measured_ratio": 1.1858129994946502,
+          "predicted_ratio": {
+            "zeng_datalink_fit": 0.9760438249300594,
+            "faessler_datalink_fit": 0.9758822262689336,
+            "kirschstein_datalink_fit": 0.9762235247833193
+          },
+          "percent_residual": {
+            "zeng_datalink_fit": 21.49177825899593,
+            "faessler_datalink_fit": 21.511896371792716,
+            "kirschstein_datalink_fit": 21.46941447224917
+          }
+        },
+        {
+          "speed_ms": 6.502224270559487,
+          "sample_count": 758,
+          "raw_sample_count": 758,
+          "stable_fraction": 1.0,
+          "measured_esc_sum_power_w": 873.894,
+          "measured_ratio": 1.1530602685610463,
+          "predicted_ratio": {
+            "zeng_datalink_fit": 0.9729603303583154,
+            "faessler_datalink_fit": 0.9727528269699284,
+            "kirschstein_datalink_fit": 0.9731311260845052
+          },
+          "percent_residual": {
+            "zeng_datalink_fit": 18.510511948252283,
+            "faessler_datalink_fit": 18.535792093533733,
+            "kirschstein_datalink_fit": 18.489711987787793
+          }
+        },
+        {
+          "speed_ms": 7.506217955725404,
+          "sample_count": 745,
+          "raw_sample_count": 745,
+          "stable_fraction": 1.0,
+          "measured_esc_sum_power_w": 847.121,
+          "measured_ratio": 1.1177346082748045,
+          "predicted_ratio": {
+            "zeng_datalink_fit": 0.973341651560827,
+            "faessler_datalink_fit": 0.973199779644819,
+            "kirschstein_datalink_fit": 0.9734112549425765
+          },
+          "percent_residual": {
+            "zeng_datalink_fit": 14.834766033327828,
+            "faessler_datalink_fit": 14.851506510074962,
+            "kirschstein_datalink_fit": 14.826554819395632
+          }
+        },
+        {
+          "speed_ms": 8.488654812656828,
+          "sample_count": 729,
+          "raw_sample_count": 729,
+          "stable_fraction": 1.0,
+          "measured_esc_sum_power_w": 857.241,
+          "measured_ratio": 1.1310874518895195,
+          "predicted_ratio": {
+            "zeng_datalink_fit": 0.977729856997737,
+            "faessler_datalink_fit": 0.9777360378292935,
+            "kirschstein_datalink_fit": 0.9776440431399382
+          },
+          "percent_residual": {
+            "zeng_datalink_fit": 15.685068201015117,
+            "faessler_datalink_fit": 15.684336889196281,
+            "kirschstein_datalink_fit": 15.695222594182745
+          }
+        },
+        {
+          "speed_ms": 9.501594034489564,
+          "sample_count": 706,
+          "raw_sample_count": 706,
+          "stable_fraction": 1.0,
+          "measured_esc_sum_power_w": 865.3335,
+          "measured_ratio": 1.1417651087029665,
+          "predicted_ratio": {
+            "zeng_datalink_fit": 0.9869496027921207,
+            "faessler_datalink_fit": 0.9871096162922527,
+            "kirschstein_datalink_fit": 0.9867325382125905
+          },
+          "percent_residual": {
+            "zeng_datalink_fit": 15.68626254804364,
+            "faessler_datalink_fit": 15.667509449621765,
+            "kirschstein_datalink_fit": 15.711711582067478
+          }
+        },
+        {
+          "speed_ms": 10.500978515379282,
+          "sample_count": 748,
+          "raw_sample_count": 748,
+          "stable_fraction": 1.0,
+          "measured_esc_sum_power_w": 865.393,
+          "measured_ratio": 1.1418436160344956,
+          "predicted_ratio": {
+            "zeng_datalink_fit": 1.0010441001952943,
+            "faessler_datalink_fit": 1.0012276928807744,
+            "kirschstein_datalink_fit": 1.0008527624514456
+          },
+          "percent_residual": {
+            "zeng_datalink_fit": 14.065266036904124,
+            "faessler_datalink_fit": 14.044350166657416,
+            "kirschstein_datalink_fit": 14.087072431884295
+          }
+        },
+        {
+          "speed_ms": 11.562061544865903,
+          "sample_count": 878,
+          "raw_sample_count": 878,
+          "stable_fraction": 1.0,
+          "measured_esc_sum_power_w": 802.0260000000001,
+          "measured_ratio": 1.0582339676813683,
+          "predicted_ratio": {
+            "zeng_datalink_fit": 1.0216846260000554,
+            "faessler_datalink_fit": 1.0215834923115958,
+            "kirschstein_datalink_fit": 1.0218566848961677
+          },
+          "percent_residual": {
+            "zeng_datalink_fit": 3.577360444818023,
+            "faessler_datalink_fit": 3.5876142914996967,
+            "kirschstein_datalink_fit": 3.559920223930124
+          }
+        },
+        {
+          "speed_ms": 12.333191156329697,
+          "sample_count": 1009,
+          "raw_sample_count": 1023,
+          "stable_fraction": 0.9863147605083089,
+          "measured_esc_sum_power_w": 736.072,
+          "measured_ratio": 0.9712108997204082,
+          "predicted_ratio": {
+            "zeng_datalink_fit": 1.0404710896533111,
+            "faessler_datalink_fit": 1.0398558556908661,
+            "kirschstein_datalink_fit": 1.041231844512929
+          },
+          "percent_residual": {
+            "zeng_datalink_fit": -6.656618393499114,
+            "faessler_datalink_fit": -6.601391490443753,
+            "kirschstein_datalink_fit": -6.724817835865881
+          }
+        },
+        {
+          "speed_ms": 13.33788528673001,
+          "sample_count": 773,
+          "raw_sample_count": 813,
+          "stable_fraction": 0.95079950799508,
+          "measured_esc_sum_power_w": 837.905,
+          "measured_ratio": 1.1055745483189534,
+          "predicted_ratio": {
+            "zeng_datalink_fit": 1.0698756196840549,
+            "faessler_datalink_fit": 1.0680666768838072,
+            "kirschstein_datalink_fit": 1.0719539175504764
+          },
+          "percent_residual": {
+            "zeng_datalink_fit": 3.3367363437481368,
+            "faessler_datalink_fit": 3.511753736628065,
+            "kirschstein_datalink_fit": 3.1363876952195335
+          }
+        },
+        {
+          "speed_ms": 14.487289198426229,
+          "sample_count": 370,
+          "raw_sample_count": 420,
+          "stable_fraction": 0.8809523809523809,
+          "measured_esc_sum_power_w": 865.384,
+          "measured_ratio": 1.1418317409759449,
+          "predicted_ratio": {
+            "zeng_datalink_fit": 1.1105796415874647,
+            "faessler_datalink_fit": 1.106486791424284,
+            "kirschstein_datalink_fit": 1.1151337932051608
+          },
+          "percent_residual": {
+            "zeng_datalink_fit": 2.8140349614016236,
+            "faessler_datalink_fit": 3.194339943829272,
+            "kirschstein_datalink_fit": 2.394147494539456
+          }
+        },
+        {
+          "speed_ms": 15.52020049968433,
+          "sample_count": 363,
+          "raw_sample_count": 424,
+          "stable_fraction": 0.8561320754716981,
+          "measured_esc_sum_power_w": 778.5829999999999,
+          "measured_ratio": 1.0273020790588618,
+          "predicted_ratio": {
+            "zeng_datalink_fit": 1.1538352478530216,
+            "faessler_datalink_fit": 1.146668905008423,
+            "kirschstein_datalink_fit": 1.1617006059344281
+          },
+          "percent_residual": {
+            "zeng_datalink_fit": -10.966311614210444,
+            "faessler_datalink_fit": -10.409877291360248,
+            "kirschstein_datalink_fit": -11.569119116320092
+          }
+        },
+        {
+          "speed_ms": 16.908069531837278,
+          "sample_count": 5204,
+          "raw_sample_count": 5295,
+          "stable_fraction": 0.9828139754485363,
+          "measured_esc_sum_power_w": 933.082,
+          "measured_ratio": 1.2311559313938283,
+          "predicted_ratio": {
+            "zeng_datalink_fit": 1.2223587939062133,
+            "faessler_datalink_fit": 1.2092407999132593,
+            "kirschstein_datalink_fit": 1.2366353893397743
+          },
+          "percent_residual": {
+            "zeng_datalink_fit": 0.719685376459922,
+            "faessler_datalink_fit": 1.8123050001406682,
+            "kirschstein_datalink_fit": -0.4430940593469046
+          }
+        },
+        {
+          "speed_ms": 17.077284475009662,
+          "sample_count": 4041,
+          "raw_sample_count": 4081,
+          "stable_fraction": 0.9901984807645186,
+          "measured_esc_sum_power_w": 943.461,
+          "measured_ratio": 1.2448505128046117,
+          "predicted_ratio": {
+            "zeng_datalink_fit": 1.2315567517214492,
+            "faessler_datalink_fit": 1.2175535187721092,
+            "kirschstein_datalink_fit": 1.246788463026852
+          },
+          "percent_residual": {
+            "zeng_datalink_fit": 1.0794274047526198,
+            "faessler_datalink_fit": 2.2419543462887104,
+            "kirschstein_datalink_fit": -0.15543536692146365
+          }
+        }
+      ],
+      "residual_summary": {
+        "zeng_datalink_fit": {
+          "median_percent": 8.821313240861073,
+          "unweighted_mean_absolute_percent": 10.881842939279862,
+          "max_absolute_percent": 21.802329816366584
+        },
+        "faessler_datalink_fit": {
+          "median_percent": 8.815982229078557,
+          "unweighted_mean_absolute_percent": 11.020769489600776,
+          "max_absolute_percent": 21.798474209308537
+        },
+        "kirschstein_datalink_fit": {
+          "median_percent": 8.82349632790721,
+          "unweighted_mean_absolute_percent": 10.808012913029758,
+          "max_absolute_percent": 21.795134808207585
+        }
+      }
+    },
+    "historical_post_intervention": {
+      "selection": {
+        "phase": "post_intervention",
+        "max_scalar_acceleration_ms2": null
+      },
+      "selected_before_stable_gate_count": 5533,
+      "bin_count": 16,
+      "bins": [
+        {
+          "speed_ms": 2.5027204150165123,
+          "sample_count": 275,
+          "raw_sample_count": 307,
+          "stable_fraction": 0.8957654723127035,
+          "measured_esc_sum_power_w": 871.233,
+          "measured_ratio": 1.149549209582908,
+          "predicted_ratio": {
+            "zeng_datalink_fit": 0.9927119660565407,
+            "faessler_datalink_fit": 0.9928076908987968,
+            "kirschstein_datalink_fit": 0.9927000879432929
+          },
+          "percent_residual": {
+            "zeng_datalink_fit": 15.79886703183293,
+            "faessler_datalink_fit": 15.787701900477003,
+            "kirschstein_datalink_fit": 15.800252618550692
+          }
+        },
+        {
+          "speed_ms": 3.5593568508281086,
+          "sample_count": 490,
+          "raw_sample_count": 496,
+          "stable_fraction": 0.9879032258064516,
+          "measured_esc_sum_power_w": 857.3555,
+          "measured_ratio": 1.1312385290233027,
+          "predicted_ratio": {
+            "zeng_datalink_fit": 0.9866395139237059,
+            "faessler_datalink_fit": 0.9866857214785337,
+            "kirschstein_datalink_fit": 0.9866851405055946
+          },
+          "percent_residual": {
+            "zeng_datalink_fit": 14.655708904719411,
+            "faessler_datalink_fit": 14.650339454406902,
+            "kirschstein_datalink_fit": 14.650406962005768
+          }
+        },
+        {
+          "speed_ms": 4.444238438228989,
+          "sample_count": 398,
+          "raw_sample_count": 398,
+          "stable_fraction": 1.0,
+          "measured_esc_sum_power_w": 821.808,
+          "measured_ratio": 1.084335346375666,
+          "predicted_ratio": {
+            "zeng_datalink_fit": 0.9813116531268199,
+            "faessler_datalink_fit": 0.9812636127145724,
+            "kirschstein_datalink_fit": 0.9814281142781008
+          },
+          "percent_residual": {
+            "zeng_datalink_fit": 10.498570247339334,
+            "faessler_datalink_fit": 10.503980003493197,
+            "kirschstein_datalink_fit": 10.485457936291098
+          }
+        },
+        {
+          "speed_ms": 5.509108802942101,
+          "sample_count": 305,
+          "raw_sample_count": 305,
+          "stable_fraction": 1.0,
+          "measured_esc_sum_power_w": 858.7049999999999,
+          "measured_ratio": 1.133019128080423,
+          "predicted_ratio": {
+            "zeng_datalink_fit": 0.9758510681897635,
+            "faessler_datalink_fit": 0.9756854692748784,
+            "kirschstein_datalink_fit": 0.9760322666713384
+          },
+          "percent_residual": {
+            "zeng_datalink_fit": 16.105742465621464,
+            "faessler_datalink_fit": 16.12544859589573,
+            "kirschstein_datalink_fit": 16.08418766158959
+          }
+        },
+        {
+          "speed_ms": 6.494932126145095,
+          "sample_count": 269,
+          "raw_sample_count": 269,
+          "stable_fraction": 1.0,
+          "measured_esc_sum_power_w": 818.9590000000001,
+          "measured_ratio": 1.0805762306189148,
+          "predicted_ratio": {
+            "zeng_datalink_fit": 0.9729709045496061,
+            "faessler_datalink_fit": 0.9727633364275344,
+            "kirschstein_datalink_fit": 0.9731421065469631
+          },
+          "percent_residual": {
+            "zeng_datalink_fit": 11.059459801536399,
+            "faessler_datalink_fit": 11.083157655522102,
+            "kirschstein_datalink_fit": 11.039921440987111
+          }
+        },
+        {
+          "speed_ms": 7.577294656744568,
+          "sample_count": 251,
+          "raw_sample_count": 251,
+          "stable_fraction": 1.0,
+          "measured_esc_sum_power_w": 898.4630000000001,
+          "measured_ratio": 1.1854778589533324,
+          "predicted_ratio": {
+            "zeng_datalink_fit": 0.9735181917570471,
+            "faessler_datalink_fit": 0.973384912128346,
+            "kirschstein_datalink_fit": 0.9735776952968157
+          },
+          "percent_residual": {
+            "zeng_datalink_fit": 21.772543029086222,
+            "faessler_datalink_fit": 21.78921659687907,
+            "kirschstein_datalink_fit": 21.76510048249558
+          }
+        },
+        {
+          "speed_ms": 8.452676735021797,
+          "sample_count": 203,
+          "raw_sample_count": 203,
+          "stable_fraction": 1.0,
+          "measured_esc_sum_power_w": 873.957,
+          "measured_ratio": 1.1531433939709006,
+          "predicted_ratio": {
+            "zeng_datalink_fit": 0.977492488919935,
+            "faessler_datalink_fit": 0.9774925679859376,
+            "kirschstein_datalink_fit": 0.977412528332719
+          },
+          "percent_residual": {
+            "zeng_datalink_fit": 17.969540128645733,
+            "faessler_datalink_fit": 17.969530586496486,
+            "kirschstein_datalink_fit": 17.97919103185073
+          }
+        },
+        {
+          "speed_ms": 9.491030219985142,
+          "sample_count": 199,
+          "raw_sample_count": 199,
+          "stable_fraction": 1.0,
+          "measured_esc_sum_power_w": 836.121,
+          "measured_ratio": 1.1032206478240274,
+          "predicted_ratio": {
+            "zeng_datalink_fit": 0.9868275876695604,
+            "faessler_datalink_fit": 0.9869864150763499,
+            "kirschstein_datalink_fit": 0.9866113247071409
+          },
+          "percent_residual": {
+            "zeng_datalink_fit": 11.794670275618735,
+            "faessler_datalink_fit": 11.776680101385795,
+            "kirschstein_datalink_fit": 11.819175413529749
+          }
+        },
+        {
+          "speed_ms": 10.527785559277056,
+          "sample_count": 203,
+          "raw_sample_count": 215,
+          "stable_fraction": 0.9441860465116279,
+          "measured_esc_sum_power_w": 883.03,
+          "measured_ratio": 1.1651147724408917,
+          "predicted_ratio": {
+            "zeng_datalink_fit": 1.0014926976928324,
+            "faessler_datalink_fit": 1.0016737773319122,
+            "kirschstein_datalink_fit": 1.0013055333321645
+          },
+          "percent_residual": {
+            "zeng_datalink_fit": 16.337820048513585,
+            "faessler_datalink_fit": 16.31678883960861,
+            "kirschstein_datalink_fit": 16.359565952222344
+          }
+        },
+        {
+          "speed_ms": 11.536537970491283,
+          "sample_count": 214,
+          "raw_sample_count": 228,
+          "stable_fraction": 0.9385964912280702,
+          "measured_esc_sum_power_w": 907.1335,
+          "measured_ratio": 1.1969181584159199,
+          "predicted_ratio": {
+            "zeng_datalink_fit": 1.021117903486044,
+            "faessler_datalink_fit": 1.021028797262551,
+            "kirschstein_datalink_fit": 1.0212757273074435
+          },
+          "percent_residual": {
+            "zeng_datalink_fit": 17.2164501601336,
+            "faessler_datalink_fit": 17.226679759174335,
+            "kirschstein_datalink_fit": 17.19833600388714
+          }
+        },
+        {
+          "speed_ms": 12.326534964216961,
+          "sample_count": 232,
+          "raw_sample_count": 244,
+          "stable_fraction": 0.9508196721311475,
+          "measured_esc_sum_power_w": 826.3965000000001,
+          "measured_ratio": 1.0903896470600651,
+          "predicted_ratio": {
+            "zeng_datalink_fit": 1.0402950278684426,
+            "faessler_datalink_fit": 1.0396855881280946,
+            "kirschstein_datalink_fit": 1.0410492755064793
+          },
+          "percent_residual": {
+            "zeng_datalink_fit": 4.8154242642364675,
+            "faessler_datalink_fit": 4.876864651289514,
+            "kirschstein_datalink_fit": 4.739484740487554
+          }
+        },
+        {
+          "speed_ms": 13.416916997403074,
+          "sample_count": 216,
+          "raw_sample_count": 242,
+          "stable_fraction": 0.8925619834710744,
+          "measured_esc_sum_power_w": 869.418,
+          "measured_ratio": 1.14715440610853,
+          "predicted_ratio": {
+            "zeng_datalink_fit": 1.0724300420130528,
+            "faessler_datalink_fit": 1.0704978280987634,
+            "kirschstein_datalink_fit": 1.0746428840545372
+          },
+          "percent_residual": {
+            "zeng_datalink_fit": 6.967761174911913,
+            "faessler_datalink_fit": 7.1608345199458245,
+            "kirschstein_datalink_fit": 6.7474993907197245
+          }
+        },
+        {
+          "speed_ms": 14.299320802850165,
+          "sample_count": 105,
+          "raw_sample_count": 132,
+          "stable_fraction": 0.7954545454545454,
+          "measured_esc_sum_power_w": 898.682,
+          "measured_ratio": 1.1857668187113977,
+          "predicted_ratio": {
+            "zeng_datalink_fit": 1.1033956622345726,
+            "faessler_datalink_fit": 1.0997525625717746,
+            "kirschstein_datalink_fit": 1.1074641318483769
+          },
+          "percent_residual": {
+            "zeng_datalink_fit": 7.465242006662298,
+            "faessler_datalink_fit": 7.821237164338002,
+            "kirschstein_datalink_fit": 7.0704490205323545
+          }
+        },
+        {
+          "speed_ms": 15.772337635256754,
+          "sample_count": 186,
+          "raw_sample_count": 298,
+          "stable_fraction": 0.6241610738255033,
+          "measured_esc_sum_power_w": 1200.682,
+          "measured_ratio": 1.584241005632736,
+          "predicted_ratio": {
+            "zeng_datalink_fit": 1.1653828841008123,
+            "faessler_datalink_fit": 1.1572996550758137,
+            "kirschstein_datalink_fit": 1.1742352050858658
+          },
+          "percent_residual": {
+            "zeng_datalink_fit": 35.94167438413229,
+            "faessler_datalink_fit": 36.89116718253527,
+            "kirschstein_datalink_fit": 34.916837680478906
+          }
+        },
+        {
+          "speed_ms": 16.839451381588393,
+          "sample_count": 939,
+          "raw_sample_count": 1111,
+          "stable_fraction": 0.8451845184518452,
+          "measured_esc_sum_power_w": 896.5550000000001,
+          "measured_ratio": 1.1829603465405976,
+          "predicted_ratio": {
+            "zeng_datalink_fit": 1.218682067484693,
+            "faessler_datalink_fit": 1.205912640598473,
+            "kirschstein_datalink_fit": 1.2325827139609964
+          },
+          "percent_residual": {
+            "zeng_datalink_fit": -2.93117638284639,
+            "faessler_datalink_fit": -1.903313165909315,
+            "kirschstein_datalink_fit": -4.025885391572115
+          }
+        },
+        {
+          "speed_ms": 17.081476605719267,
+          "sample_count": 607,
+          "raw_sample_count": 635,
+          "stable_fraction": 0.9559055118110236,
+          "measured_esc_sum_power_w": 862.296,
+          "measured_ratio": 1.1377572764421269,
+          "predicted_ratio": {
+            "zeng_datalink_fit": 1.2317869958535927,
+            "faessler_datalink_fit": 1.217761364289551,
+            "kirschstein_datalink_fit": 1.2470428802113054
+          },
+          "percent_residual": {
+            "zeng_datalink_fit": -7.633602215966406,
+            "faessler_datalink_fit": -6.569767295425654,
+            "kirschstein_datalink_fit": -8.76358026683578
+          }
+        }
+      ],
+      "residual_summary": {
+        "zeng_datalink_fit": {
+          "median_percent": 13.225189590169073,
+          "unweighted_mean_absolute_percent": 13.6852657826127,
+          "max_absolute_percent": 35.94167438413229
+        },
+        "faessler_datalink_fit": {
+          "median_percent": 13.213509777896348,
+          "unweighted_mean_absolute_percent": 13.653294217048925,
+          "max_absolute_percent": 36.89116718253527
+        },
+        "kirschstein_datalink_fit": {
+          "median_percent": 13.234791187767758,
+          "unweighted_mean_absolute_percent": 13.715333249627264,
+          "max_absolute_percent": 34.916837680478906
+        }
+      }
+    }
+  },
+  "limitations": [
+    "Historical variant names describe earlier sample selections; all predictions use the current installed package and declared configuration, not historical model coefficients.",
+    "The current scalar acceleration gate does not exclude constant-speed turns; wind, mission geometry and attitude estimation remain potential confounders.",
+    "Selection and clock alignment were developed after examining the later flight; this is not a prospectively blinded validation.",
+    "ESC-slot power is not promoted to independently calibrated vehicle power; cross-flight electrical calibration remains an assumption.",
+    "Public replay verifies fitting, selection and residual computation from derived telemetry, not the private raw decoder or physical hardware metadata."
+  ]
+}

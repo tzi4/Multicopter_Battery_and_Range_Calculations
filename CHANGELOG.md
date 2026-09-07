@@ -1,5 +1,23 @@
 # Release notes
 
+## 0.1.2rc1 — 2026-09-07
+
+- Add README flight plots, downloadable bin tables, derived July 21 telemetry
+  and scripts to reproduce both calibration and later-flight comparisons.
+- Declare G29×9.5 and mass explicitly in the reproduction examples; retain the
+  legacy CLI's fixed G28 profile for historical comparisons. Record unknown
+  flight-specific mass and sensor wiring as assumptions.
+- Cite the four model papers, Kirschstein's corrigendum and official technical
+  documentation, with an equation-to-code mapping and BibTeX.
+- Correct Kirschstein profile power to use total rotor disk area `N π r²`,
+  including squared-radius scaling during transfer. Add area regression checks.
+  The Zeng and Faessler implementations are unchanged.
+- Preserve prior numerical audits as historical evidence. Report all retained
+  comparison bins; two old sub-percent results are not an overall accuracy claim.
+
+This is a local release candidate; these notes do not imply a published tag,
+GitHub release or PyPI upload.
+
 ## 0.1.1rc1 — 2026-09-07
 
 Release candidate. The version in `pyproject.toml` is `0.1.1rc1`; the proposed

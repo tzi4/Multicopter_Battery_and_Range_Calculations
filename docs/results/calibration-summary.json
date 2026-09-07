@@ -1,8 +1,9 @@
 {
-  "schema_version": 1,
+  "schema_version": 2,
   "scope": "July 3 calibration reproduction; not independent flight validation",
-  "package_version": "0.1.1rc1",
-  "module_sha256": "48036bd570687456264ac74b4d72789488fc589cddc3b428852c5fce37db839a",
+  "package_version": "0.1.2rc1",
+  "module_sha256": "222f17eeee0fd28befdbac21f663da5664bd3f7ac92ec46bb11415a600d58923",
+  "reproduction_script_sha256": "6527ce6cf15bda285030c8b920ef1871aae2b3912bd25b3538a6f67d6dbfc004",
   "input_sha256": {
     "00000076.BIN": "9feb424e4fac3ab776af2c1e8a36eb5177cbeb8a525ce8b15bdcfabdb5257bfc",
     "00000077.BIN": "bb314ffabf7ec03b2c5900b92bf76f5908caf4e068afa9448b2bcf961aba40b0",
@@ -40,97 +41,1363 @@
   "profile": {
     "mass_kg": 12.4,
     "num_rotors": 4,
-    "prop_diameter_inch": 28.0
+    "prop_diameter_inch": 29.0
   },
+  "configuration_status": "Declared 29-inch propeller and 12.4 kg mass. Owner selected G29 for the showcase; actual mass may differ between flights (12.4, 12.8 or 13 kg). These inputs are not inferred measurements.",
+  "electrical_status": "Power is the sum of four ESC V*I slots. The historical x2 vehicle conversion is conditional on unverified sensor wiring; parallel pack count alone does not establish it.",
   "joined_samples": 46175,
   "stable_samples": 28095,
   "rpm_scale": 0.47619047619047616,
-  "tip_speed_ms": 80.05357530658453,
-  "tip_speed_before_rpm_conversion_ms": 168.11250814382754,
-  "parallel_branches": 2,
-  "hover_power_branch_w": 757.8910000000001,
-  "hover_power_vehicle_w": 1515.7820000000002,
-  "usable_energy_branch_wh": 559.44,
-  "usable_energy_vehicle_wh": 1118.88,
-  "integrated_energy_branch_wh": 490.2733438407017,
-  "integrated_energy_vehicle_wh": 980.5466876814035,
-  "hover_10_percent_reserve_min": 39.86029653340652,
+  "tip_speed_ms": 82.91263156753398,
+  "tip_speed_before_rpm_conversion_ms": 174.11652629182137,
+  "hover_esc_sum_power_w": 757.8910000000001,
+  "integrated_esc_sum_energy_wh": 490.2733438407017,
+  "historical_energy_power_scenario": {
+    "assumed_multiplier": 2,
+    "usable_energy_basis_wh": 559.44,
+    "conditional_vehicle_hover_w": 1515.7820000000002,
+    "conditional_vehicle_energy_wh": 1118.88,
+    "hover_10_percent_reserve_min": 39.86029653340652
+  },
   "battery_direct_current_fit_enabled": false,
   "battery_warnings": [
     "battery_current_scale_suspect: BAT.Curr is near zero",
     "battery_energy_scale_suspect: BAT.EnrgTot disagrees with DataLink energy"
   ],
   "calibration_bin_mae": {
-    "zeng_measured_fit": 0.0276649679688276,
-    "faessler_measured_fit": 0.027670920696745635,
-    "kirschstein_measured_fit": 0.02760774802502932
+    "zeng_measured_fit": 0.027756634728687148,
+    "faessler_measured_fit": 0.027783671938652922,
+    "kirschstein_measured_fit": 0.02768786159401365
   },
   "bins": [
     {
       "speed_ms": 2.4624748023768035,
       "power_ratio": 1.016136885119364,
       "sample_count": 1303,
-      "raw_sample_count": 1304
+      "raw_sample_count": 1304,
+      "predicted_ratio": {
+        "zeng_datalink_fit": 0.9929218575770486,
+        "faessler_datalink_fit": 0.993017761272335,
+        "kirschstein_datalink_fit": 0.9929087481500622
+      }
     },
     {
       "speed_ms": 3.511285481322351,
       "power_ratio": 1.0266898538180291,
       "sample_count": 1107,
-      "raw_sample_count": 1107
+      "raw_sample_count": 1107,
+      "predicted_ratio": {
+        "zeng_datalink_fit": 0.9869309543808211,
+        "faessler_datalink_fit": 0.9869811906086716,
+        "kirschstein_datalink_fit": 0.9869730636860494
+      }
     },
     {
       "speed_ms": 4.526273127797663,
       "power_ratio": 1.0079628864836763,
       "sample_count": 911,
-      "raw_sample_count": 911
+      "raw_sample_count": 911,
+      "predicted_ratio": {
+        "zeng_datalink_fit": 0.9808375389759019,
+        "faessler_datalink_fit": 0.9807796487159961,
+        "kirschstein_datalink_fit": 0.9809604980487707
+      }
     },
     {
       "speed_ms": 5.594750877597143,
       "power_ratio": 0.9666264673943878,
       "sample_count": 1760,
-      "raw_sample_count": 1760
+      "raw_sample_count": 1760,
+      "predicted_ratio": {
+        "zeng_datalink_fit": 0.9754997524437903,
+        "faessler_datalink_fit": 0.9753270069163537,
+        "kirschstein_datalink_fit": 0.9756833658130444
+      }
     },
     {
       "speed_ms": 6.4221533884016315,
       "power_ratio": 1.0035889065841919,
       "sample_count": 1711,
-      "raw_sample_count": 1711
+      "raw_sample_count": 1711,
+      "predicted_ratio": {
+        "zeng_datalink_fit": 0.9730860222184037,
+        "faessler_datalink_fit": 0.972878136753661,
+        "kirschstein_datalink_fit": 0.973261001448347
+      }
     },
     {
       "speed_ms": 7.900430308277751,
       "power_ratio": 0.9550555422877431,
       "sample_count": 4935,
-      "raw_sample_count": 4935
+      "raw_sample_count": 4935,
+      "predicted_ratio": {
+        "zeng_datalink_fit": 0.9745910063533365,
+        "faessler_datalink_fit": 0.9745019502947732,
+        "kirschstein_datalink_fit": 0.9746013216511487
+      }
     },
     {
       "speed_ms": 8.07723560857004,
       "power_ratio": 0.9523051467823208,
       "sample_count": 2020,
-      "raw_sample_count": 2020
+      "raw_sample_count": 2020,
+      "predicted_ratio": {
+        "zeng_datalink_fit": 0.9753704126818102,
+        "faessler_datalink_fit": 0.9753085157396431,
+        "kirschstein_datalink_fit": 0.9753521889630519
+      }
     },
     {
       "speed_ms": 9.536946761960088,
       "power_ratio": 1.0839282957575693,
       "sample_count": 1154,
-      "raw_sample_count": 1154
+      "raw_sample_count": 1154,
+      "predicted_ratio": {
+        "zeng_datalink_fit": 0.9873619810380309,
+        "faessler_datalink_fit": 0.9875258604406713,
+        "kirschstein_datalink_fit": 0.9871423589820394
+      }
     },
     {
       "speed_ms": 10.904366283273962,
       "power_ratio": 0.9918833974806402,
       "sample_count": 8556,
-      "raw_sample_count": 8556
+      "raw_sample_count": 8556,
+      "predicted_ratio": {
+        "zeng_datalink_fit": 1.0081907988699064,
+        "faessler_datalink_fit": 1.0083136117169262,
+        "kirschstein_datalink_fit": 1.0080870179160952
+      }
     },
     {
       "speed_ms": 11.088186985269962,
       "power_ratio": 1.023626088711965,
       "sample_count": 4552,
-      "raw_sample_count": 4552
+      "raw_sample_count": 4552,
+      "predicted_ratio": {
+        "zeng_datalink_fit": 1.0117308685831021,
+        "faessler_datalink_fit": 1.0118080494466346,
+        "kirschstein_datalink_fit": 1.011686189892317
+      }
     },
     {
       "speed_ms": 12.338323946638544,
       "power_ratio": 1.0490848947935785,
       "sample_count": 86,
-      "raw_sample_count": 86
+      "raw_sample_count": 86,
+      "predicted_ratio": {
+        "zeng_datalink_fit": 1.0406070228832585,
+        "faessler_datalink_fit": 1.0399873034278264,
+        "kirschstein_datalink_fit": 1.0413728139248861
+      }
+    }
+  ],
+  "model_curves": [
+    {
+      "speed_ms": 0.0,
+      "zeng_datalink_fit": 1.0,
+      "faessler_datalink_fit": 1.0,
+      "kirschstein_datalink_fit": 1.0
+    },
+    {
+      "speed_ms": 0.1,
+      "zeng_datalink_fit": 0.9999866095870587,
+      "faessler_datalink_fit": 0.9999871816354843,
+      "kirschstein_datalink_fit": 0.9999863710083015
+    },
+    {
+      "speed_ms": 0.2,
+      "zeng_datalink_fit": 0.9999466597336178,
+      "faessler_datalink_fit": 0.9999488630017193,
+      "kirschstein_datalink_fit": 0.9999457509499573
+    },
+    {
+      "speed_ms": 0.3,
+      "zeng_datalink_fit": 0.9998804956362306,
+      "faessler_datalink_fit": 0.9998852647124575,
+      "kirschstein_datalink_fit": 0.9998785516804207
+    },
+    {
+      "speed_ms": 0.4,
+      "zeng_datalink_fit": 0.9997884800424487,
+      "faessler_datalink_fit": 0.9997966286860193,
+      "kirschstein_datalink_fit": 0.9997852004122949
+    },
+    {
+      "speed_ms": 0.5,
+      "zeng_datalink_fit": 0.9996709933623272,
+      "faessler_datalink_fit": 0.9996832182806439,
+      "kirschstein_datalink_fit": 0.9996661398088236
+    },
+    {
+      "speed_ms": 0.6,
+      "zeng_datalink_fit": 0.9995284338235751,
+      "faessler_datalink_fit": 0.999545318482822,
+      "kirschstein_datalink_fit": 0.9995218281139706
+    },
+    {
+      "speed_ms": 0.7,
+      "zeng_datalink_fit": 0.9993612176693819,
+      "faessler_datalink_fit": 0.9993832361474303,
+      "kirschstein_datalink_fit": 0.9993527393182823
+    },
+    {
+      "speed_ms": 0.8,
+      "zeng_datalink_fit": 0.999169779397658,
+      "faessler_datalink_fit": 0.9991973002881378,
+      "kirschstein_datalink_fit": 0.9991593633594729
+    },
+    {
+      "speed_ms": 0.9,
+      "zeng_datalink_fit": 0.9989545720401235,
+      "faessler_datalink_fit": 0.9989878624161825,
+      "kirschstein_datalink_fit": 0.9989422063564175
+    },
+    {
+      "speed_ms": 1.0,
+      "zeng_datalink_fit": 0.9987160674793537,
+      "faessler_datalink_fit": 0.9987552969252217,
+      "kirschstein_datalink_fit": 0.9987017908749699
+    },
+    {
+      "speed_ms": 1.1,
+      "zeng_datalink_fit": 0.9984547568015572,
+      "faessler_datalink_fit": 0.9985000015195574,
+      "kirschstein_datalink_fit": 0.9984386562237373
+    },
+    {
+      "speed_ms": 1.2,
+      "zeng_datalink_fit": 0.9981711506825058,
+      "faessler_datalink_fit": 0.998222397682605,
+      "kirschstein_datalink_fit": 0.9981533587776517
+    },
+    {
+      "speed_ms": 1.3,
+      "zeng_datalink_fit": 0.9978657798036633,
+      "faessler_datalink_fit": 0.9979229311820154,
+      "kirschstein_datalink_fit": 0.9978464723268581
+    },
+    {
+      "speed_ms": 1.4,
+      "zeng_datalink_fit": 0.9975391952951607,
+      "faessler_datalink_fit": 0.9976020726073913,
+      "kirschstein_datalink_fit": 0.9975185884481126
+    },
+    {
+      "speed_ms": 1.5,
+      "zeng_datalink_fit": 0.9971919692018634,
+      "faessler_datalink_fit": 0.9972603179360269,
+      "kirschstein_datalink_fit": 0.9971703168955358
+    },
+    {
+      "speed_ms": 1.6,
+      "zeng_datalink_fit": 0.9968246949683286,
+      "faessler_datalink_fit": 0.9968981891215841,
+      "kirschstein_datalink_fit": 0.9968022860072087
+    },
+    {
+      "speed_ms": 1.7,
+      "zeng_datalink_fit": 0.9964379879380152,
+      "faessler_datalink_fit": 0.9965162347000653,
+      "kirschstein_datalink_fit": 0.9964151431237127
+    },
+    {
+      "speed_ms": 1.8,
+      "zeng_datalink_fit": 0.9960324858616372,
+      "faessler_datalink_fit": 0.996115030406886,
+      "kirschstein_datalink_fit": 0.9960095550143337
+    },
+    {
+      "speed_ms": 1.9,
+      "zeng_datalink_fit": 0.9956088494090727,
+      "faessler_datalink_fit": 0.9956951797982662,
+      "kirschstein_datalink_fit": 0.9955862083062479
+    },
+    {
+      "speed_ms": 2.0,
+      "zeng_datalink_fit": 0.9951677626787697,
+      "faessler_datalink_fit": 0.9952573148695781,
+      "kirschstein_datalink_fit": 0.9951458099116036
+    },
+    {
+      "speed_ms": 2.1,
+      "zeng_datalink_fit": 0.9947099336980898,
+      "faessler_datalink_fit": 0.9948020966626987,
+      "kirschstein_datalink_fit": 0.9946890874470051
+    },
+    {
+      "speed_ms": 2.2,
+      "zeng_datalink_fit": 0.9942360949075671,
+      "faessler_datalink_fit": 0.9943302158538343,
+      "kirschstein_datalink_fit": 0.9942167896395057
+    },
+    {
+      "speed_ms": 2.3,
+      "zeng_datalink_fit": 0.9937470036215849,
+      "faessler_datalink_fit": 0.9938423933127207,
+      "kirschstein_datalink_fit": 0.9937296867128257
+    },
+    {
+      "speed_ms": 2.4,
+      "zeng_datalink_fit": 0.9932434424575373,
+      "faessler_datalink_fit": 0.9933393806235681,
+      "kirschstein_datalink_fit": 0.9932285707471462
+    },
+    {
+      "speed_ms": 2.5,
+      "zeng_datalink_fit": 0.9927262197251323,
+      "faessler_datalink_fit": 0.9928219605576236,
+      "kirschstein_datalink_fit": 0.992714256005477
+    },
+    {
+      "speed_ms": 2.6,
+      "zeng_datalink_fit": 0.9921961697671344,
+      "faessler_datalink_fit": 0.992290947486786,
+      "kirschstein_datalink_fit": 0.9921875792193087
+    },
+    {
+      "speed_ms": 2.7,
+      "zeng_datalink_fit": 0.9916541532425368,
+      "faessler_datalink_fit": 0.9917471877273392,
+      "kirschstein_datalink_fit": 0.9916493998259905
+    },
+    {
+      "speed_ms": 2.8,
+      "zeng_datalink_fit": 0.9911010573429268,
+      "faessler_datalink_fit": 0.9911915598025927,
+      "kirschstein_datalink_fit": 0.9911006001500915
+    },
+    {
+      "speed_ms": 2.9,
+      "zeng_datalink_fit": 0.9905377959326663,
+      "faessler_datalink_fit": 0.9906249746130398,
+      "kirschstein_datalink_fit": 0.9905420855208792
+    },
+    {
+      "speed_ms": 3.0,
+      "zeng_datalink_fit": 0.9899653096034604,
+      "faessler_datalink_fit": 0.9900483755025968,
+      "kirschstein_datalink_fit": 0.9899747843180149
+    },
+    {
+      "speed_ms": 3.1,
+      "zeng_datalink_fit": 0.9893845656339672,
+      "faessler_datalink_fit": 0.989462738209577,
+      "kirschstein_datalink_fit": 0.9893996479376276
+    },
+    {
+      "speed_ms": 3.2,
+      "zeng_datalink_fit": 0.9887965578453094,
+      "faessler_datalink_fit": 0.9888690706912978,
+      "kirschstein_datalink_fit": 0.9888176506710992
+    },
+    {
+      "speed_ms": 3.3,
+      "zeng_datalink_fit": 0.9882023063436923,
+      "faessler_datalink_fit": 0.9882684128116559,
+      "kirschstein_datalink_fit": 0.9882297894891945
+    },
+    {
+      "speed_ms": 3.4,
+      "zeng_datalink_fit": 0.9876028571418448,
+      "faessler_datalink_fit": 0.9876618358816058,
+      "kirschstein_datalink_fit": 0.9876370837245805
+    },
+    {
+      "speed_ms": 3.5,
+      "zeng_datalink_fit": 0.9869992816516707,
+      "faessler_datalink_fit": 0.987050442043307,
+      "kirschstein_datalink_fit": 0.9870405746463626
+    },
+    {
+      "speed_ms": 3.6,
+      "zeng_datalink_fit": 0.9863926760413441,
+      "faessler_datalink_fit": 0.9864353634897236,
+      "kirschstein_datalink_fit": 0.9864413249209538
+    },
+    {
+      "speed_ms": 3.7,
+      "zeng_datalink_fit": 0.9857841604511043,
+      "faessler_datalink_fit": 0.9858177615127034,
+      "kirschstein_datalink_fit": 0.9858404179544669
+    },
+    {
+      "speed_ms": 3.8,
+      "zeng_datalink_fit": 0.9851748780632054,
+      "faessler_datalink_fit": 0.9851988253740223,
+      "kirschstein_datalink_fit": 0.9852389571128181
+    },
+    {
+      "speed_ms": 3.9,
+      "zeng_datalink_fit": 0.9845659940228504,
+      "faessler_datalink_fit": 0.9845797709955412,
+      "kirschstein_datalink_fit": 0.9846380648168777
+    },
+    {
+      "speed_ms": 4.0,
+      "zeng_datalink_fit": 0.9839586942084659,
+      "faessler_datalink_fit": 0.9839618394664845,
+      "kirschstein_datalink_fit": 0.984038881511298
+    },
+    {
+      "speed_ms": 4.1,
+      "zeng_datalink_fit": 0.9833541838513602,
+      "faessler_datalink_fit": 0.9833462953678891,
+      "kirschstein_datalink_fit": 0.9834425645070457
+    },
+    {
+      "speed_ms": 4.2,
+      "zeng_datalink_fit": 0.982753686006611,
+      "faessler_datalink_fit": 0.9827344249164665,
+      "kirschstein_datalink_fit": 0.9828502866991904
+    },
+    {
+      "speed_ms": 4.3,
+      "zeng_datalink_fit": 0.9821584398789345,
+      "faessler_datalink_fit": 0.9821275339324321,
+      "kirschstein_datalink_fit": 0.9822632351630937
+    },
+    {
+      "speed_ms": 4.4,
+      "zeng_datalink_fit": 0.981569699009272,
+      "faessler_datalink_fit": 0.9815269456382625,
+      "kirschstein_datalink_fit": 0.9816826096338046
+    },
+    {
+      "speed_ms": 4.5,
+      "zeng_datalink_fit": 0.9809887293298256,
+      "faessler_datalink_fit": 0.9809339982977693,
+      "kirschstein_datalink_fit": 0.9811096208751482
+    },
+    {
+      "speed_ms": 4.6,
+      "zeng_datalink_fit": 0.9804168070972951,
+      "faessler_datalink_fit": 0.9803500427073258,
+      "kirschstein_datalink_fit": 0.9805454889466796
+    },
+    {
+      "speed_ms": 4.7,
+      "zeng_datalink_fit": 0.9798552167160135,
+      "faessler_datalink_fit": 0.9797764395534424,
+      "kirschstein_datalink_fit": 0.9799914413783064
+    },
+    {
+      "speed_ms": 4.8,
+      "zeng_datalink_fit": 0.9793052484645404,
+      "faessler_datalink_fit": 0.979214556653156,
+      "kirschstein_datalink_fit": 0.9794487112639582
+    },
+    {
+      "speed_ms": 4.9,
+      "zeng_datalink_fit": 0.9787681961410003,
+      "faessler_datalink_fit": 0.9786657660957854,
+      "kirschstein_datalink_fit": 0.9789185352871076
+    },
+    {
+      "speed_ms": 5.0,
+      "zeng_datalink_fit": 0.9782453546439942,
+      "faessler_datalink_fit": 0.9781314413064801,
+      "kirschstein_datalink_fit": 0.978402151692259
+    },
+    {
+      "speed_ms": 5.1,
+      "zeng_datalink_fit": 0.9777380175072266,
+      "faessler_datalink_fit": 0.9776129540535884,
+      "kirschstein_datalink_fit": 0.9779007982176101
+    },
+    {
+      "speed_ms": 5.2,
+      "zeng_datalink_fit": 0.9772474744070522,
+      "faessler_datalink_fit": 0.9771116714231508,
+      "kirschstein_datalink_fit": 0.9774157100049935
+    },
+    {
+      "speed_ms": 5.3,
+      "zeng_datalink_fit": 0.97677500866291,
+      "faessler_datalink_fit": 0.9766289527847621,
+      "kirschstein_datalink_fit": 0.9769481175038289
+    },
+    {
+      "speed_ms": 5.4,
+      "zeng_datalink_fit": 0.9763218947510632,
+      "faessler_datalink_fit": 0.9761661467735824,
+      "kirschstein_datalink_fit": 0.9764992443862144
+    },
+    {
+      "speed_ms": 5.5,
+      "zeng_datalink_fit": 0.9758893958521733,
+      "faessler_datalink_fit": 0.9757245883134211,
+      "kirschstein_datalink_fit": 0.9760703054903617
+    },
+    {
+      "speed_ms": 5.6,
+      "zeng_datalink_fit": 0.9754787614530227,
+      "faessler_datalink_fit": 0.9753055957055474,
+      "kirschstein_datalink_fit": 0.9756625048094077
+    },
+    {
+      "speed_ms": 5.7,
+      "zeng_datalink_fit": 0.9750912250221202,
+      "faessler_datalink_fit": 0.9749104678071875,
+      "kirschstein_datalink_fit": 0.9752770335421487
+    },
+    {
+      "speed_ms": 5.8,
+      "zeng_datalink_fit": 0.9747280017780457,
+      "faessler_datalink_fit": 0.9745404813225916,
+      "kirschstein_datalink_fit": 0.9749150682215023
+    },
+    {
+      "speed_ms": 5.9,
+      "zeng_datalink_fit": 0.974390286568174,
+      "faessler_datalink_fit": 0.9741968882280885,
+      "kirschstein_datalink_fit": 0.974577768935493
+    },
+    {
+      "speed_ms": 6.0,
+      "zeng_datalink_fit": 0.9740792518739433,
+      "faessler_datalink_fit": 0.9738809133507488,
+      "kirschstein_datalink_fit": 0.9742662776543025
+    },
+    {
+      "speed_ms": 6.1,
+      "zeng_datalink_fit": 0.9737960459571012,
+      "faessler_datalink_fit": 0.9735937521181748,
+      "kirschstein_datalink_fit": 0.9739817166755004
+    },
+    {
+      "speed_ms": 6.2,
+      "zeng_datalink_fit": 0.9735417911594292,
+      "faessler_datalink_fit": 0.9733365684945918,
+      "kirschstein_datalink_fit": 0.9737251871979178
+    },
+    {
+      "speed_ms": 6.3,
+      "zeng_datalink_fit": 0.9733175823663542,
+      "faessler_datalink_fit": 0.9731104931158814,
+      "kirschstein_datalink_fit": 0.973497768032907
+    },
+    {
+      "speed_ms": 6.4,
+      "zeng_datalink_fit": 0.9731244856426596,
+      "faessler_datalink_fit": 0.9729166216335124,
+      "kirschstein_datalink_fit": 0.9733005144598557
+    },
+    {
+      "speed_ms": 6.5,
+      "zeng_datalink_fit": 0.9729635370462446,
+      "faessler_datalink_fit": 0.9727560132746064,
+      "kirschstein_datalink_fit": 0.9731344572309566
+    },
+    {
+      "speed_ms": 6.6,
+      "zeng_datalink_fit": 0.9728357416236163,
+      "faessler_datalink_fit": 0.972629689622598,
+      "kirschstein_datalink_fit": 0.9730006017283092
+    },
+    {
+      "speed_ms": 6.7,
+      "zeng_datalink_fit": 0.9727420725885663,
+      "faessler_datalink_fit": 0.9725386336202594,
+      "kirschstein_datalink_fit": 0.9728999272745789
+    },
+    {
+      "speed_ms": 6.8,
+      "zeng_datalink_fit": 0.9726834706833378,
+      "faessler_datalink_fit": 0.9724837887942402,
+      "kirschstein_datalink_fit": 0.9728333865966227
+    },
+    {
+      "speed_ms": 6.9,
+      "zeng_datalink_fit": 0.9726608437195546,
+      "faessler_datalink_fit": 0.9724660586978185,
+      "kirschstein_datalink_fit": 0.9728019054397995
+    },
+    {
+      "speed_ms": 7.0,
+      "zeng_datalink_fit": 0.9726750662943192,
+      "faessler_datalink_fit": 0.9724863065662814,
+      "kirschstein_datalink_fit": 0.9728063823291089
+    },
+    {
+      "speed_ms": 7.1,
+      "zeng_datalink_fit": 0.9727269796751888,
+      "faessler_datalink_fit": 0.9725453551773008,
+      "kirschstein_datalink_fit": 0.9728476884718841
+    },
+    {
+      "speed_ms": 7.2,
+      "zeng_datalink_fit": 0.9728173918462523,
+      "faessler_datalink_fit": 0.9726439869068652,
+      "kirschstein_datalink_fit": 0.9729266677955187
+    },
+    {
+      "speed_ms": 7.3,
+      "zeng_datalink_fit": 0.9729470777062567,
+      "faessler_datalink_fit": 0.9727829439697788,
+      "kirschstein_datalink_fit": 0.9730441371126352
+    },
+    {
+      "speed_ms": 7.4,
+      "zeng_datalink_fit": 0.9731167794086895,
+      "faessler_datalink_fit": 0.9729629288324756,
+      "kirschstein_datalink_fit": 0.9732008864052325
+    },
+    {
+      "speed_ms": 7.5,
+      "zeng_datalink_fit": 0.9733272068328895,
+      "faessler_datalink_fit": 0.9731846047848853,
+      "kirschstein_datalink_fit": 0.9733976792186501
+    },
+    {
+      "speed_ms": 7.6,
+      "zeng_datalink_fit": 0.9735790381746726,
+      "faessler_datalink_fit": 0.9734485966573736,
+      "kirschstein_datalink_fit": 0.9736352531556937
+    },
+    {
+      "speed_ms": 7.7,
+      "zeng_datalink_fit": 0.9738729206445549,
+      "faessler_datalink_fit": 0.973755491668293,
+      "kirschstein_datalink_fit": 0.9739143204609301
+    },
+    {
+      "speed_ms": 7.8,
+      "zeng_datalink_fit": 0.9742094712614856,
+      "faessler_datalink_fit": 0.9741058403874665,
+      "kirschstein_datalink_fit": 0.9742355686850137
+    },
+    {
+      "speed_ms": 7.9,
+      "zeng_datalink_fit": 0.9745892777299754,
+      "faessler_datalink_fit": 0.9745001578009068,
+      "kirschstein_datalink_fit": 0.9745996614188898
+    },
+    {
+      "speed_ms": 8.0,
+      "zeng_datalink_fit": 0.97501289938869,
+      "faessler_datalink_fit": 0.9749389244622796,
+      "kirschstein_datalink_fit": 0.9750072390878688
+    },
+    {
+      "speed_ms": 8.1,
+      "zeng_datalink_fit": 0.9754808682188641,
+      "faessler_datalink_fit": 0.9754225877169849,
+      "kirschstein_datalink_fit": 0.9754589197958059
+    },
+    {
+      "speed_ms": 8.2,
+      "zeng_datalink_fit": 0.9759936899013314,
+      "faessler_datalink_fit": 0.9759515629852504,
+      "kirschstein_datalink_fit": 0.9759553002099944
+    },
+    {
+      "speed_ms": 8.3,
+      "zeng_datalink_fit": 0.9765518449114992,
+      "faessler_datalink_fit": 0.976526235091283,
+      "kirschstein_datalink_fit": 0.976496956477821
+    },
+    {
+      "speed_ms": 8.4,
+      "zeng_datalink_fit": 0.9771557896422032,
+      "faessler_datalink_fit": 0.9771469596262657,
+      "kirschstein_datalink_fit": 0.9770844451667471
+    },
+    {
+      "speed_ms": 8.5,
+      "zeng_datalink_fit": 0.977805957545064,
+      "faessler_datalink_fit": 0.9778140643338119,
+      "kirschstein_datalink_fit": 0.9777183042197469
+    },
+    {
+      "speed_ms": 8.6,
+      "zeng_datalink_fit": 0.9785027602816855,
+      "faessler_datalink_fit": 0.9785278505073651,
+      "kirschstein_datalink_fit": 0.9783990539189469
+    },
+    {
+      "speed_ms": 8.7,
+      "zeng_datalink_fit": 0.9792465888767825,
+      "faessler_datalink_fit": 0.9792885943899439,
+      "kirschstein_datalink_fit": 0.9791271978508249
+    },
+    {
+      "speed_ms": 8.8,
+      "zeng_datalink_fit": 0.9800378148660887,
+      "faessler_datalink_fit": 0.9800965485675469,
+      "kirschstein_datalink_fit": 0.9799032238669779
+    },
+    {
+      "speed_ms": 8.9,
+      "zeng_datalink_fit": 0.9808767914326543,
+      "faessler_datalink_fit": 0.9809519433484674,
+      "kirschstein_datalink_fit": 0.9807276050351008
+    },
+    {
+      "speed_ms": 9.0,
+      "zeng_datalink_fit": 0.9817638545258913,
+      "faessler_datalink_fit": 0.9818549881216643,
+      "kirschstein_datalink_fit": 0.9816008005754371
+    },
+    {
+      "speed_ms": 9.1,
+      "zeng_datalink_fit": 0.9826993239584468,
+      "faessler_datalink_fit": 0.9828058726882198,
+      "kirschstein_datalink_fit": 0.982523256778584
+    },
+    {
+      "speed_ms": 9.2,
+      "zeng_datalink_fit": 0.98368350447668,
+      "faessler_datalink_fit": 0.983804768560756,
+      "kirschstein_datalink_fit": 0.9834954079011056
+    },
+    {
+      "speed_ms": 9.3,
+      "zeng_datalink_fit": 0.9847166868011811,
+      "faessler_datalink_fit": 0.9848518302264855,
+      "kirschstein_datalink_fit": 0.9845176770359644
+    },
+    {
+      "speed_ms": 9.4,
+      "zeng_datalink_fit": 0.985799148634381,
+      "faessler_datalink_fit": 0.9859471963703144,
+      "kirschstein_datalink_fit": 0.9855904769552991
+    },
+    {
+      "speed_ms": 9.5,
+      "zeng_datalink_fit": 0.9869311556328831,
+      "faessler_datalink_fit": 0.9870909910551235,
+      "kirschstein_datalink_fit": 0.9867142109235603
+    },
+    {
+      "speed_ms": 9.6,
+      "zeng_datalink_fit": 0.9881129623426675,
+      "faessler_datalink_fit": 0.9882833248569822,
+      "kirschstein_datalink_fit": 0.9878892734794509
+    },
+    {
+      "speed_ms": 9.7,
+      "zeng_datalink_fit": 0.9893448130958116,
+      "faessler_datalink_fit": 0.9895242959536458,
+      "kirschstein_datalink_fit": 0.9891160511855375
+    },
+    {
+      "speed_ms": 9.8,
+      "zeng_datalink_fit": 0.9906269428677954,
+      "faessler_datalink_fit": 0.990813991165211,
+      "kirschstein_datalink_fit": 0.990394923344741
+    },
+    {
+      "speed_ms": 9.9,
+      "zeng_datalink_fit": 0.9919595780948568,
+      "faessler_datalink_fit": 0.9921524869462753,
+      "kirschstein_datalink_fit": 0.9917262626832708
+    },
+    {
+      "speed_ms": 10.0,
+      "zeng_datalink_fit": 0.9933429374512075,
+      "faessler_datalink_fit": 0.9935398503293741,
+      "kirschstein_datalink_fit": 0.9931104359998274
+    },
+    {
+      "speed_ms": 10.1,
+      "zeng_datalink_fit": 0.9947772325862195,
+      "faessler_datalink_fit": 0.9949761398198248,
+      "kirschstein_datalink_fit": 0.9945478047811769
+    },
+    {
+      "speed_ms": 10.2,
+      "zeng_datalink_fit": 0.9962626688219608,
+      "faessler_datalink_fit": 0.9964614062424441,
+      "kirschstein_datalink_fit": 0.9960387257844082
+    },
+    {
+      "speed_ms": 10.3,
+      "zeng_datalink_fit": 0.9977994458116847,
+      "faessler_datalink_fit": 0.9979956935408649,
+      "kirschstein_datalink_fit": 0.9975835515863768
+    },
+    {
+      "speed_ms": 10.4,
+      "zeng_datalink_fit": 0.9993877581600658,
+      "faessler_datalink_fit": 0.9995790395304196,
+      "kirschstein_datalink_fit": 0.9991826311010013
+    },
+    {
+      "speed_ms": 10.5,
+      "zeng_datalink_fit": 1.0010277960061364,
+      "faessler_datalink_fit": 1.001211476605748,
+      "kirschstein_datalink_fit": 1.0008363100652136
+    },
+    {
+      "speed_ms": 10.6,
+      "zeng_datalink_fit": 1.0027197455700136,
+      "faessler_datalink_fit": 1.0028930324044505,
+      "kirschstein_datalink_fit": 1.0025449314944703
+    },
+    {
+      "speed_ms": 10.7,
+      "zeng_datalink_fit": 1.0044637896646023,
+      "faessler_datalink_fit": 1.0046237304282266,
+      "kirschstein_datalink_fit": 1.0043088361088226
+    },
+    {
+      "speed_ms": 10.8,
+      "zeng_datalink_fit": 1.0062601081735456,
+      "faessler_datalink_fit": 1.006403590623044,
+      "kirschstein_datalink_fit": 1.0061283627306055
+    },
+    {
+      "speed_ms": 10.9,
+      "zeng_datalink_fit": 1.0081088784967565,
+      "faessler_datalink_fit": 1.008232629919953,
+      "kirschstein_datalink_fit": 1.008003848654866
+    },
+    {
+      "speed_ms": 11.0,
+      "zeng_datalink_fit": 1.0100102759648963,
+      "faessler_datalink_fit": 1.0101108627382105,
+      "kirschstein_datalink_fit": 1.009935629993678
+    },
+    {
+      "speed_ms": 11.1,
+      "zeng_datalink_fit": 1.0119644742242007,
+      "faessler_datalink_fit": 1.0120383014524033,
+      "kirschstein_datalink_fit": 1.0119240419955053
+    },
+    {
+      "speed_ms": 11.2,
+      "zeng_datalink_fit": 1.0139716455930556,
+      "faessler_datalink_fit": 1.0140149568252885,
+      "kirschstein_datalink_fit": 1.0139694193408024
+    },
+    {
+      "speed_ms": 11.3,
+      "zeng_datalink_fit": 1.0160319613917332,
+      "faessler_datalink_fit": 1.0160408384080444,
+      "kirschstein_datalink_fit": 1.0160720964150216
+    },
+    {
+      "speed_ms": 11.4,
+      "zeng_datalink_fit": 1.018145592246672,
+      "faessler_datalink_fit": 1.0181159549096293,
+      "kirschstein_datalink_fit": 1.0182324075601943
+    },
+    {
+      "speed_ms": 11.5,
+      "zeng_datalink_fit": 1.0203127083706804,
+      "faessler_datalink_fit": 1.0202403145369097,
+      "kirschstein_datalink_fit": 1.020450687306238
+    },
+    {
+      "speed_ms": 11.6,
+      "zeng_datalink_fit": 1.0225334798204035,
+      "faessler_datalink_fit": 1.0224139253071896,
+      "kirschstein_datalink_fit": 1.0227272705831107
+    },
+    {
+      "speed_ms": 11.7,
+      "zeng_datalink_fit": 1.0248080767323606,
+      "faessler_datalink_fit": 1.0246367953347308,
+      "kirschstein_datalink_fit": 1.0250624929149115
+    },
+    {
+      "speed_ms": 11.8,
+      "zeng_datalink_fit": 1.027136669538826,
+      "faessler_datalink_fit": 1.0269089330928014,
+      "kirschstein_datalink_fit": 1.0274566905969889
+    },
+    {
+      "speed_ms": 11.9,
+      "zeng_datalink_fit": 1.029519429164778,
+      "faessler_datalink_fit": 1.0292303476527473,
+      "kirschstein_datalink_fit": 1.0299102008570868
+    },
+    {
+      "speed_ms": 12.0,
+      "zeng_datalink_fit": 1.0319565272071034,
+      "faessler_datalink_fit": 1.0316010489015208,
+      "kirschstein_datalink_fit": 1.03242336200152
+    },
+    {
+      "speed_ms": 12.1,
+      "zeng_datalink_fit": 1.034448136097181,
+      "faessler_datalink_fit": 1.0340210477390357,
+      "kirschstein_datalink_fit": 1.0349965135473205
+    },
+    {
+      "speed_ms": 12.2,
+      "zeng_datalink_fit": 1.0369944292479427,
+      "faessler_datalink_fit": 1.036490356256681,
+      "kirschstein_datalink_fit": 1.0376299963412774
+    },
+    {
+      "speed_ms": 12.3,
+      "zeng_datalink_fit": 1.0395955811864361,
+      "faessler_datalink_fit": 1.0390089878982325,
+      "kirschstein_datalink_fit": 1.0403241526667248
+    },
+    {
+      "speed_ms": 12.4,
+      "zeng_datalink_fit": 1.042251767672886,
+      "faessler_datalink_fit": 1.0415769576043783,
+      "kirschstein_datalink_fit": 1.0430793263389124
+    },
+    {
+      "speed_ms": 12.5,
+      "zeng_datalink_fit": 1.0449631658071803,
+      "faessler_datalink_fit": 1.0441942819419796,
+      "kirschstein_datalink_fit": 1.0458958627897412
+    },
+    {
+      "speed_ms": 12.6,
+      "zeng_datalink_fit": 1.0477299541236786,
+      "faessler_datalink_fit": 1.0468609792191537,
+      "kirschstein_datalink_fit": 1.048774109142605
+    },
+    {
+      "speed_ms": 12.7,
+      "zeng_datalink_fit": 1.050552312675178,
+      "faessler_datalink_fit": 1.049577069587198,
+      "kirschstein_datalink_fit": 1.051714414278048
+    },
+    {
+      "speed_ms": 12.8,
+      "zeng_datalink_fit": 1.0534304231068277,
+      "faessler_datalink_fit": 1.0523425751303135,
+      "kirschstein_datalink_fit": 1.054717128890893
+    },
+    {
+      "speed_ms": 12.9,
+      "zeng_datalink_fit": 1.0563644687207483,
+      "faessler_datalink_fit": 1.055157519944042,
+      "kirschstein_datalink_fit": 1.0577826055394763
+    },
+    {
+      "speed_ms": 13.0,
+      "zeng_datalink_fit": 1.0593546345320488,
+      "faessler_datalink_fit": 1.0580219302032647,
+      "kirschstein_datalink_fit": 1.0609111986875757
+    },
+    {
+      "speed_ms": 13.1,
+      "zeng_datalink_fit": 1.0624011073169108,
+      "faessler_datalink_fit": 1.0609358342205706,
+      "kirschstein_datalink_fit": 1.0641032647395767
+    },
+    {
+      "speed_ms": 13.2,
+      "zeng_datalink_fit": 1.065504075653359,
+      "faessler_datalink_fit": 1.063899262495744,
+      "kirschstein_datalink_fit": 1.067359162069415
+    },
+    {
+      "speed_ms": 13.3,
+      "zeng_datalink_fit": 1.0686637299552957,
+      "faessler_datalink_fit": 1.0669122477570807,
+      "kirschstein_datalink_fit": 1.0706792510437626
+    },
+    {
+      "speed_ms": 13.4,
+      "zeng_datalink_fit": 1.0718802625003487,
+      "faessler_datalink_fit": 1.0699748249951888,
+      "kirschstein_datalink_fit": 1.0740638940399265
+    },
+    {
+      "speed_ms": 13.5,
+      "zeng_datalink_fit": 1.07515386745204,
+      "faessler_datalink_fit": 1.0730870314899008,
+      "kirschstein_datalink_fit": 1.0775134554588828
+    },
+    {
+      "speed_ms": 13.6,
+      "zeng_datalink_fit": 1.0784847408767473,
+      "faessler_datalink_fit": 1.0762489068308623,
+      "kirschstein_datalink_fit": 1.0810283017338418
+    },
+    {
+      "speed_ms": 13.7,
+      "zeng_datalink_fit": 1.0818730807559094,
+      "faessler_datalink_fit": 1.0794604929323457,
+      "kirschstein_datalink_fit": 1.0846088013347184
+    },
+    {
+      "speed_ms": 13.8,
+      "zeng_datalink_fit": 1.0853190869938774,
+      "faessler_datalink_fit": 1.082721834042784,
+      "kirschstein_datalink_fit": 1.0882553247688516
+    },
+    {
+      "speed_ms": 13.9,
+      "zeng_datalink_fit": 1.0888229614218092,
+      "faessler_datalink_fit": 1.0860329767494947,
+      "kirschstein_datalink_fit": 1.091968244578298
+    },
+    {
+      "speed_ms": 14.0,
+      "zeng_datalink_fit": 1.0923849077979522,
+      "faessler_datalink_fit": 1.0893939699790243,
+      "kirschstein_datalink_fit": 1.095747935333994
+    },
+    {
+      "speed_ms": 14.1,
+      "zeng_datalink_fit": 1.0960051318046564,
+      "faessler_datalink_fit": 1.0928048649935242,
+      "kirschstein_datalink_fit": 1.099594773627072
+    },
+    {
+      "speed_ms": 14.2,
+      "zeng_datalink_fit": 1.0996838410424195,
+      "faessler_datalink_fit": 1.09626571538352,
+      "kirschstein_datalink_fit": 1.103509138057578
+    },
+    {
+      "speed_ms": 14.3,
+      "zeng_datalink_fit": 1.103421245021254,
+      "faessler_datalink_fit": 1.0997765770574328,
+      "kirschstein_datalink_fit": 1.1074914092208452
+    },
+    {
+      "speed_ms": 14.4,
+      "zeng_datalink_fit": 1.1072175551496373,
+      "faessler_datalink_fit": 1.103337508228167,
+      "kirschstein_datalink_fit": 1.1115419696917277
+    },
+    {
+      "speed_ms": 14.5,
+      "zeng_datalink_fit": 1.1110729847212941,
+      "faessler_datalink_fit": 1.1069485693970653,
+      "kirschstein_datalink_fit": 1.115661204006917
+    },
+    {
+      "speed_ms": 14.6,
+      "zeng_datalink_fit": 1.1149877489000344,
+      "faessler_datalink_fit": 1.1106098233355035,
+      "kirschstein_datalink_fit": 1.1198494986455174
+    },
+    {
+      "speed_ms": 14.7,
+      "zeng_datalink_fit": 1.1189620647028562,
+      "faessler_datalink_fit": 1.1143213350643808,
+      "kirschstein_datalink_fit": 1.1241072420080647
+    },
+    {
+      "speed_ms": 14.8,
+      "zeng_datalink_fit": 1.1229961509815094,
+      "faessler_datalink_fit": 1.1180831718317394,
+      "kirschstein_datalink_fit": 1.1284348243941453
+    },
+    {
+      "speed_ms": 14.9,
+      "zeng_datalink_fit": 1.1270902284026958,
+      "faessler_datalink_fit": 1.1218954030887316,
+      "kirschstein_datalink_fit": 1.1328326379787665
+    },
+    {
+      "speed_ms": 15.0,
+      "zeng_datalink_fit": 1.1312445194270695,
+      "faessler_datalink_fit": 1.1257581004641266,
+      "kirschstein_datalink_fit": 1.1373010767876184
+    },
+    {
+      "speed_ms": 15.1,
+      "zeng_datalink_fit": 1.135459248287191,
+      "faessler_datalink_fit": 1.129671337737553,
+      "kirschstein_datalink_fit": 1.1418405366713493
+    },
+    {
+      "speed_ms": 15.2,
+      "zeng_datalink_fit": 1.1397346409645726,
+      "faessler_datalink_fit": 1.133635190811631,
+      "kirschstein_datalink_fit": 1.1464514152789758
+    },
+    {
+      "speed_ms": 15.3,
+      "zeng_datalink_fit": 1.1440709251659402,
+      "faessler_datalink_fit": 1.1376497376831622,
+      "kirschstein_datalink_fit": 1.1511341120305323
+    },
+    {
+      "speed_ms": 15.4,
+      "zeng_datalink_fit": 1.148468330298831,
+      "faessler_datalink_fit": 1.1417150584135038,
+      "kirschstein_datalink_fit": 1.1558890280890566
+    },
+    {
+      "speed_ms": 15.5,
+      "zeng_datalink_fit": 1.1529270874466366,
+      "faessler_datalink_fit": 1.1458312350982776,
+      "kirschstein_datalink_fit": 1.16071656633201
+    },
+    {
+      "speed_ms": 15.6,
+      "zeng_datalink_fit": 1.1574474293431831,
+      "faessler_datalink_fit": 1.1499983518365113,
+      "kirschstein_datalink_fit": 1.165617131322203
+    },
+    {
+      "speed_ms": 15.7,
+      "zeng_datalink_fit": 1.1620295903469438,
+      "faessler_datalink_fit": 1.1542164946993383,
+      "kirschstein_datalink_fit": 1.1705911292783093
+    },
+    {
+      "speed_ms": 15.8,
+      "zeng_datalink_fit": 1.1666738064149629,
+      "faessler_datalink_fit": 1.1584857516983424,
+      "kirschstein_datalink_fit": 1.1756389680450416
+    },
+    {
+      "speed_ms": 15.9,
+      "zeng_datalink_fit": 1.1713803150765656,
+      "faessler_datalink_fit": 1.1628062127536478,
+      "kirschstein_datalink_fit": 1.1807610570630391
+    },
+    {
+      "speed_ms": 16.0,
+      "zeng_datalink_fit": 1.1761493554069256,
+      "faessler_datalink_fit": 1.1671779696618305,
+      "kirschstein_datalink_fit": 1.1859578073385397
+    },
+    {
+      "speed_ms": 16.1,
+      "zeng_datalink_fit": 1.1809811680005442,
+      "faessler_datalink_fit": 1.1716011160637294,
+      "kirschstein_datalink_fit": 1.191229631412876
+    },
+    {
+      "speed_ms": 16.2,
+      "zeng_datalink_fit": 1.185875994944705,
+      "faessler_datalink_fit": 1.1760757474122199,
+      "kirschstein_datalink_fit": 1.196576943331854
+    },
+    {
+      "speed_ms": 16.3,
+      "zeng_datalink_fit": 1.1908340797929537,
+      "faessler_datalink_fit": 1.1806019609400236,
+      "kirschstein_datalink_fit": 1.2020001586150515
+    },
+    {
+      "speed_ms": 16.4,
+      "zeng_datalink_fit": 1.1958556675386371,
+      "faessler_datalink_fit": 1.1851798556275899,
+      "kirschstein_datalink_fit": 1.2074996942250737
+    },
+    {
+      "speed_ms": 16.5,
+      "zeng_datalink_fit": 1.2009410045885651,
+      "faessler_datalink_fit": 1.1898095321711217,
+      "kirschstein_datalink_fit": 1.2130759685368118
+    },
+    {
+      "speed_ms": 16.6,
+      "zeng_datalink_fit": 1.2060903387368083,
+      "faessler_datalink_fit": 1.1944910929507726,
+      "kirschstein_datalink_fit": 1.2187294013067234
+    },
+    {
+      "speed_ms": 16.7,
+      "zeng_datalink_fit": 1.2113039191386832,
+      "faessler_datalink_fit": 1.1992246419990658,
+      "kirschstein_datalink_fit": 1.224460413642174
+    },
+    {
+      "speed_ms": 16.8,
+      "zeng_datalink_fit": 1.216581996284942,
+      "faessler_datalink_fit": 1.2040102849695657,
+      "kirschstein_datalink_fit": 1.2302694279708628
+    },
+    {
+      "speed_ms": 16.9,
+      "zeng_datalink_fit": 1.221924821976204,
+      "faessler_datalink_fit": 1.2088481291058395,
+      "kirschstein_datalink_fit": 1.2361568680103532
+    },
+    {
+      "speed_ms": 17.0,
+      "zeng_datalink_fit": 1.2273326492976422,
+      "faessler_datalink_fit": 1.2137382832107317,
+      "kirschstein_datalink_fit": 1.2421231587377344
+    },
+    {
+      "speed_ms": 17.1,
+      "zeng_datalink_fit": 1.2328057325939517,
+      "faessler_datalink_fit": 1.218680857615978,
+      "kirschstein_datalink_fit": 1.2481687263594259
+    },
+    {
+      "speed_ms": 17.2,
+      "zeng_datalink_fit": 1.2383443274446173,
+      "faessler_datalink_fit": 1.2236759641521846,
+      "kirschstein_datalink_fit": 1.2542939982811525
+    },
+    {
+      "speed_ms": 17.3,
+      "zeng_datalink_fit": 1.243948690639498,
+      "faessler_datalink_fit": 1.228723716119189,
+      "kirschstein_datalink_fit": 1.260499403078092
+    },
+    {
+      "speed_ms": 17.4,
+      "zeng_datalink_fit": 1.2496190801547329,
+      "faessler_datalink_fit": 1.2338242282568144,
+      "kirschstein_datalink_fit": 1.2667853704652197
+    },
+    {
+      "speed_ms": 17.5,
+      "zeng_datalink_fit": 1.2553557551289924,
+      "faessler_datalink_fit": 1.238977616716043,
+      "kirschstein_datalink_fit": 1.2731523312678494
+    },
+    {
+      "speed_ms": 17.6,
+      "zeng_datalink_fit": 1.261158975840079,
+      "faessler_datalink_fit": 1.2441839990306094,
+      "kirschstein_datalink_fit": 1.2796007173923991
+    },
+    {
+      "speed_ms": 17.7,
+      "zeng_datalink_fit": 1.2670290036818839,
+      "faessler_datalink_fit": 1.2494434940890327,
+      "kirschstein_datalink_fit": 1.2861309617973689
+    },
+    {
+      "speed_ms": 17.8,
+      "zeng_datalink_fit": 1.2729661011417108,
+      "faessler_datalink_fit": 1.254756222107087,
+      "kirschstein_datalink_fit": 1.292743498464556
+    },
+    {
+      "speed_ms": 17.9,
+      "zeng_datalink_fit": 1.2789705317779694,
+      "faessler_datalink_fit": 1.2601223046007262,
+      "kirschstein_datalink_fit": 1.2994387623705042
+    },
+    {
+      "speed_ms": 18.0,
+      "zeng_datalink_fit": 1.2850425601982438,
+      "faessler_datalink_fit": 1.265541864359463,
+      "kirschstein_datalink_fit": 1.3062171894581966
+    },
+    {
+      "speed_ms": 18.1,
+      "zeng_datalink_fit": 1.2911824520377388,
+      "faessler_datalink_fit": 1.271015025420203,
+      "kirschstein_datalink_fit": 1.313079216608995
+    },
+    {
+      "speed_ms": 18.2,
+      "zeng_datalink_fit": 1.2973904739381068,
+      "faessler_datalink_fit": 1.2765419130415454,
+      "kirschstein_datalink_fit": 1.3200252816148317
+    },
+    {
+      "speed_ms": 18.3,
+      "zeng_datalink_fit": 1.3036668935266553,
+      "faessler_datalink_fit": 1.2821226536785426,
+      "kirschstein_datalink_fit": 1.3270558231506586
+    },
+    {
+      "speed_ms": 18.4,
+      "zeng_datalink_fit": 1.3100119793959377,
+      "faessler_datalink_fit": 1.2877573749579265,
+      "kirschstein_datalink_fit": 1.3341712807471464
+    },
+    {
+      "speed_ms": 18.5,
+      "zeng_datalink_fit": 1.3164260010837232,
+      "faessler_datalink_fit": 1.2934462056537956,
+      "kirschstein_datalink_fit": 1.3413720947636532
+    },
+    {
+      "speed_ms": 18.6,
+      "zeng_datalink_fit": 1.3229092290533482,
+      "faessler_datalink_fit": 1.2991892756637622,
+      "kirschstein_datalink_fit": 1.3486587063614452
+    },
+    {
+      "speed_ms": 18.7,
+      "zeng_datalink_fit": 1.329461934674446,
+      "faessler_datalink_fit": 1.3049867159855626,
+      "kirschstein_datalink_fit": 1.3560315574771868
+    },
+    {
+      "speed_ms": 18.8,
+      "zeng_datalink_fit": 1.3360843902040545,
+      "faessler_datalink_fit": 1.3108386586941234,
+      "kirschstein_datalink_fit": 1.36349109079669
+    },
+    {
+      "speed_ms": 18.9,
+      "zeng_datalink_fit": 1.3427768687680934,
+      "faessler_datalink_fit": 1.3167452369190777,
+      "kirschstein_datalink_fit": 1.3710377497289241
+    },
+    {
+      "speed_ms": 19.0,
+      "zeng_datalink_fit": 1.3495396443432133,
+      "faessler_datalink_fit": 1.3227065848227326,
+      "kirschstein_datalink_fit": 1.3786719783802974
+    },
+    {
+      "speed_ms": 19.1,
+      "zeng_datalink_fit": 1.356372991739017,
+      "faessler_datalink_fit": 1.328722837578487,
+      "kirschstein_datalink_fit": 1.3863942215291944
+    },
+    {
+      "speed_ms": 19.2,
+      "zeng_datalink_fit": 1.3632771865806337,
+      "faessler_datalink_fit": 1.334794131349681,
+      "kirschstein_datalink_fit": 1.3942049246007788
+    },
+    {
+      "speed_ms": 19.3,
+      "zeng_datalink_fit": 1.3702525052916616,
+      "faessler_datalink_fit": 1.3409206032688883,
+      "kirschstein_datalink_fit": 1.4021045336420572
+    },
+    {
+      "speed_ms": 19.4,
+      "zeng_datalink_fit": 1.3772992250774563,
+      "faessler_datalink_fit": 1.347102391417633,
+      "kirschstein_datalink_fit": 1.4100934952972086
+    },
+    {
+      "speed_ms": 19.5,
+      "zeng_datalink_fit": 1.3844176239087769,
+      "faessler_datalink_fit": 1.3533396348065345,
+      "kirschstein_datalink_fit": 1.4181722567831656
+    },
+    {
+      "speed_ms": 19.6,
+      "zeng_datalink_fit": 1.3916079805057684,
+      "faessler_datalink_fit": 1.3596324733558696,
+      "kirschstein_datalink_fit": 1.4263412658654628
+    },
+    {
+      "speed_ms": 19.7,
+      "zeng_datalink_fit": 1.3988705743222902,
+      "faessler_datalink_fit": 1.3659810478765444,
+      "kirschstein_datalink_fit": 1.4346009708343415
+    },
+    {
+      "speed_ms": 19.8,
+      "zeng_datalink_fit": 1.4062056855305765,
+      "faessler_datalink_fit": 1.372385500051475,
+      "kirschstein_datalink_fit": 1.4429518204811072
+    },
+    {
+      "speed_ms": 19.9,
+      "zeng_datalink_fit": 1.4136135950062216,
+      "faessler_datalink_fit": 1.3788459724173663,
+      "kirschstein_datalink_fit": 1.451394264074749
+    },
+    {
+      "speed_ms": 20.0,
+      "zeng_datalink_fit": 1.4210945843134977,
+      "faessler_datalink_fit": 1.385362608346882,
+      "kirschstein_datalink_fit": 1.4599287513388057
     }
   ]
 }

@@ -10,6 +10,8 @@ htmlcov/
 build/
 dist/
 calibration-output/
+validation-output/
+showcase-output/
 
 # Generated analysis output
 *.log
