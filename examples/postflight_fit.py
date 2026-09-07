@@ -7,24 +7,26 @@ specific to one aircraft and are not a ready-made fit for another configuration.
 from pathlib import Path
 
 from flight_workflow import Aircraft, FitOptions, FlightFit, fit_flight, load_ardupilot_log
+from aircraft_inputs import MASS_KG, NUM_ROTORS, PROPELLER_INCH, REFERENCE_AREA_CM2, REPRESENTATIVE_RPM, postflight_energy_basis
 
 
-# Replace these illustrative values and the path with your measured inputs.
+# The starting values follow the author's scenario; use your measured inputs and log path.
 LOG_PATH = Path("my-logs/flight.BIN")
 OUTPUT_DIR = Path("my-flight-output")
 AIRCRAFT = Aircraft(
     name="My multicopter",
-    mass_kg=12.4,
-    num_rotors=4,
-    prop_diameter_inch=29.0,
-    reference_area_m2=0.045,
-    hover_rpm=2200.0,  # Mechanical RPM; needed when BAT has no RPM telemetry.
+    mass_kg=MASS_KG,
+    num_rotors=NUM_ROTORS,
+    prop_diameter_inch=PROPELLER_INCH,
+    reference_area_m2=REFERENCE_AREA_CM2 / 10000,
+    hover_rpm=REPRESENTATIVE_RPM,  # Replace this fallback with your own mechanical RPM.
 )
-# Hover must match the electrical basis of the log (BAT or selected ESC sum).
-LOG_HOVER_POWER_W = 1500.0
-# Future estimates need measured whole-aircraft hover and energy after reserve.
-PREDICTION_HOVER_POWER_W = 1500.0
-USABLE_ENERGY_WH = 1100.0
+# Defaults follow the author's saved electrical scenario. Replace the hover
+# reference with your own calibrated measurement on the log's sensor basis.
+ENERGY_BASIS = postflight_energy_basis()
+LOG_HOVER_POWER_W = ENERGY_BASIS["hover_power_w"]
+PREDICTION_HOVER_POWER_W = ENERGY_BASIS["hover_power_w"]
+USABLE_ENERGY_WH = ENERGY_BASIS["usable_energy_wh"]
 PLANNED_SPEED_MS = 10.0
 
 

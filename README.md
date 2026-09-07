@@ -8,7 +8,8 @@ its logs to fit three power models and compare the speeds, power demands and
 flight times you can expect on subsequent flights of the same aircraft.
 
 The project brings these two stages together in Python. Edit a few inputs in
-an example file, run it, and keep the fitted model for your next calculation.
+the shared input file, run both stages together, and keep the fitted model for
+your next calculation.
 
 | Stage | What you provide | What you get |
 |---|---|---|
@@ -39,18 +40,38 @@ python -m pip install -e .
 On Windows PowerShell, create and activate the environment with
 `py -3 -m venv .venv` and `.\.venv\Scripts\Activate.ps1` instead.
 
+## Run the author's aircraft example
+
+Edit [`examples/aircraft_inputs.py`](examples/aircraft_inputs.py), then run:
+
+```bash
+python examples/analyze_aircraft.py
+```
+
+This single entry point runs the first estimate, fits the included aircraft
+logs, saves the coefficients and generates the two main plots. The defaults
+follow the author's saved working setup: **12.4 kg, U8 Lite KV190 / G29, four
+rotors, 450 cm², two 6S 27 Ah Li-ion packs, and empirical CF ≈ 0.616**.
+The stages remain available separately, as shown below.
+
+For a more intuitive view, try the author's [browser explorer](docs/aircraft-demo.html):
+an interactive Zeng-model view of the aircraft with adjustable speed, mass,
+propulsion and battery inputs. [Download the HTML](https://raw.githubusercontent.com/tzi4/Multicopter_Battery_and_Range_Calculations/main/docs/aircraft-demo.html)
+and open it in a browser; Python is not required. The public copy is in English
+and uses the current G29 source fit. [Demo notes](docs/AIRCRAFT_DEMO.md).
+
 ## 1. Before flight: get a first estimate
 
-Open [`examples/preflight_estimate.py`](examples/preflight_estimate.py) and edit
-the inputs. The underlying Python call is:
+The first stage uses the inputs in
+[`examples/aircraft_inputs.py`](examples/aircraft_inputs.py). Its Python call is:
 
 ```python
 from multicopter_range import BauersfeldRangeCalculator
 
 estimate = BauersfeldRangeCalculator(
-    hover_power_w=1500.0,       # Whole-aircraft hover estimate [W].
-    correction_factor=0.93,    # Fraction of battery energy available to use.
-    battery_wh=1200.0,         # Whole-pack energy basis [Wh].
+    hover_power_w=1101.6581196581196,  # Four G29 manufacturer-table motors [W].
+    correction_factor=0.6159319356120826,  # Author's empirical correction.
+    battery_wh=1198.8,         # Two 6S, 27 Ah Li-ion packs [Wh].
     total_mass_kg=12.4,
     drag_area_cm2=450.0,        # Projected reference area, not CdA.
     prop_diameter_inch=29.0,
@@ -61,12 +82,15 @@ print(f"Range: {estimate['max_range_km']:.2f} km")
 print(f"Endurance: {estimate['max_endurance_min']:.2f} min")
 ```
 
-Run the complete example with `python examples/preflight_estimate.py`.
-These illustrative inputs give **26.30 km at 10.72 m/s** for best range and
-**48.84 minutes at 6.59 m/s** for best endurance. Hover power can come from a
-propulsion test, a suitable manufacturer estimate or an earlier measurement.
-Use a correction factor of `1.0` if the entered energy already excludes your
-reserve and other unusable capacity.
+Run this stage with `python examples/preflight_estimate.py`.
+The saved inputs give **23.69 km at 10.72 m/s** for best range and
+**44.00 minutes at 6.59 m/s** for best endurance.
+
+The author used an empirical correction of approximately **0.62** with the
+team's own multicopters with cylindrical arms. The recovered reference is a
+35-minute Vibe hover versus a 56.82-minute theoretical estimate. This is the
+author's working calibration, not a universal Bauersfeld coefficient or a
+measured battery-capacity fraction. [Defaults and CF derivation](docs/AUTHOR_DEFAULTS.md).
 
 ## 2. After flight: fit once, reuse the model
 
@@ -93,16 +117,16 @@ aircraft = Aircraft(
     num_rotors=4,
     prop_diameter_inch=29.0,
     reference_area_m2=0.045,
-    hover_rpm=2200.0,
+    hover_rpm=2149.761904761904,
 )
-fit = fit_flight(samples, aircraft, hover_power_w=1500.0)
+fit = fit_flight(samples, aircraft, hover_power_w=1485.6942539603501)
 fit.save("my-flight-output/aircraft-fit.json")
-fit.plot("my-flight-output", hover_power_w=1500.0, usable_energy_wh=1100.0)
+fit.plot("my-flight-output", hover_power_w=1485.6942539603501, usable_energy_wh=1006.992)
 ```
 
-These aircraft and electrical values are placeholders to replace with your
-measurements. The loader also accepts ESC telemetry; a documented CSV format
-supports synchronized data from other loggers. See the [usage guide](docs/USAGE.md)
+These values follow the author's saved scenario. Replace the log path and
+electrical reference with your own measurements before fitting a new flight.
+The loader also accepts ESC telemetry; a documented CSV format supports synchronized data from other loggers. See the [usage guide](docs/USAGE.md)
 for exact fields, units, power-source selection and log requirements.
 
 For subsequent estimates, load the JSON without reading the logs again:
@@ -112,7 +136,7 @@ from flight_workflow import FlightFit
 
 fit = FlightFit.load("my-flight-output/aircraft-fit.json")
 for name, prediction in fit.predict(
-    speed_ms=10.0, hover_power_w=1500.0, usable_energy_wh=1100.0
+    speed_ms=10.0, hover_power_w=1485.6942539603501, usable_energy_wh=1006.992
 ).items():
     print(name, prediction)    # Power ratio, watts, minutes, km and fit-range status.
 ```
@@ -132,14 +156,15 @@ Energy already excludes the reserve; no second reserve deduction is applied.
 
 ![Range and endurance versus speed for all three fitted models](docs/assets/range_endurance.png)
 
-These example plots use the bundled G29 fit, with **illustrative whole-aircraft
-inputs of 1500 W hover power and 1100 Wh usable energy**. Their absolute time
-and range are scenarios, not measured flight outcomes. Dashed curves identify
-speeds outside the fitted bin range.
+These plots use the current G29 fit and the saved report's electrical basis:
+**1485.69 W hover and 1006.992 Wh after a 10% reserve**. This retains the
+author's working assumptions; it is not a newly measured endurance result.
+The empirical preflight CF is not applied again. [Energy basis](docs/AUTHOR_DEFAULTS.md).
+Dashed curves identify speeds outside the fitted bin range.
 
 To make them yourself, run `python examples/bundled_flight_demo.py`. Change its
-Python variables to explore speed and energy inputs. It rebuilds the published
-fit and writes the two figures plus `aircraft-fit.json` into `flight-output/`.
+shared inputs in `examples/aircraft_inputs.py` to explore speed and energy.
+It rebuilds the published fit and writes the two figures plus `aircraft-fit.json` into `flight-output/`.
 
 ## Flight results
 
@@ -161,11 +186,14 @@ without fitting its coefficients to the July 21 power observations.
 | 16.91 m/s | 4,256 | **0.27%** | **0.81%** | 1.43% |
 | 17.07 m/s | 3,442 | 1.83% | **0.70%** | 3.03% |
 
-These are two selected **bin-median power comparisons**, not a claim that every
-sample or every higher speed has sub-percent error. July 3's raw telemetry
-contains sparse higher-speed records; those did not enter the fitted power
+These are two selected **bin-median power comparisons**. Errors are larger at
+other operating points; they are not an overall accuracy score. July 3's raw
+telemetry contains sparse higher-speed records; those did not enter the fitted power
 bins. The complete nine-bin comparison and its wider error distribution are
 shown below. [Exact results and selection](docs/results/validation-summary.json).
+
+<details>
+<summary>Full flight comparison and limitations</summary>
 
 ![July 3 measured speed bins, fitted curves and calibration residuals](docs/assets/calibration.png)
 
@@ -199,14 +227,17 @@ The plots report normalized electrical power; absolute endurance additionally de
 battery-energy and current-sensor interpretation described in
 [Methodology](docs/METHODOLOGY.md).
 
+</details>
+
 ## Which code does what?
 
 - [`multicopter_range.py`](multicopter_range.py) contains the Bauersfeld
   calculator, original log parsers, model equations, fitting and transfer routines.
 - [`flight_workflow.py`](flight_workflow.py) provides the Python interface for
   your own logs, saved fits, predictions and the two main plots.
-- [`examples/`](examples/) contains editable preflight, postflight and bundled
-  demonstration scripts, plus the complete research-reproduction scripts.
+- [`examples/aircraft_inputs.py`](examples/aircraft_inputs.py) holds the shared
+  editable inputs; [`examples/analyze_aircraft.py`](examples/analyze_aircraft.py)
+  runs both stages. Separate stage and research-reproduction scripts remain available.
 - [`docs/USAGE.md`](docs/USAGE.md) explains every input and output;
   [workflow methodology](docs/WORKFLOW_METHOD.md) explains the custom-log fit.
 

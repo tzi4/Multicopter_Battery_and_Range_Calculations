@@ -5,8 +5,12 @@
 The general `calculate` command uses the simple optimum-speed and power-ratio
 relationships from Bauersfeld and Scaramuzza. Inputs include electrical hover
 power, battery energy, takeoff mass, rotor geometry and projected reference
-area. The correction factor explicitly multiplies available energy. Use a
-factor of 1 when the entered energy already represents usable energy.
+area. The correction factor explicitly multiplies the effective energy budget.
+The author's default is an empirical hover-time correction of approximately
+0.616 derived with manufacturer-table power; it is not a directly measured
+battery-capacity fraction. Use a factor of 1 when independently calibrated
+hover power and the intended usable-energy budget already provide the required
+basis. See [author defaults and CF derivation](AUTHOR_DEFAULTS.md).
 The projected-area input is in square centimetres and is distinct from the
 aerodynamic `CdA` used by the fitted forward-flight curves.
 

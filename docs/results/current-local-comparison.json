@@ -1,0 +1,793 @@
+{
+  "schema_version": 1,
+  "scope": "Same-input code comparison, not independent flight validation.",
+  "archive_module_name": "menzil2.py",
+  "archive_module_sha256": "51a13396a005b8731ef1bd4b05dc94cc8606eed314465898d03a41678eff05cc",
+  "current_model_sha256": "a83164577ef3ceee347cf4239875c9028f01a8628bf2521f42fa30f14e315a99",
+  "comparison_script_sha256": "9273b99a176cdcd86eb922d7424692e73483d8e1a4394eeffc58f5034c101c29",
+  "reference_cf": {
+    "archive": {
+      "reference_mass_kg": 19.5,
+      "num_rotors": 4,
+      "total_cell_equivalents": 24,
+      "capacity_mah": 17000,
+      "energy_wh": 1761.2000000000003,
+      "hover_power_w": 1859.6217,
+      "theoretical_hover_min": 56.82446058787119,
+      "recorded_hover_min": 35.0,
+      "correction_factor": 0.6159319356120826
+    },
+    "current": {
+      "reference_mass_kg": 19.5,
+      "num_rotors": 4,
+      "total_cell_equivalents": 24,
+      "capacity_mah": 17000,
+      "energy_wh": 1761.2000000000003,
+      "hover_power_w": 1859.6217,
+      "theoretical_hover_min": 56.82446058787119,
+      "recorded_hover_min": 35.0,
+      "correction_factor": 0.6159319356120826
+    }
+  },
+  "latest_saved_report": {
+    "filename": "datalink_fit_method_report.md",
+    "sha256": "e3c7e898acd1090b7b2a8636406d6ed678a2ef9cc23d430b9adf317b7a8d41a4",
+    "nominal_energy_wh": 1198.8,
+    "usable_energy_wh": 1118.88,
+    "entered_g29_table_hover_w": 1101.6581196581196,
+    "historical_g28_table_hover_w": 1123.9685039370079,
+    "conditional_scaled_entered_hover_w": 1485.6942539603501,
+    "note": "The saved report prints CF 0.616 only as a legacy-menu audit. Fitted range/time uses a separate usable-energy and conditional electrical-power basis. The fitted source preset was G28, while the entered aircraft could use G29."
+  },
+  "comparisons": [
+    {
+      "profile": {
+        "mass_kg": 12.4,
+        "num_rotors": 4,
+        "prop_diameter_inch": 28.0,
+        "reference_area_cm2": 450.0
+      },
+      "bauersfeld": {
+        "archive": {
+          "vi_h": 5.589791639464894,
+          "max_range_km": 23.6804561081308,
+          "optimal_speed_ms": 10.934146422998264,
+          "flight_time_min_range": 36.09557190844923,
+          "power_range_w": 1227.3736062992127,
+          "max_endurance_min": 43.12512529981024,
+          "optimal_endurance_speed_ms": 6.711228919637015,
+          "power_endurance_w": 1027.3072125984252,
+          "max_range_km_endurance": 17.365355284503384
+        },
+        "current": {
+          "vi_h": 5.589791639464894,
+          "max_range_km": 23.6804561081308,
+          "optimal_speed_ms": 10.934146422998264,
+          "flight_time_min_range": 36.09557190844923,
+          "power_range_w": 1227.3736062992127,
+          "max_endurance_min": 43.12512529981024,
+          "optimal_endurance_speed_ms": 6.711228919637015,
+          "power_endurance_w": 1027.3072125984252,
+          "max_range_km_endurance": 17.365355284503384
+        },
+        "max_absolute_difference": 0.0
+      },
+      "joined_samples": {
+        "archive": 46175,
+        "current": 46175
+      },
+      "hover_reference_w": {
+        "archive": 757.8910000000001,
+        "current": 757.8910000000001
+      },
+      "observations_equal": true,
+      "bin_count": 11,
+      "curve_comparison": {
+        "zeng_datalink_fit": {
+          "points": 251,
+          "max_absolute_ratio_difference": 0.0,
+          "max_absolute_relative_difference_percent": 0.0,
+          "selected_points": [
+            {
+              "speed_ms": 0.0,
+              "archive_ratio": 1.0,
+              "current_ratio": 1.0
+            },
+            {
+              "speed_ms": 6.0,
+              "archive_ratio": 0.9742605335395513,
+              "current_ratio": 0.9742605335395513
+            },
+            {
+              "speed_ms": 10.0,
+              "archive_ratio": 0.9931398625729237,
+              "current_ratio": 0.9931398625729237
+            },
+            {
+              "speed_ms": 15.0,
+              "archive_ratio": 1.1340541115250131,
+              "current_ratio": 1.1340541115250131
+            },
+            {
+              "speed_ms": 17.0,
+              "archive_ratio": 1.2329405827298534,
+              "current_ratio": 1.2329405827298534
+            },
+            {
+              "speed_ms": 20.0,
+              "archive_ratio": 1.4327265097496495,
+              "current_ratio": 1.4327265097496495
+            },
+            {
+              "speed_ms": 25.0,
+              "archive_ratio": 1.9216259686360564,
+              "current_ratio": 1.9216259686360564
+            }
+          ]
+        },
+        "faessler_datalink_fit": {
+          "points": 251,
+          "max_absolute_ratio_difference": 0.0,
+          "max_absolute_relative_difference_percent": 0.0,
+          "selected_points": [
+            {
+              "speed_ms": 0.0,
+              "archive_ratio": 1.0,
+              "current_ratio": 1.0
+            },
+            {
+              "speed_ms": 6.0,
+              "archive_ratio": 0.974087763263715,
+              "current_ratio": 0.974087763263715
+            },
+            {
+              "speed_ms": 10.0,
+              "archive_ratio": 0.9932970980185066,
+              "current_ratio": 0.9932970980185066
+            },
+            {
+              "speed_ms": 15.0,
+              "archive_ratio": 1.1290875284512367,
+              "current_ratio": 1.1290875284512367
+            },
+            {
+              "speed_ms": 17.0,
+              "archive_ratio": 1.2202945597077222,
+              "current_ratio": 1.2202945597077222
+            },
+            {
+              "speed_ms": 20.0,
+              "archive_ratio": 1.3987303030871687,
+              "current_ratio": 1.3987303030871687
+            },
+            {
+              "speed_ms": 25.0,
+              "archive_ratio": 1.8163550089173728,
+              "current_ratio": 1.8163550089173728
+            }
+          ]
+        },
+        "kirschstein_datalink_fit": {
+          "points": 251,
+          "max_absolute_ratio_difference": 0.0016715808411511546,
+          "max_absolute_relative_difference_percent": 0.08175947380181237,
+          "selected_points": [
+            {
+              "speed_ms": 0.0,
+              "archive_ratio": 1.0,
+              "current_ratio": 1.0
+            },
+            {
+              "speed_ms": 6.0,
+              "archive_ratio": 0.9744200162841845,
+              "current_ratio": 0.9744178185347435
+            },
+            {
+              "speed_ms": 10.0,
+              "archive_ratio": 0.9929246809624384,
+              "current_ratio": 0.9929275252410867
+            },
+            {
+              "speed_ms": 15.0,
+              "archive_ratio": 1.1400683803003344,
+              "current_ratio": 1.1399867495252964
+            },
+            {
+              "speed_ms": 17.0,
+              "archive_ratio": 1.2478228377363998,
+              "current_ratio": 1.2476202690291762
+            },
+            {
+              "speed_ms": 20.0,
+              "archive_ratio": 1.4722832283338199,
+              "current_ratio": 1.4717444306373555
+            },
+            {
+              "speed_ms": 25.0,
+              "archive_ratio": 2.0445102731495335,
+              "current_ratio": 2.0428386923083823
+            }
+          ]
+        }
+      },
+      "saved_json_api_max_absolute_ratio_difference": 4.440892098500626e-16
+    },
+    {
+      "profile": {
+        "mass_kg": 12.4,
+        "num_rotors": 4,
+        "prop_diameter_inch": 29.0,
+        "reference_area_cm2": 450.0
+      },
+      "bauersfeld": {
+        "archive": {
+          "vi_h": 5.397040203621278,
+          "max_range_km": 23.69429087882705,
+          "optimal_speed_ms": 10.723368643110977,
+          "flight_time_min_range": 36.826566457187866,
+          "power_range_w": 1203.0106666666668,
+          "max_endurance_min": 43.99847983725291,
+          "optimal_endurance_speed_ms": 6.588610148792063,
+          "power_endurance_w": 1006.9155213675214,
+          "max_range_km_endurance": 17.39332984722885
+        },
+        "current": {
+          "vi_h": 5.397040203621278,
+          "max_range_km": 23.69429087882705,
+          "optimal_speed_ms": 10.723368643110977,
+          "flight_time_min_range": 36.826566457187866,
+          "power_range_w": 1203.0106666666668,
+          "max_endurance_min": 43.99847983725291,
+          "optimal_endurance_speed_ms": 6.588610148792063,
+          "power_endurance_w": 1006.9155213675214,
+          "max_range_km_endurance": 17.39332984722885
+        },
+        "max_absolute_difference": 0.0
+      },
+      "joined_samples": {
+        "archive": 46175,
+        "current": 46175
+      },
+      "hover_reference_w": {
+        "archive": 757.8910000000001,
+        "current": 757.8910000000001
+      },
+      "observations_equal": true,
+      "bin_count": 11,
+      "curve_comparison": {
+        "zeng_datalink_fit": {
+          "points": 251,
+          "max_absolute_ratio_difference": 0.0,
+          "max_absolute_relative_difference_percent": 0.0,
+          "selected_points": [
+            {
+              "speed_ms": 0.0,
+              "archive_ratio": 1.0,
+              "current_ratio": 1.0
+            },
+            {
+              "speed_ms": 6.0,
+              "archive_ratio": 0.9740792518739433,
+              "current_ratio": 0.9740792518739433
+            },
+            {
+              "speed_ms": 10.0,
+              "archive_ratio": 0.9933429374512075,
+              "current_ratio": 0.9933429374512075
+            },
+            {
+              "speed_ms": 15.0,
+              "archive_ratio": 1.1312445194270695,
+              "current_ratio": 1.1312445194270695
+            },
+            {
+              "speed_ms": 17.0,
+              "archive_ratio": 1.2273326492976422,
+              "current_ratio": 1.2273326492976422
+            },
+            {
+              "speed_ms": 20.0,
+              "archive_ratio": 1.4210945843134977,
+              "current_ratio": 1.4210945843134977
+            },
+            {
+              "speed_ms": 25.0,
+              "archive_ratio": 1.894706714824292,
+              "current_ratio": 1.894706714824292
+            }
+          ]
+        },
+        "faessler_datalink_fit": {
+          "points": 251,
+          "max_absolute_ratio_difference": 0.0,
+          "max_absolute_relative_difference_percent": 0.0,
+          "selected_points": [
+            {
+              "speed_ms": 0.0,
+              "archive_ratio": 1.0,
+              "current_ratio": 1.0
+            },
+            {
+              "speed_ms": 6.0,
+              "archive_ratio": 0.9738809133507488,
+              "current_ratio": 0.9738809133507488
+            },
+            {
+              "speed_ms": 10.0,
+              "archive_ratio": 0.9935398503293741,
+              "current_ratio": 0.9935398503293741
+            },
+            {
+              "speed_ms": 15.0,
+              "archive_ratio": 1.1257581004641266,
+              "current_ratio": 1.1257581004641266
+            },
+            {
+              "speed_ms": 17.0,
+              "archive_ratio": 1.2137382832107317,
+              "current_ratio": 1.2137382832107317
+            },
+            {
+              "speed_ms": 20.0,
+              "archive_ratio": 1.385362608346882,
+              "current_ratio": 1.385362608346882
+            },
+            {
+              "speed_ms": 25.0,
+              "archive_ratio": 1.7861697201493585,
+              "current_ratio": 1.7861697201493585
+            }
+          ]
+        },
+        "kirschstein_datalink_fit": {
+          "points": 251,
+          "max_absolute_ratio_difference": 0.002566666085452418,
+          "max_absolute_relative_difference_percent": 0.12727807917893852,
+          "selected_points": [
+            {
+              "speed_ms": 0.0,
+              "archive_ratio": 1.0,
+              "current_ratio": 1.0
+            },
+            {
+              "speed_ms": 6.0,
+              "archive_ratio": 0.9742703410306657,
+              "current_ratio": 0.9742662776543025
+            },
+            {
+              "speed_ms": 10.0,
+              "archive_ratio": 0.993105504879448,
+              "current_ratio": 0.9931104359998274
+            },
+            {
+              "speed_ms": 15.0,
+              "archive_ratio": 1.1374315774668364,
+              "current_ratio": 1.1373010767876184
+            },
+            {
+              "speed_ms": 17.0,
+              "archive_ratio": 1.242442243703774,
+              "current_ratio": 1.2421231587377344
+            },
+            {
+              "speed_ms": 20.0,
+              "archive_ratio": 1.4607660987142363,
+              "current_ratio": 1.4599287513388057
+            },
+            {
+              "speed_ms": 25.0,
+              "archive_ratio": 2.0165814113551077,
+              "current_ratio": 2.0140147452696553
+            }
+          ]
+        }
+      },
+      "saved_json_api_max_absolute_ratio_difference": 4.440892098500626e-16
+    }
+  ],
+  "historical_g28_to_current_g29": {
+    "scope": "Actual historical fitted geometry versus the owner's current G29 selection; includes geometry changes and the Kirschstein correction.",
+    "curve_comparison": {
+      "zeng_datalink_fit": {
+        "points": 251,
+        "max_absolute_ratio_difference": 0.02691925381176441,
+        "max_absolute_relative_difference_percent": 1.400858140508543,
+        "selected_points": [
+          {
+            "speed_ms": 0.0,
+            "archive_ratio": 1.0,
+            "current_ratio": 1.0
+          },
+          {
+            "speed_ms": 6.0,
+            "archive_ratio": 0.9742605335395513,
+            "current_ratio": 0.9740792518739433
+          },
+          {
+            "speed_ms": 10.0,
+            "archive_ratio": 0.9931398625729237,
+            "current_ratio": 0.9933429374512075
+          },
+          {
+            "speed_ms": 15.0,
+            "archive_ratio": 1.1340541115250131,
+            "current_ratio": 1.1312445194270695
+          },
+          {
+            "speed_ms": 17.0,
+            "archive_ratio": 1.2329405827298534,
+            "current_ratio": 1.2273326492976422
+          },
+          {
+            "speed_ms": 20.0,
+            "archive_ratio": 1.4327265097496495,
+            "current_ratio": 1.4210945843134977
+          },
+          {
+            "speed_ms": 25.0,
+            "archive_ratio": 1.9216259686360564,
+            "current_ratio": 1.894706714824292
+          }
+        ]
+      },
+      "faessler_datalink_fit": {
+        "points": 251,
+        "max_absolute_ratio_difference": 0.030185288768014296,
+        "max_absolute_relative_difference_percent": 1.661860628556644,
+        "selected_points": [
+          {
+            "speed_ms": 0.0,
+            "archive_ratio": 1.0,
+            "current_ratio": 1.0
+          },
+          {
+            "speed_ms": 6.0,
+            "archive_ratio": 0.974087763263715,
+            "current_ratio": 0.9738809133507488
+          },
+          {
+            "speed_ms": 10.0,
+            "archive_ratio": 0.9932970980185066,
+            "current_ratio": 0.9935398503293741
+          },
+          {
+            "speed_ms": 15.0,
+            "archive_ratio": 1.1290875284512367,
+            "current_ratio": 1.1257581004641266
+          },
+          {
+            "speed_ms": 17.0,
+            "archive_ratio": 1.2202945597077222,
+            "current_ratio": 1.2137382832107317
+          },
+          {
+            "speed_ms": 20.0,
+            "archive_ratio": 1.3987303030871687,
+            "current_ratio": 1.385362608346882
+          },
+          {
+            "speed_ms": 25.0,
+            "archive_ratio": 1.8163550089173728,
+            "current_ratio": 1.7861697201493585
+          }
+        ]
+      },
+      "kirschstein_datalink_fit": {
+        "points": 251,
+        "max_absolute_ratio_difference": 0.030495527879878193,
+        "max_absolute_relative_difference_percent": 1.4915810539264385,
+        "selected_points": [
+          {
+            "speed_ms": 0.0,
+            "archive_ratio": 1.0,
+            "current_ratio": 1.0
+          },
+          {
+            "speed_ms": 6.0,
+            "archive_ratio": 0.9744200162841845,
+            "current_ratio": 0.9742662776543025
+          },
+          {
+            "speed_ms": 10.0,
+            "archive_ratio": 0.9929246809624384,
+            "current_ratio": 0.9931104359998274
+          },
+          {
+            "speed_ms": 15.0,
+            "archive_ratio": 1.1400683803003344,
+            "current_ratio": 1.1373010767876184
+          },
+          {
+            "speed_ms": 17.0,
+            "archive_ratio": 1.2478228377363998,
+            "current_ratio": 1.2421231587377344
+          },
+          {
+            "speed_ms": 20.0,
+            "archive_ratio": 1.4722832283338199,
+            "current_ratio": 1.4599287513388057
+          },
+          {
+            "speed_ms": 25.0,
+            "archive_ratio": 2.0445102731495335,
+            "current_ratio": 2.0140147452696553
+          }
+        ]
+      }
+    }
+  },
+  "current_g29_prediction_at_17_ms": {
+    "conditional_hover_power_w": 1485.6942539603501,
+    "usable_energy_after_10_percent_reserve_wh": 1006.992,
+    "models": {
+      "zeng": {
+        "speed_ms": 17.0,
+        "power_ratio": 1.2273326492976422,
+        "power_w": 1823.4410647594405,
+        "endurance_min": 33.134890492318114,
+        "range_km": 33.79758830216448,
+        "within_fitted_speed_range": false
+      },
+      "faessler": {
+        "speed_ms": 17.0,
+        "power_ratio": 1.2137382832107317,
+        "power_w": 1803.2439931778842,
+        "endurance_min": 33.506014842462754,
+        "range_km": 34.176135139312,
+        "within_fitted_speed_range": false
+      },
+      "kirschstein": {
+        "speed_ms": 17.0,
+        "power_ratio": 1.2421231587377344,
+        "power_w": 1845.4152396477318,
+        "endurance_min": 32.740338706389664,
+        "range_km": 33.395145480517456,
+        "within_fitted_speed_range": false
+      }
+    }
+  },
+  "battery_checks": [
+    {
+      "chemistry": "lipo",
+      "archive_wh": 111.00000000000001,
+      "current_wh": 111.00000000000001
+    },
+    {
+      "chemistry": "liion",
+      "archive_wh": 111.00000000000001,
+      "current_wh": 111.00000000000001
+    },
+    {
+      "chemistry": "lihv",
+      "archive_wh": 129.50000000000003,
+      "current_wh": 129.50000000000003
+    }
+  ],
+  "input_hash_checks": [
+    {
+      "public_path": "00000076.BIN",
+      "archive_sha256": "9feb424e4fac3ab776af2c1e8a36eb5177cbeb8a525ce8b15bdcfabdb5257bfc",
+      "current_sha256": "9feb424e4fac3ab776af2c1e8a36eb5177cbeb8a525ce8b15bdcfabdb5257bfc",
+      "byte_identical": true,
+      "equivalent": true
+    },
+    {
+      "public_path": "00000077.BIN",
+      "archive_sha256": "bb314ffabf7ec03b2c5900b92bf76f5908caf4e068afa9448b2bcf961aba40b0",
+      "current_sha256": "bb314ffabf7ec03b2c5900b92bf76f5908caf4e068afa9448b2bcf961aba40b0",
+      "byte_identical": true,
+      "equivalent": true
+    },
+    {
+      "public_path": "Datalink/UART-260703-081042/UART-260703-081043-081050.udat",
+      "archive_sha256": "5e122ec1be4f0e3295338f9a72591a88661dd589adc19661f7a54b5ff0d409ac",
+      "current_sha256": "5e122ec1be4f0e3295338f9a72591a88661dd589adc19661f7a54b5ff0d409ac",
+      "byte_identical": true,
+      "equivalent": true
+    },
+    {
+      "public_path": "Datalink/UART-260703-081146/UART-260703-081147-081154.udat",
+      "archive_sha256": "3b3461dfc6f4508924be60aab04e140f1f52739b1c2692e2cfee034c948b8495",
+      "current_sha256": "3b3461dfc6f4508924be60aab04e140f1f52739b1c2692e2cfee034c948b8495",
+      "byte_identical": true,
+      "equivalent": true
+    },
+    {
+      "public_path": "Datalink/UART-260703-081549/UART-260703-081550-081556.udat",
+      "archive_sha256": "ad2e0999bfe35ac9b5f7198acb3ca9a2b5c9da3db5d6a6c4835a783d03efe038",
+      "current_sha256": "ad2e0999bfe35ac9b5f7198acb3ca9a2b5c9da3db5d6a6c4835a783d03efe038",
+      "byte_identical": true,
+      "equivalent": true
+    },
+    {
+      "public_path": "Datalink/UART-260703-082137/UART-260703-082138-082145.udat",
+      "archive_sha256": "0fbdc00b18aadb3ba9fd47914dc88e62ecf7730d0feb7e70570310c31716c309",
+      "current_sha256": "0fbdc00b18aadb3ba9fd47914dc88e62ecf7730d0feb7e70570310c31716c309",
+      "byte_identical": true,
+      "equivalent": true
+    },
+    {
+      "public_path": "Datalink/UART-260703-083311/UART-260703-083312-083319.udat",
+      "archive_sha256": "f6c68255e15ffb390d37c0c314d5173bc9e30008fb3928253a70912ddc0b2d31",
+      "current_sha256": "f6c68255e15ffb390d37c0c314d5173bc9e30008fb3928253a70912ddc0b2d31",
+      "byte_identical": true,
+      "equivalent": true
+    },
+    {
+      "public_path": "Datalink/UART-260703-083830/UART-260703-083831-083837.udat",
+      "archive_sha256": "65538b52eadf1a337bc0fd61ff237e796074590593e1da0f1e440a531a200409",
+      "current_sha256": "65538b52eadf1a337bc0fd61ff237e796074590593e1da0f1e440a531a200409",
+      "byte_identical": true,
+      "equivalent": true
+    },
+    {
+      "public_path": "Datalink/UART-260703-103606/UART-260703-103607-103614.udat",
+      "archive_sha256": "2ad6a90373a4461db66facd60c146d40f7e8d6b57fd58b9185e4c24847300da7",
+      "current_sha256": "2ad6a90373a4461db66facd60c146d40f7e8d6b57fd58b9185e4c24847300da7",
+      "byte_identical": true,
+      "equivalent": true
+    },
+    {
+      "public_path": "Datalink/UART-260703-103606/UART-260703-121333-121902.udat",
+      "archive_sha256": "619273ec109fcfd5974cf8417d7373ae0a2dd99b8a8d1dce0557efd2c6c9515c",
+      "current_sha256": "619273ec109fcfd5974cf8417d7373ae0a2dd99b8a8d1dce0557efd2c6c9515c",
+      "byte_identical": true,
+      "equivalent": true
+    },
+    {
+      "public_path": "Datalink/UART-260703-103606/UART-260703-121902-122432.udat",
+      "archive_sha256": "dac5a3d0512f2028052ecfddccd7114ec074a60b44b8b72e8eaf8ffc04f23e14",
+      "current_sha256": "dac5a3d0512f2028052ecfddccd7114ec074a60b44b8b72e8eaf8ffc04f23e14",
+      "byte_identical": true,
+      "equivalent": true
+    },
+    {
+      "public_path": "Datalink/UART-260703-103606/UART-260703-122432-123002.udat",
+      "archive_sha256": "f67c99c19affb6931ce13b22dc6906da398b5ebb8d47c77170f902b9f673ef6d",
+      "current_sha256": "f67c99c19affb6931ce13b22dc6906da398b5ebb8d47c77170f902b9f673ef6d",
+      "byte_identical": true,
+      "equivalent": true
+    },
+    {
+      "public_path": "Datalink/UART-260703-103606/UART-260703-123002-123532.udat",
+      "archive_sha256": "1b6516846ec227754f9b21abffba491dd91bfdfe025469ddef572d50fe417ce8",
+      "current_sha256": "1b6516846ec227754f9b21abffba491dd91bfdfe025469ddef572d50fe417ce8",
+      "byte_identical": true,
+      "equivalent": true
+    },
+    {
+      "public_path": "Datalink/UART-260703-103606/UART-260703-123532-124102.udat",
+      "archive_sha256": "8b7fe88dbbee84b55827206ea0cdd5e3b86976d6e0462e8abe3fbc381caad759",
+      "current_sha256": "8b7fe88dbbee84b55827206ea0cdd5e3b86976d6e0462e8abe3fbc381caad759",
+      "byte_identical": true,
+      "equivalent": true
+    },
+    {
+      "public_path": "Datalink/UART-260703-103606/UART-260703-124102-124632.udat",
+      "archive_sha256": "807906f917f37420402d22e899392e13e6055886716a7411f5732001778d38de",
+      "current_sha256": "807906f917f37420402d22e899392e13e6055886716a7411f5732001778d38de",
+      "byte_identical": true,
+      "equivalent": true
+    },
+    {
+      "public_path": "Datalink/UART-260703-103606/UART-260703-124632-125202.udat",
+      "archive_sha256": "6253260e7da38b1fb6558a15ef474f1a9eed51886819dfdc9db5ab38acf1d851",
+      "current_sha256": "6253260e7da38b1fb6558a15ef474f1a9eed51886819dfdc9db5ab38acf1d851",
+      "byte_identical": true,
+      "equivalent": true
+    },
+    {
+      "public_path": "Datalink/UART-260703-103606/UART-260703-125202-125732.udat",
+      "archive_sha256": "5e446f64a81482109ad05e6369af4197286b5c6bfc85f85767720fd15af4e298",
+      "current_sha256": "5e446f64a81482109ad05e6369af4197286b5c6bfc85f85767720fd15af4e298",
+      "byte_identical": true,
+      "equivalent": true
+    },
+    {
+      "public_path": "Datalink/UART-260703-103606/UART-260703-125732-130301.udat",
+      "archive_sha256": "c0b6fcf302f7d3007a389df298c393e7acb628b75af79b01b1e5c83db3e9f8bc",
+      "current_sha256": "c0b6fcf302f7d3007a389df298c393e7acb628b75af79b01b1e5c83db3e9f8bc",
+      "byte_identical": true,
+      "equivalent": true
+    },
+    {
+      "public_path": "Datalink/UART-260703-103606/UART-260703-130301-130831.udat",
+      "archive_sha256": "cffc15b346a617048a171d48eb2461993cbc443f902d41a906e010aa7114db0f",
+      "current_sha256": "cffc15b346a617048a171d48eb2461993cbc443f902d41a906e010aa7114db0f",
+      "byte_identical": true,
+      "equivalent": true
+    },
+    {
+      "public_path": "Datalink/UART-260703-103606/UART-260703-130831-131400.udat",
+      "archive_sha256": "41a9034ae9a54f59922f63c9e04fa7b09cd7ec5a1068e21ee387d611dea16e6f",
+      "current_sha256": "41a9034ae9a54f59922f63c9e04fa7b09cd7ec5a1068e21ee387d611dea16e6f",
+      "byte_identical": true,
+      "equivalent": true
+    },
+    {
+      "public_path": "Datalink/UART-260703-103606/UART-260703-131400-131930.udat",
+      "archive_sha256": "0f3bf29cc6edd495e587ac408ac1da7b75d93e012ab9a68968145949469cf90d",
+      "current_sha256": "0f3bf29cc6edd495e587ac408ac1da7b75d93e012ab9a68968145949469cf90d",
+      "byte_identical": true,
+      "equivalent": true
+    },
+    {
+      "public_path": "Datalink/UART-260703-103606/UART-260703-131930-132500.udat",
+      "archive_sha256": "b72a5995b83fb5d77b5d0a63f63aafefa3a4840afeb2d1649d10534035f24f88",
+      "current_sha256": "b72a5995b83fb5d77b5d0a63f63aafefa3a4840afeb2d1649d10534035f24f88",
+      "byte_identical": true,
+      "equivalent": true
+    },
+    {
+      "public_path": "Datalink/UART-260703-103606/UART-260703-132500-133030.udat",
+      "archive_sha256": "7ae09bd10690a877e6bb5775c775f43a3085dccf90f51328175983ac45282bbd",
+      "current_sha256": "7ae09bd10690a877e6bb5775c775f43a3085dccf90f51328175983ac45282bbd",
+      "byte_identical": true,
+      "equivalent": true
+    },
+    {
+      "public_path": "Datalink/UART-260703-103606/UART-260703-133030-133600.udat",
+      "archive_sha256": "518feed43125cfd360eb03dcb408d04bdb6069d5b89af5f4b82f201b23f97c3f",
+      "current_sha256": "518feed43125cfd360eb03dcb408d04bdb6069d5b89af5f4b82f201b23f97c3f",
+      "byte_identical": true,
+      "equivalent": true
+    },
+    {
+      "public_path": "Datalink/UART-260703-103606/UART-260703-133600-134130.udat",
+      "archive_sha256": "1c2ec3c6147c87b3267c07f916090676698ba537a7cd1d960ba2a75e34e28b2f",
+      "current_sha256": "1c2ec3c6147c87b3267c07f916090676698ba537a7cd1d960ba2a75e34e28b2f",
+      "byte_identical": true,
+      "equivalent": true
+    },
+    {
+      "public_path": "Datalink/UART-260703-103606/UART-260703-134130-134700.udat",
+      "archive_sha256": "642acb4c479e23677ca901ef9df8301242fb971aad3229daaf9dfd3d8e1385d3",
+      "current_sha256": "642acb4c479e23677ca901ef9df8301242fb971aad3229daaf9dfd3d8e1385d3",
+      "byte_identical": true,
+      "equivalent": true
+    },
+    {
+      "public_path": "Datalink/UART-260703-103606/UART-260703-134700.udat",
+      "archive_sha256": "0bb49d1453ef201f0310e754e8ac6f707994207b89d25c4bbce8bf3a20fe9aa5",
+      "current_sha256": "0bb49d1453ef201f0310e754e8ac6f707994207b89d25c4bbce8bf3a20fe9aa5",
+      "byte_identical": true,
+      "equivalent": true
+    },
+    {
+      "public_path": "Datalink/UART-260703-141448/UART-260703-141449-141456.udat",
+      "archive_sha256": "5144f230195206b7e383006ca086394b72a30919fce6482fe50250b0b2f52483",
+      "current_sha256": "5144f230195206b7e383006ca086394b72a30919fce6482fe50250b0b2f52483",
+      "byte_identical": true,
+      "equivalent": true
+    },
+    {
+      "public_path": "Datalink/UART-260703-141448/UART-260703-150126-150656.udat",
+      "archive_sha256": "1bdd7b5629d4972b026430f6e985d6ef560e90267bd21e78c92ee87bb6343683",
+      "current_sha256": "1bdd7b5629d4972b026430f6e985d6ef560e90267bd21e78c92ee87bb6343683",
+      "byte_identical": true,
+      "equivalent": true
+    },
+    {
+      "public_path": "Datalink/UART-260703-141448/UART-260703-150656-151122.udat",
+      "archive_sha256": "aad57f5e89c155cad821d5e8d73097662af9f5ac82c6af772599acd6893da4b5",
+      "current_sha256": "aad57f5e89c155cad821d5e8d73097662af9f5ac82c6af772599acd6893da4b5",
+      "byte_identical": true,
+      "equivalent": true
+    },
+    {
+      "public_path": "Datalink/UART-260704-114624/UART-260704-114624.udat",
+      "archive_sha256": "2f858d66741b2e86c65921469e7dc1de4adf142b80ffb48c77e9e081a5b20dca",
+      "current_sha256": "2f858d66741b2e86c65921469e7dc1de4adf142b80ffb48c77e9e081a5b20dca",
+      "byte_identical": true,
+      "equivalent": true
+    },
+    {
+      "public_path": "flight_attitude.csv",
+      "archive_sha256": "f91d7460118ab2368da7073c573a878e617504dac2ed658b3bd22c21caee7813",
+      "current_sha256": "55545efcee0b892e1f4c4d62e8b3ffad7946ccd0e23b70a81c08c97591b7dd2e",
+      "byte_identical": false,
+      "equivalent": true
+    }
+  ],
+  "archive_module_unchanged": true
+}

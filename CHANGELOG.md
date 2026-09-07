@@ -2,6 +2,12 @@
 
 ## 0.1.2rc1 — 2026-09-07
 
+- Recover the author's standard CF (0.6159319356) and latest saved aircraft
+  power/energy settings; share editable inputs across a combined Python example.
+  Add the original browser explorer in English with the current G29 source fit
+  and a numerical comparison against the latest local research implementation.
+- Keep selected high-speed results visible and move the complete unchanged
+  flight comparison into an expandable README section.
 - Present two Python workflows: a preflight Bauersfeld estimate and a postflight
   calibration for subsequent steady-flight estimates on the same aircraft.
   Add configurable BIN/CSV inputs, saved JSON fits, and power-ratio plus

@@ -20,6 +20,9 @@ jobs:
         with:
           python-version: ${{ matrix.python-version }}
           cache: pip
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
       - run: python -m pip install --upgrade pip
       - run: python -m pip install -e '.[dev]'
       - run: MPLBACKEND=Agg python -m pytest -q
@@ -34,10 +37,9 @@ jobs:
         working-directory: ${{ runner.temp }}
         run: |
           "$RUNNER_TEMP/wheel-env/bin/multicopter-range" calculate \
-            --hover-power 1500 --battery-energy 1200 --mass 12.4 \
-            --drag-area 450 --prop-diameter 29 --rotors 4 --correction-factor 0.93
-          "$RUNNER_TEMP/wheel-env/bin/python" "$GITHUB_WORKSPACE/examples/preflight_estimate.py"
-          "$RUNNER_TEMP/wheel-env/bin/python" "$GITHUB_WORKSPACE/examples/bundled_flight_demo.py"
+            --hover-power 1101.6581196581196 --battery-energy 1198.8 --mass 12.4 \
+            --drag-area 450 --prop-diameter 29 --rotors 4 --correction-factor 0.6159319356120826
+          "$RUNNER_TEMP/wheel-env/bin/python" "$GITHUB_WORKSPACE/examples/analyze_aircraft.py"
           "$RUNNER_TEMP/wheel-env/bin/multicopter-range" analyze-calibration \
             --data-root "$GITHUB_WORKSPACE/data/calibration/2026-07-03"
           "$RUNNER_TEMP/wheel-env/bin/python" "$GITHUB_WORKSPACE/examples/reproduce_showcase.py" \
