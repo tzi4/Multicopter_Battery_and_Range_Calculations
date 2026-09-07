@@ -2,6 +2,13 @@
 
 ## 0.1.2rc1 — 2026-09-07
 
+- Present two Python workflows: a preflight Bauersfeld estimate and a postflight
+  calibration for subsequent steady-flight estimates on the same aircraft.
+  Add configurable BIN/CSV inputs, saved JSON fits, and power-ratio plus
+  range/endurance plots with explicit hover-power and usable-energy inputs.
+- Add editable examples and input/output documentation. Translate remaining
+  source comments and a plot label to English; preserve the existing model
+  equations and historical numerical results.
 - Highlight the current G29 model's two highest-speed comparison bins beyond
   its fitted speed-bin range, while retaining all nine comparison bins and
   their errors. Add command/output and Python API usage documentation.

@@ -36,6 +36,8 @@ jobs:
           "$RUNNER_TEMP/wheel-env/bin/multicopter-range" calculate \
             --hover-power 1500 --battery-energy 1200 --mass 12.4 \
             --drag-area 450 --prop-diameter 29 --rotors 4 --correction-factor 0.93
+          "$RUNNER_TEMP/wheel-env/bin/python" "$GITHUB_WORKSPACE/examples/preflight_estimate.py"
+          "$RUNNER_TEMP/wheel-env/bin/python" "$GITHUB_WORKSPACE/examples/bundled_flight_demo.py"
           "$RUNNER_TEMP/wheel-env/bin/multicopter-range" analyze-calibration \
             --data-root "$GITHUB_WORKSPACE/data/calibration/2026-07-03"
           "$RUNNER_TEMP/wheel-env/bin/python" "$GITHUB_WORKSPACE/examples/reproduce_showcase.py" \

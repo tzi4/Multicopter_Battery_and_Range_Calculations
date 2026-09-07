@@ -29,7 +29,7 @@ Repository = "https://github.com/tzi4/Multicopter_Battery_and_Range_Calculations
 Issues = "https://github.com/tzi4/Multicopter_Battery_and_Range_Calculations/issues"
 
 [tool.setuptools]
-py-modules = ["multicopter_range"]
+py-modules = ["multicopter_range", "flight_workflow"]
 
 [tool.pytest.ini_options]
 testpaths = ["tests"]

@@ -13,6 +13,8 @@ calibration-output/
 validation-output/
 showcase-output/
 mass-sensitivity-output/
+flight-output/
+my-flight-output/
 
 # Generated analysis output
 *.log

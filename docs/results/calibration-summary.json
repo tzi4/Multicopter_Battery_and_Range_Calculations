@@ -2,7 +2,7 @@
   "schema_version": 2,
   "scope": "July 3 calibration reproduction; not independent flight validation",
   "package_version": "0.1.2rc1",
-  "module_sha256": "222f17eeee0fd28befdbac21f663da5664bd3f7ac92ec46bb11415a600d58923",
+  "module_sha256": "a83164577ef3ceee347cf4239875c9028f01a8628bf2521f42fa30f14e315a99",
   "reproduction_script_sha256": "6527ce6cf15bda285030c8b920ef1871aae2b3912bd25b3538a6f67d6dbfc004",
   "input_sha256": {
     "00000076.BIN": "9feb424e4fac3ab776af2c1e8a36eb5177cbeb8a525ce8b15bdcfabdb5257bfc",

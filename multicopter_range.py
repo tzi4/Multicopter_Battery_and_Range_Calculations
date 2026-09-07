@@ -73,7 +73,7 @@ class BauersfeldRangeCalculator:
         v_endurance_ms = self.vi_h / denom_e
 
         # Calculate power consumption (Eq. 17).
-        # Makale diyor ki:
+        # The paper gives:
         # P_range = 1.092 * P_hover
         # P_endurance = 0.914 * P_hover
 
@@ -116,7 +116,7 @@ p80_raw_data = [
 ]
 p80_thrust_power = [[row[0], row[1] * row[2]] for row in p80_raw_data]
 
-# 2. MN7005 KV115 + P24x7.2 (12S - 48V Test Verisi)
+# 2. MN7005 KV115 + P24x7.2 (12S - 48V test data)
 mn7005_thrust_power = [
     [1322, 97],
     [1408, 105],
@@ -265,7 +265,7 @@ u8lite_kv150_thrust_power = [
     [5378, 629],
 ]
 
-# 7. M8108 Light 150KV + MSC 28x9.2 (23V - 6S Test Verisi)
+# 7. M8108 Light 150KV + MSC 28x9.2 (23V - 6S test data)
 m8108_light_data = [
     [871, 47.2],
     [968, 53.7],
@@ -291,7 +291,7 @@ m8108_light_data = [
     [5483, 640.0],
 ]
 
-# 8. M6208 155KV + MSC 21x6.3 (12S - 46V Test Verisi)
+# 8. M6208 155KV + MSC 21x6.3 (12S - 46V test data)
 m6208_12s_data = [
     [853, 67.7],
     [953, 77.8],
@@ -317,7 +317,7 @@ m6208_12s_data = [
     [6582, 1180.0],
 ]
 
-# 9. M8108 Light 150KV + MSC 29x9.5 (23V - 6S Test Verisi)
+# 9. M8108 Light 150KV + MSC 29x9.5 (23V - 6S test data)
 m8108_light_29in_data = [
     [869, 46.1],
     [963, 52.4],
@@ -367,7 +367,7 @@ mn601s_kv170_data = [
     [6605, 1166],
 ]
 
-# 11. U10II KV100 + G32x11" (8S - 32V Test Verisi)
+# 11. U10II KV100 + G32x11" (8S - 32V test data)
 u10ii_kv100_data = [
     [1651, 105],
     [1761, 113],
@@ -391,7 +391,7 @@ u10ii_kv100_data = [
     [6430, 722],
 ]
 
-# 12. U10II KV100 + G30x10.5" (8S - 32V Test Verisi)
+# 12. U10II KV100 + G30x10.5" (8S - 32V test data)
 u10ii_kv100_30in_data = [
     [1405, 85],
     [1487, 91],
@@ -415,7 +415,7 @@ u10ii_kv100_30in_data = [
     [5717, 593],
 ]
 
-# 13. MN6007 II KV320 + P22x6.6" (6S - 24V Test Verisi)
+# 13. MN6007 II KV320 + P22x6.6" (6S - 24V test data)
 mn6007ii_kv320_data = [
     [1737, 160],
     [1878, 178],
@@ -438,7 +438,7 @@ mn6007ii_kv320_data = [
     [5882, 1041],
 ]
 
-# 14. MN6007 II KV160 + P21x6.3" (12S - 48V Test Verisi)
+# 14. MN6007 II KV160 + P21x6.3" (12S - 48V test data)
 mn6007ii_kv160_data = [
     [1444, 126],
     [1563, 141],
@@ -461,7 +461,7 @@ mn6007ii_kv160_data = [
     [5838, 978],
 ]
 
-# 15. U8 Lite KV150 + G30x10.5" (6S - 24V Test Verisi)
+# 15. U8 Lite KV150 + G30x10.5" (6S - 24V test data)
 u8lite_kv150_g30_data = [
     [1551, 91],
     [1684, 103],
@@ -565,7 +565,7 @@ U8LITE_KV190_THRUST_RPM_TABLES = {
 }
 
 
-# 17. U8 Lite KV190 + G28x9.2" (6S - 24V Test Verisi)
+# 17. U8 Lite KV190 + G28x9.2" (6S - 24V test data)
 u8lite_kv190_data = [
     [1662, 115],
     [1806, 130],
@@ -589,7 +589,7 @@ u8lite_kv190_data = [
     [6761, 929],
 ]
 
-# 17. U8II KV85 + G28x9.2" (12S - 48V Test Verisi)
+# 17. U8II KV85 + G28x9.2" (12S - 48V test data)
 u8ii_kv85_data = [
     [1465, 86],
     [1572, 96],
@@ -826,12 +826,12 @@ def quadratic_regression(data_list):
     sxy = sum(d[0] * d[1] for d in data_list)
     sx2y = sum(d[0] ** 2 * d[1] for d in data_list)
 
-    # Normal denklemler: A·[a,b,c]^T = rhs
+    # Normal equations: A·[a,b,c]^T = rhs
     A_mat = [[sx4, sx3, sx2], [sx3, sx2, sx], [sx2, sx, n]]
     det_A = _det3(A_mat)
 
     if abs(det_A) < 1e-12:
-        # Dejenere durum — lineer fallback
+        # Degenerate case: fall back to a linear fit.
         return 0, sy / max(sx, 1e-12), 0
 
     a = _det3([[sx2y, sx3, sx2], [sxy, sx2, sx], [sy, sx, n]]) / det_A
@@ -948,15 +948,13 @@ FIRFIR_BATTERY_NOMINAL_V_PER_CELL = 3.7
 FIRFIR_BATTERY_USABLE_FRACTION = (
     FIRFIR_BATTERY_MEASURED_USABLE_AH / FIRFIR_BATTERY_DATASHEET_NOMINAL_AH
 )
-# Firfir's actual battery is 6S2P (12 cells). The current/energy sensor was
-# installed on only one parallel branch (6S1P), so hover power measured from
-# DataLink (~758 W) and integrated energy (~490 Wh / usable ~559 Wh) are half
-# the actual aircraft values. Actual values = measured values multiplied by
-# FIRFIR_BATTERY_PARALLEL_ARMS: hover ~1516 W (above the theoretical 1124 W,
-# which is physically plausible), full-pack usable energy ~1119 Wh, and hover
-# time 40 min (the branch-independent ratio is unchanged). Because P/Ph tuning
-# uses a ratio, the branch multiplier cancels there; this constant only maps
-# absolute Firfir fit-source values to the physical aircraft.
+# The legacy preset assumes a 6S2P pack with power and energy measured on one
+# parallel branch. Under that assumption, multiplying the DataLink reference
+# (~758 W) and usable energy (~559 Wh) by two gives ~1516 W and ~1119 Wh.
+# The sensor topology is not established by the bundled ESC-sum telemetry;
+# these aircraft-level values therefore remain assumptions, not measurements.
+# Scaling both quantities preserves endurance and the fitted P/Ph ratios.
+# Supply independently measured aircraft-level values for another vehicle.
 FIRFIR_BATTERY_PARALLEL_ARMS = 2
 
 # Rest-voltage anchors for the calibrated 6S Li-ion solid-state pack.
@@ -2416,7 +2414,7 @@ def plot_battery_voltage_timeline(
             begin = (report["start_utc"] - start).total_seconds() / 60.0
             end = (report["end_utc"] - start).total_seconds() / 60.0
             ax.axvspan(begin, end, color="blue", alpha=0.08)
-    ax.set_xlabel("Log zamani [dk]")
+    ax.set_xlabel("Elapsed log time [min]")
     ax.set_ylabel("BAT VoltR [V]")
     ax.grid(True, alpha=0.3)
     ax.legend(fontsize=8)
@@ -2640,10 +2638,9 @@ def build_datalink_fitted_model_suite(
         correction_factor,
         battery_basis,
     )
-    # Because the sensor was on one parallel branch (6S1P), measured hover power
-    # is half the actual aircraft power. Scale absolute Firfir fit-source values
-    # to aircraft level with the branch multiplier. The reserve report and P/Ph
-    # ratio remain branch-consistent, so the 40-minute baseline is unchanged.
+    # Apply the legacy preset's assumed parallel-branch multiplier to its
+    # absolute source values. This does not establish the sensor topology.
+    # Scaling energy and power together leaves endurance and P/Ph unchanged.
     measured_hover_power_w = result.get("measured_hover_power_w")
     theoretical_hover_power_w = profile.get("theoretical_hover_power_w")
     vehicle_measured_hover_power_w = (
@@ -2654,8 +2651,8 @@ def build_datalink_fitted_model_suite(
     full_pack_usable_energy_wh = (
         battery_basis.get("usable_energy_wh", 0.0) * FIRFIR_BATTERY_PARALLEL_ARMS
     )
-    # Reality/efficiency ratio at aircraft level: actual / theoretical hover.
-    # The former one-branch value was below theory and physically impossible.
+    # Electrical scale under the legacy branch assumption: scaled / table hover.
+    # This is not an independently verified whole-aircraft efficiency estimate.
     if vehicle_measured_hover_power_w and theoretical_hover_power_w:
         datalink_efficiency_ratio = (
             vehicle_measured_hover_power_w / theoretical_hover_power_w
@@ -3658,7 +3655,7 @@ def transfer_faessler_params_to_vehicle(
     hover_pred_w = p_profile_w + p_induced_w
     fit_weight_n = fit_profile["mass_kg"] * 9.81
     apply_weight_n = apply_profile["mass_kg"] * 9.81
-    # Rotor huzursuzluk suruklenmesi (lambda*v) itki/agirlikla olceklenir.
+    # Scale linear rotor drag (lambda*v) with the aircraft weight ratio.
     lambda_new_n_per_ms = lambda_vehicle_n_per_ms * apply_weight_n / fit_weight_n
     return {
         "v0_ms": v0_ms,
@@ -3960,11 +3957,11 @@ def print_transfer_summary(transfer):
 
 
 def build_july3_firfir_battery_basis():
-    # This basis represents the single sensed branch (6S1P). Measured hover power
-    # (~758 W) also comes from that branch, so their ratio correctly gives the
-    # 40-minute baseline. The actual pack is 6S2P: full usable energy is this
-    # value times FIRFIR_BATTERY_PARALLEL_ARMS (~1119 Wh). Using full-pack energy
-    # requires doubling measured hover power too, or endurance would double.
+    # Legacy energy basis under the assumed single sensed branch (6S1P).
+    # Its ratio to the ~758 W reference gives the historical 40-minute baseline.
+    # The assumed full 6S2P energy is this value times the branch multiplier
+    # (~1119 Wh). The reference power must receive the same multiplier to
+    # preserve endurance. The bundled logs do not verify the sensor topology.
     usable_energy_wh = (
         FIRFIR_BATTERY_CELLS
         * FIRFIR_BATTERY_NOMINAL_V_PER_CELL

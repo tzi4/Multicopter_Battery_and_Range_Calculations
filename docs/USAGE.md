@@ -1,74 +1,233 @@
-# Using the calculator and fitted models
+# Two stages, one aircraft workflow
 
-The main implementation is [`multicopter_range.py`](../multicopter_range.py).
-It contains the calculator, log parsers, model fitting, physical transfer and
-command-line entry point. The installed command `multicopter-range` calls its
-`main()` function. The files in `examples/` assemble those functions into
-reproducible experiments.
+Use a first estimate before flight, then a model fitted to your own telemetry
+once flight data are available. You can edit and run the Python files in
+`examples/`; command-line flags are optional.
 
-Install the repository first with `python -m pip install -e .` in a Python
-3.10+ environment. Run the commands below from the repository root.
+Install with `python -m pip install -e .` from a repository clone in a Python
+3.10+ environment. The calculator lives in
+[`multicopter_range.py`](../multicopter_range.py); the custom-log and saved-fit
+interface lives in [`flight_workflow.py`](../flight_workflow.py).
 
-## 1. Estimate range and endurance from aircraft inputs
+## Before flight: geometry, hover power and energy
+
+Open [`examples/preflight_estimate.py`](../examples/preflight_estimate.py).
+Edit the values passed to `BauersfeldRangeCalculator`, then run:
 
 ```bash
-python multicopter_range.py calculate --hover-power 1500 --battery-energy 1200 --mass 12.4 --drag-area 450 --prop-diameter 29 --rotors 4 --correction-factor 0.93
+python examples/preflight_estimate.py
 ```
 
-The installed equivalent starts with `multicopter-range calculate`. The
-example prints:
+| Python input | Meaning |
+|---|---|
+| `hover_power_w` | Electrical hover power for the whole aircraft, in W. Before flight, use a suitable bench or manufacturer estimate; a previous hover measurement can improve this input. |
+| `battery_wh` | Whole-pack energy basis, in Wh. |
+| `correction_factor` | Fraction of that energy available for flight. Use `1.0` if the input already excludes reserves and unusable capacity. |
+| `total_mass_kg` | Takeoff mass including battery and payload, in kg. |
+| `drag_area_cm2` | Projected reference area in cm², as used by the Bauersfeld regression. This is not aerodynamic `CdA`. |
+| `prop_diameter_inch` | Diameter of one propeller, in inches. |
+| `num_rotors` | Number of load-bearing rotors. |
+
+The example's 1500 W / 1200 Wh values are illustrative. It prints:
 
 ```text
-Induced hover velocity: 5.397 m/s
-Best-range speed: 10.723 m/s
-Best-range flight time: 40.879 min
-Maximum range: 26.302 km
-Best-endurance speed: 6.589 m/s
-Maximum endurance: 48.840 min
+Best-range speed: 10.72 m/s
+Best-range power: 1638.0 W
+Best-range flight time: 40.88 min
+Maximum range: 26.30 km
+Best-endurance speed: 6.59 m/s
+Maximum endurance: 48.84 min
 ```
 
-These are **illustrative inputs**, not a reconstruction of a particular flight:
-1500 W is measured hover power for the whole aircraft, 1200 Wh is the whole
-pack's energy basis, 12.4 kg is total takeoff mass, 450 cm² is the projected
-reference area, and 29 inches is one propeller's diameter. The example treats
-93% of the energy input as available. If the energy you enter is already usable
-under your reserve policy, use a correction factor of 1.0.
+`solve()` returns a dictionary, so your own program can use these values
+without parsing terminal output. This stage uses the Bauersfeld relationships;
+it does not automatically use the log-fitted curves.
 
-This command runs the **Bauersfeld calculator**. It does not load the July 3
-Zeng/Faessler/Kirschstein fits. It also does not infer hover power from mass or
-select a motor from propeller diameter. Different aircraft need consistent
-hover-power, energy and geometry inputs; changing only mass is insufficient.
+## After flight: introduce your logs
 
-## 2. Reproduce the flight-data results
+Choose a representative calibration flight with steady hover and several
+steady forward-flight speeds. Include enough settled samples for multiple
+speed bins. Record the actual mass, rotor geometry and power-sensor setup.
+Use a separate later flight to assess how well the fitted curve carries over.
+
+The [editable postflight example](../examples/postflight_fit.py) keeps log paths,
+aircraft inputs and output settings in Python. Replace its example values,
+then run `python examples/postflight_fit.py`.
+
+### ArduPilot BIN input
+
+```python
+from flight_workflow import load_ardupilot_log
+
+samples = load_ardupilot_log(
+    "my-logs/flight.BIN",       # An absolute path also works.
+    power_source="battery",
+    battery_instance=0,
+    current_scale=1.0,          # Keep 1 unless an independent calibration says otherwise.
+)
+```
+
+The battery route needs `XKF1` vehicle velocity/attitude and `BAT` voltage/current
+from a **calibrated whole-aircraft monitor**. Select the monitor instance that
+covers the aircraft's electrical supply. The loader joins records on log time.
+It cannot repair an uncalibrated current sensor or infer battery wiring.
+
+If your BIN log records all motor ESCs instead:
+
+```python
+samples = load_ardupilot_log(
+    "my-logs/flight.BIN",
+    power_source="esc",
+    esc_ids=(0, 1, 2, 3),       # Use the actual complete set of motor IDs.
+    rpm_scale=1.0,             # Convert to mechanical RPM if your logger requires it.
+)
+```
+
+ESC power is the sum of the selected `voltage × current` measurements. It may
+exclude avionics or other loads. Match the electrical boundary of the fitted
+power and hover reference, and check any whole-aircraft scaling independently.
+Do not double ESC power merely because the battery has two parallel branches.
+
+For battery-only logs without rotor RPM, supply `hover_rpm` in the aircraft
+configuration below. For another logger, use a synchronized CSV with the
+schema described below. The legacy T-MOTOR `.udat` reproduction path remains
+available for the included July 3 data; it is not a universal DataLink importer.
+
+### CSV input from another logger
+
+Export one already synchronized flight, with this header:
+
+```csv
+time_s,vx_ms,vy_ms,vertical_speed_ms,pitch_deg,roll_deg,power_w,rpm
+0.0,0.1,0.0,0.0,0.2,0.1,1500.0,2200.0
+0.1,0.1,0.0,0.0,0.2,0.1,1502.0,2202.0
+```
+
+These two rows illustrate the format only; they are not enough to fit a model.
+`time_s` is seconds on one common flight clock. `vx_ms` and `vy_ms` are horizontal
+velocity components in a consistent earth-fixed frame; vertical speed is in
+m/s, pitch and roll in degrees, and power in W. `rpm` is optional and must be
+mechanical RPM. Without it, supply the aircraft's measured `hover_rpm`.
+All required fields must be finite numbers, power must be positive, and times
+must be unique within the flight. Use complete in-flight rows, not empty cells
+or zero-power records from a disarmed aircraft.
+
+```python
+from flight_workflow import load_flight_csv
+
+samples = load_flight_csv("my-logs/synchronized-flight.csv")
+```
+
+Convert units, correct independently established sensor gains and align any
+external logger clocks before exporting. Do not concatenate flights whose
+clocks restart into one CSV. There is no automatic search for the clock shift
+that produces the smallest model error.
+
+### Fit the aircraft
+
+```python
+from flight_workflow import Aircraft, FitOptions, fit_flight
+
+aircraft = Aircraft(
+    name="My multicopter",
+    mass_kg=12.4,
+    num_rotors=4,
+    prop_diameter_inch=29.0,
+    reference_area_m2=0.045,   # Projected body reference area [m²].
+    hover_rpm=2200.0,          # Measured mechanical RPM; replace for your aircraft.
+)
+fit = fit_flight(
+    samples,
+    aircraft,
+    hover_power_w=1500.0,     # Measured hover reference on the same electrical basis.
+    options=FitOptions(min_speed_ms=2.0, max_speed_ms=20.0, min_bin_samples=80),
+)
+fit.save("my-flight-output/aircraft-fit.json")
+fit.plot(
+    "my-flight-output",
+    hover_power_w=1500.0,
+    usable_energy_wh=1100.0,  # Already excludes reserve; no extra deduction.
+    max_speed_ms=20.0,
+)
+```
+
+All numbers above are example inputs. Aircraft geometry and measured tip speed
+inform the three existing model families. The Faessler-inspired fit also uses
+a drag prior estimated from sufficiently steady attitude/velocity records.
+Rotor solidity, blade drag, induced correction and hotel-power
+assumptions are configurable in `Aircraft`; the defaults are modeling
+assumptions, not measurements inferred for every new aircraft. See the
+[workflow methodology](WORKFLOW_METHOD.md) for filtering and fit requirements.
+
+### Reuse the fit on a later day
+
+```python
+from flight_workflow import FlightFit
+
+fit = FlightFit.load("my-flight-output/aircraft-fit.json")
+predictions = fit.predict(
+    speed_ms=10.0,
+    hover_power_w=1500.0,
+    usable_energy_wh=1100.0,
+)
+for model_name, row in predictions.items():
+    print(model_name, row)
+```
+
+The log is not parsed again. Each of `zeng`, `faessler` and `kirschstein` returns:
+
+| Output field | Meaning |
+|---|---|
+| `speed_ms` | Requested steady-flight speed in m/s. |
+| `power_ratio` | Predicted electrical power relative to the hover reference, `P/P_hover`. |
+| `power_w` | Power ratio multiplied by the supplied hover power, in W. |
+| `endurance_min` | `60 × usable_energy_wh / power_w`. |
+| `range_km` | Requested speed multiplied by flight time, in km. |
+| `within_fitted_speed_range` | Whether the speed lies between the retained calibration-bin medians. A false value means extrapolation. |
+
+These are steady-flight estimates for the calibrated configuration, not a
+complete mission simulation. The energy input is the usable budget for the
+modeled segment. Hover, takeoff, climb, manoeuvres and return-flight wind may
+consume additional energy. A new payload or propulsion setup is a reason to
+recheck the fit, not just change the energy number.
+
+## Rebuild the included example and its two plots
+
+The supplied fit belongs to one specific aircraft. **Refit your own logs before
+using these curves for your aircraft.** To inspect the workflow immediately:
 
 ```bash
-python examples/reproduce_showcase.py --prop-diameter 29 --mass 12.4 --output-dir showcase-output --check-results docs/results
+python examples/bundled_flight_demo.py
 ```
 
-This rebuilds the G29 July 3 calibration, evaluates the frozen fits on the
-published July 21 derived observations, and writes:
+This fits the current G29 / 12.4 kg July 3 scenario, saves and reloads its
+coefficients, predicts at 17 m/s and writes:
 
-| Output | Contents |
+| File in `flight-output/` | Contents |
 |---|---|
-| `calibration-summary.json` | Source/data hashes, configuration, measured bins and model curves |
-| `calibration-bins.csv` | Measured and predicted normalized power in each calibration bin |
-| `calibration-audit.md` | Fit parameters, diagnostics and interpretation |
-| `validation-summary.json` | Every comparison bin, model prediction and residual |
-| `validation-bins.csv` | The same comparison results in spreadsheet form |
-| `figures/` | Calibration and comparison plots in PNG and SVG |
+| `aircraft-fit.json` | Reusable model parameters, calibration observations and fit metadata. |
+| `power_ratio.png` | Three fitted `P/P_hover` curves and measured bins versus speed. |
+| `range_endurance.png` | Range and endurance versus speed using the explicit power/energy inputs. |
 
-The comparison's `P/Ph` uses the **July 3 ESC-sum hover reference**. It does not
-establish independently calibrated whole-aircraft watts. The two highlighted
-approximately 17 m/s results are beyond the fitted bin range; all retained
-comparison bins remain visible and downloadable.
+Edit `DATA_ROOT`, `OUTPUT_DIR`, `HOVER_POWER_W` and `USABLE_ENERGY_WH` in the
+example file. The latter two default to illustrative **1500 W / 1100 Wh**;
+absolute range and endurance in these plots are not measured flight results.
+The 17 m/s prediction is beyond the retained calibration-bin range.
 
-The separate command `multicopter-range analyze-calibration --graphs` keeps
-the historical fixed **G28 / 12.4 kg preset**. It has no mass or propeller
-options. Use the examples above for the explicit G29 experiment. A wheel
-installation also needs `--data-root` pointing to the public July 3 data in a
-repository clone; wheels omit telemetry.
+Both plots use ground speed from the logs; neither is a thrust-to-weight plot
+or a normalized-airspeed plot. Dashed curve segments indicate extrapolation.
 
-## 3. Evaluate or transfer a fitted curve from Python
+For the published calibration and July 21 comparison, the separate
+`examples/reproduce_showcase.py` script writes JSON summaries, CSV bin tables,
+a Markdown audit and calibration/comparison PNG/SVG figures. Its options and
+source hashes are documented in [Reproducibility](REPRODUCIBILITY.md).
+
+The older `multicopter-range analyze-calibration --graphs` retains a fixed
+G28 / 12.4 kg preset. Its `--data-root` relocates that historical data set and
+does not configure a new aircraft. Wheels omit the large raw logs; use a
+repository clone for the bundled demonstration.
+
+## Advanced: transfer physical parameters to another configuration
 
 Run this Python example from the repository root after installation. The first
 call parses the bundled calibration data, so allow time for it to complete.

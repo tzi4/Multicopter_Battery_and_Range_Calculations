@@ -1,22 +1,145 @@
 # Multicopter Battery and Range Calculator
 
-**From real flight telemetry to reproducible multicopter power and range estimates.**
+**Start with a preflight estimate. Refine it with your own flight data.**
 
-Fit and compare three power–speed models, estimate endurance and range, and
-trace the results back to ArduPilot and T-MOTOR DataLink measurements. The
-repository includes the calibration logs, later-flight comparison data,
-publication-ready figures, and the scripts that connect them.
+Before the first flight, estimate range and endurance from the aircraft's
+geometry, hover power and battery energy. After a representative flight, use
+its logs to fit three power models and compare the speeds, power demands and
+flight times you can expect on subsequent flights of the same aircraft.
 
-**46,175 calibration samples · 30,782 later-flight samples · 3 model families · 4 research papers**
+The project brings these two stages together in Python. Edit a few inputs in
+an example file, run it, and keep the fitted model for your next calculation.
 
-## Features
+| Stage | What you provide | What you get |
+|---|---|---|
+| **Before flight — first estimate** | Mass, rotor geometry, reference area, hover-power estimate and battery energy | Bauersfeld best-range and best-endurance speeds, power, time and range |
+| **After flight — calibrated estimate** | Flight logs, aircraft configuration and an electrical hover reference | Zeng, Faessler-inspired and Kirschstein-inspired curves; two comparison plots; a reusable saved fit |
 
-- Estimates best-range speed, best-endurance speed, flight time, and range.
-- Parses ArduPilot `.BIN` logs and T-MOTOR DataLink `.udat` telemetry.
-- Fits Zeng, Faessler, and Kirschstein power-speed model families.
-- Includes the complete 3 July 2026 calibration data set used by the tests.
-- Transfers fitted physical parameters to another mass/rotor/propeller setup.
-- Produces empirical and diagnostic plots for audit and comparison.
+> [!IMPORTANT]
+> The included logs and fitted curves come from one specific aircraft. Use them
+> as a worked example, and **fit your own logs before planning with these models**.
+> A saved fit describes the aircraft and conditions used for calibration;
+> changes in payload, propulsion or operating conditions need a new check.
+
+**46,175 calibration samples · 30,782 later-flight samples · 3 fitted model families · 4 research papers**
+
+## Install
+
+Python 3.10 or newer is required. The clone includes 126 MB of calibration
+inputs; allow at least 1 GB for the repository and Python environment.
+
+```bash
+git clone https://github.com/tzi4/Multicopter_Battery_and_Range_Calculations.git
+cd Multicopter_Battery_and_Range_Calculations
+python3 -m venv .venv
+source .venv/bin/activate
+python -m pip install -e .
+```
+
+On Windows PowerShell, create and activate the environment with
+`py -3 -m venv .venv` and `.\.venv\Scripts\Activate.ps1` instead.
+
+## 1. Before flight: get a first estimate
+
+Open [`examples/preflight_estimate.py`](examples/preflight_estimate.py) and edit
+the inputs. The underlying Python call is:
+
+```python
+from multicopter_range import BauersfeldRangeCalculator
+
+estimate = BauersfeldRangeCalculator(
+    hover_power_w=1500.0,       # Whole-aircraft hover estimate [W].
+    correction_factor=0.93,    # Fraction of battery energy available to use.
+    battery_wh=1200.0,         # Whole-pack energy basis [Wh].
+    total_mass_kg=12.4,
+    drag_area_cm2=450.0,        # Projected reference area, not CdA.
+    prop_diameter_inch=29.0,
+    num_rotors=4,
+).solve()
+
+print(f"Range: {estimate['max_range_km']:.2f} km")
+print(f"Endurance: {estimate['max_endurance_min']:.2f} min")
+```
+
+Run the complete example with `python examples/preflight_estimate.py`.
+These illustrative inputs give **26.30 km at 10.72 m/s** for best range and
+**48.84 minutes at 6.59 m/s** for best endurance. Hover power can come from a
+propulsion test, a suitable manufacturer estimate or an earlier measurement.
+Use a correction factor of `1.0` if the entered energy already excludes your
+reserve and other unusable capacity.
+
+## 2. After flight: fit once, reuse the model
+
+Record steady flight at several speeds, including hover. Supply your aircraft
+configuration and calibrated power measurements, then fit the three model
+families. The saved fit can estimate power at a requested speed; a hover-power
+and usable-energy input turns that ratio into watts, minutes and kilometres.
+
+Open [`examples/postflight_fit.py`](examples/postflight_fit.py), set your log
+path and aircraft inputs in the file, and run `python examples/postflight_fit.py`.
+The workflow looks like this:
+
+```python
+from flight_workflow import Aircraft, fit_flight, load_ardupilot_log
+
+samples = load_ardupilot_log(
+    "my-logs/flight.BIN",
+    power_source="battery",    # Use a calibrated whole-aircraft BAT monitor.
+    battery_instance=0,
+)
+aircraft = Aircraft(
+    name="My multicopter",
+    mass_kg=12.4,
+    num_rotors=4,
+    prop_diameter_inch=29.0,
+    reference_area_m2=0.045,
+    hover_rpm=2200.0,
+)
+fit = fit_flight(samples, aircraft, hover_power_w=1500.0)
+fit.save("my-flight-output/aircraft-fit.json")
+fit.plot("my-flight-output", hover_power_w=1500.0, usable_energy_wh=1100.0)
+```
+
+These aircraft and electrical values are placeholders to replace with your
+measurements. The loader also accepts ESC telemetry; a documented CSV format
+supports synchronized data from other loggers. See the [usage guide](docs/USAGE.md)
+for exact fields, units, power-source selection and log requirements.
+
+For subsequent estimates, load the JSON without reading the logs again:
+
+```python
+from flight_workflow import FlightFit
+
+fit = FlightFit.load("my-flight-output/aircraft-fit.json")
+for name, prediction in fit.predict(
+    speed_ms=10.0, hover_power_w=1500.0, usable_energy_wh=1100.0
+).items():
+    print(name, prediction)    # Power ratio, watts, minutes, km and fit-range status.
+```
+
+### The two main plots
+
+**Power versus speed:** `power_ratio.png` compares all three fitted
+`P(V)/P_hover` curves with the measured speed bins. This is normalized
+**electrical power**, not thrust-to-weight ratio. The flight-log input here is
+EKF ground speed, which serves as an airspeed proxy in sufficiently calm flight.
+
+![Three fitted power curves with measured speed bins](docs/assets/power_ratio.png)
+
+**Range and endurance versus speed:** `range_endurance.png` shows how speed
+changes distance and time for a declared hover-power and usable-energy basis.
+Energy already excludes the reserve; no second reserve deduction is applied.
+
+![Range and endurance versus speed for all three fitted models](docs/assets/range_endurance.png)
+
+These example plots use the bundled G29 fit, with **illustrative whole-aircraft
+inputs of 1500 W hover power and 1100 Wh usable energy**. Their absolute time
+and range are scenarios, not measured flight outcomes. Dashed curves identify
+speeds outside the fitted bin range.
+
+To make them yourself, run `python examples/bundled_flight_demo.py`. Change its
+Python variables to explore speed and energy inputs. It rebuilds the published
+fit and writes the two figures plus `aircraft-fit.json` into `flight-output/`.
 
 ## Flight results
 
@@ -70,235 +193,61 @@ and [30,782 derived telemetry rows](data/validation/2026-07-21/).
 The residual is `100 × (observation / prediction − 1)`; the table averages
 its absolute value equally over the nine bins.
 
-Reproduce the data tables and figures after installation:
-
-```bash
-python examples/reproduce_showcase.py --prop-diameter 29 --mass 12.4 \
-  --output-dir showcase-output --check-results docs/results
-```
+The [reproduction guide](docs/REPRODUCIBILITY.md) covers the complete comparison pipeline.
 
 The plots report normalized electrical power; absolute endurance additionally depends on the
 battery-energy and current-sensor interpretation described in
 [Methodology](docs/METHODOLOGY.md).
 
-## Main code and workflow
+## Which code does what?
 
-The main implementation is **[`multicopter_range.py`](multicopter_range.py)**.
-The installed `multicopter-range` command calls that same file.
+- [`multicopter_range.py`](multicopter_range.py) contains the Bauersfeld
+  calculator, original log parsers, model equations, fitting and transfer routines.
+- [`flight_workflow.py`](flight_workflow.py) provides the Python interface for
+  your own logs, saved fits, predictions and the two main plots.
+- [`examples/`](examples/) contains editable preflight, postflight and bundled
+  demonstration scripts, plus the complete research-reproduction scripts.
+- [`docs/USAGE.md`](docs/USAGE.md) explains every input and output;
+  [workflow methodology](docs/WORKFLOW_METHOD.md) explains the custom-log fit.
 
-| Task | Entry point | Output |
-|---|---|---|
-| Estimate range/endurance for aircraft inputs | `multicopter-range calculate` | Best-range and best-endurance speeds, flight times, and maximum range in the terminal |
-| Rebuild the bundled historical calibration | `multicopter-range analyze-calibration --graphs` | Joined-sample/bin counts, hover-power and tip-speed statistics, two PNG diagnostics and a fit audit |
-| Reproduce the current G29 flight results | `python examples/reproduce_showcase.py` | Calibration/comparison JSON, bin CSV tables, Markdown audit, and PNG/SVG figures |
+The existing command-line interface remains available. Its historical
+`analyze-calibration` preset reproduces the July 3 G28 configuration; use the
+Python examples above for your own aircraft and the current G29 demonstration.
+Wheels include the Python modules; the large bundled logs require a repository clone.
 
-`calculate` uses the Bauersfeld range/endurance relationships with **your
-aircraft's hover power and battery energy**. It does not automatically load
-the three log-fitted curves. The showcase fits those curves from the included
-July 3 data and evaluates them against July 21 observations. Python callers
-can use `build_transferred_model_suite` to rebuild fitted curves for another
-configuration. See the [usage guide](docs/USAGE.md) for commands, output files
-and the fitted-model API.
+## Applying it to another aircraft
 
-### Applying the calculator to another aircraft
+The inputs support aircraft-specific design studies, including **1–25 kg
+configurations**, with suitable propulsion, power and energy measurements.
+That flexibility is not an accuracy claim for the entire mass range. The
+published flight comparison concerns one nominal 12.4 kg configuration.
 
-Mass, rotor count, propeller diameter, hover power, battery energy and reference
-area are configurable. This supports **aircraft-specific design studies,
-including 1–25 kg configurations**, when those inputs describe the actual
-aircraft. The supplied fit comes from a nominal 12.4 kg configuration; it does
-not establish accuracy throughout the 1–25 kg range. A new aircraft needs its
-own measured electrical inputs and validation of any transferred model.
+A calibration flight gives a useful starting point for subsequent steady-flight
+estimates. It cannot cover every manoeuvre, wind condition, battery state or
+payload change. Check the saved model against a later flight before relying on
+it for planning. Physical-parameter transfer is also available through the
+original Python API; its assumptions are described in [Methodology](docs/METHODOLOGY.md).
 
-## Requirements
+## Data, tests and reproducibility
 
-- Python 3.10 or newer
-- Space for the repository history, the 126 MB calibration inputs, and a Python
-  environment (allow at least 1 GB for a fresh clone and installation)
-
-## Installation
-
-```bash
-git clone https://github.com/tzi4/Multicopter_Battery_and_Range_Calculations.git
-cd Multicopter_Battery_and_Range_Calculations
-python3 -m venv .venv
-source .venv/bin/activate
-python -m pip install --upgrade pip
-python -m pip install -e .
-```
-
-On Windows PowerShell, create and activate the environment with:
-
-```powershell
-py -3 -m venv .venv
-.\.venv\Scripts\Activate.ps1
-```
-
-## Quick start
-
-Run a calculation from measured hover power and battery energy:
-
-```bash
-multicopter-range calculate \
-  --hover-power 1500 \
-  --battery-energy 1200 \
-  --mass 12.4 \
-  --drag-area 450 \
-  --prop-diameter 29 \
-  --rotors 4 \
-  --correction-factor 0.93
-```
-
-Input definitions:
-
-- `--hover-power`: measured electrical power for the **whole aircraft** during
-  steady hover, in watts. Do not enter per-motor power.
-- `--battery-energy`: energy basis for the whole battery pack, in watt-hours.
-  Use nominal energy only when the correction factor accounts for unusable
-  capacity; otherwise enter an independently measured usable-energy value.
-- `--mass`: takeoff mass including the battery and payload, in kilograms.
-- `--drag-area`: the projected reference area used by the Bauersfeld regression,
-  in square centimetres. This is not the aerodynamic `CdA` used by the fitted
-  forward-flight models.
-- `--prop-diameter`: one propeller's diameter, in inches.
-- `--rotors`: total load-bearing rotor count.
-- `--correction-factor`: a dimensionless multiplier applied to available energy
-  in the range/endurance calculation. Use `1.0` when `--battery-energy` is
-  already usable energy. A value such as `0.93` means 93% of the entered energy
-  is treated as usable. The tool does not infer this value for a new aircraft.
-
-The example above produces:
-
-```text
-Induced hover velocity: 5.397 m/s
-Best-range speed: 10.723 m/s
-Best-range flight time: 40.879 min
-Maximum range: 26.302 km
-Best-endurance speed: 6.589 m/s
-Maximum endurance: 48.840 min
-```
-
-The same command works without installation:
-
-```bash
-python multicopter_range.py calculate --hover-power 1500 --battery-energy 1200 \
-  --mass 12.4 --drag-area 450 --prop-diameter 29 --rotors 4 --correction-factor 0.93
-```
-
-Rebuild the fitted models from the included raw logs:
-
-```bash
-multicopter-range analyze-calibration
-```
-
-Add `--graphs` to write `empirical_datalink_power_curve.png` and
-`diagnostic_datalink_surrogate_fits.png`, plus `scientific_model_fit_audit.md`,
-in the current directory. These are calibration diagnostics.
-
-For a compact audit with input hashes, electrical measurements, and
-per-model residuals:
-
-```bash
-python examples/reproduce_calibration.py \
-  --data-root data/calibration/2026-07-03 --output-dir calibration-output
-```
-
-The example defaults to the G29 / 12.4 kg scenario shown above: 46,175 joined
-samples, 11 stable speed bins and a tip-speed statistic of 82.912632 m/s.
-The legacy `analyze-calibration` command retains its fixed G28 / 12.4 kg preset.
-See the [reproduction and research audit](docs/REPRODUCIBILITY.md) for measured
-results, the old 168.1 m/s report discrepancy, and the separate July 21 check.
-
-Wheels and source distributions contain the calculator code but omit the large
-flight logs. After installing a wheel, point to the data in a repository clone:
-
-```bash
-multicopter-range analyze-calibration --data-root /path/to/repository/data/calibration/2026-07-03
-```
-
-The directory must include both BIN logs, the DataLink sessions, and
-`flight_attitude.csv`. This command uses the fixed July 3 aircraft profile;
-the option relocates that data set and does not configure a new aircraft.
-
-## Calibration data
-
-The required raw logs are committed under
-`data/calibration/2026-07-03/`:
-
-```text
-data/calibration/2026-07-03/
-├── 00000076.BIN
-├── 00000077.BIN
-├── flight_attitude.csv
-└── Datalink/
-    └── UART-260703-*/
-        └── *.udat
-```
-
-The `.BIN` files provide vehicle state and speed. The `.udat` files provide
-per-motor voltage, current, and RPM. Both sources are needed because the
-pipeline time-aligns them before creating stable speed bins. See
-[the data notes](data/calibration/2026-07-03/README.md) and
-[the methodology](docs/METHODOLOGY.md) for assumptions and known limitations.
-The directly parsed power is the sum of four ESC `voltage × current` records.
-The archive's additional factor of two assumes a particular sensor layout;
-the physical wiring has not been established from these logs. Parallel battery
-count alone does not justify doubling ESC power.
-
-> [!IMPORTANT]
-> The raw ArduPilot logs contain the original flight's GPS positions and
-> non-secret autopilot parameters. Review this before redistributing the data.
-
-The largest file is approximately 83 MB. Git LFS is not required; every file is
-below GitHub's 100 MB per-file limit.
-
-## Testing
+The [July 3 calibration data](data/calibration/2026-07-03/) include two ArduPilot
+BIN logs, T-MOTOR DataLink sessions and the derived attitude CSV. The [July 21
+comparison data](data/validation/2026-07-21/) provide 30,782 derived telemetry
+rows. Raw BIN logs retain the original flight's GPS positions and autopilot
+parameters. Source hashes, filters and electrical assumptions are recorded in
+the [reproduction guide](docs/REPRODUCIBILITY.md) and
+[configuration audit](docs/FLIGHT_CONFIGURATION.md).
 
 ```bash
 python -m pip install -e '.[dev]'
 python -m pytest -q
 ```
 
-The full suite parses the real flight logs and may take around one minute.
-For a fast unit and numerical-regression check:
-
-```bash
-python -m pytest -q tests/test_numerical_regression.py tests/test_transfer.py
-```
-
-The old and public implementations were also executed side by side over broad
-input grids and the complete bundled telemetry set. See
-[Numerical validation](docs/VALIDATION.md) for the exact comparison and scope.
-
-## Project layout
-
-- `multicopter_range.py` — calculator, telemetry parsers, model fitting, plots,
-  and command-line interface.
-- `data/calibration/2026-07-03/` — raw logs and the derived attitude input needed
-  to reproduce the calibration.
-- `tests/test_transfer.py` — model and physical-transfer unit tests.
-- `tests/test_numerical_regression.py` — representative outputs captured from
-  the pre-cleanup implementation.
-- `tests/test_calibration.py` — end-to-end tests against the included logs.
-- `docs/METHODOLOGY.md` — model basis, calibration decisions, and limitations.
-- `docs/VALIDATION.md` — old-versus-public numerical equivalence evidence.
-- `examples/reproduce_calibration.py` — compact calibration audit and input hashes.
-- `docs/REPRODUCIBILITY.md` — current calibration and July 21 replay scope.
-- `docs/USAGE.md` — commands, outputs, and the fitted-model Python API.
-- `CHANGELOG.md` — release candidate notes.
-
-## Contributing and security
-
-Bug reports and pull requests are welcome. Please read [CONTRIBUTING.md](CONTRIBUTING.md)
-before submitting a change. For private vulnerability reports, follow
-[SECURITY.md](SECURITY.md).
-
-## Engineering scope
-
-This is an experimental engineering model. Validate estimates on the target
-aircraft and retain flight reserves. The G29 selection comes from the aircraft
-owner; masses of approximately 12.4–13 kg varied between flights and have not
-been established individually from telemetry. Timing, wind and electrical
-calibration limits are documented in [Methodology](docs/METHODOLOGY.md).
+The tests include the real bundled logs, model regression checks and the custom
+flight workflow. See [numerical validation](docs/VALIDATION.md) for the scope of
+historical comparisons. Contributions are welcome; see
+[CONTRIBUTING.md](CONTRIBUTING.md), [SECURITY.md](SECURITY.md) and
+[CHANGELOG.md](CHANGELOG.md).
 
 ## License
 
