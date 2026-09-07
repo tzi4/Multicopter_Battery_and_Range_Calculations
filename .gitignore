@@ -12,6 +12,7 @@ dist/
 calibration-output/
 validation-output/
 showcase-output/
+mass-sensitivity-output/
 
 # Generated analysis output
 *.log

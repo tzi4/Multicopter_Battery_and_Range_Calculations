@@ -1,8 +1,17 @@
 import math
+from pathlib import Path
+import sys
 
 import pytest
 
 import multicopter_range
+
+# Examples are distributed as scripts, including their sibling imports.
+sys.path.insert(0, str(Path(__file__).resolve().parents[1] / "examples"))
+try:
+    from analyze_mass_sensitivity import evaluate_mass_pair, fingerprint
+finally:
+    sys.path.pop(0)
 
 
 FIT_HOVER_W = 758.0
@@ -230,6 +239,41 @@ def test_transfer_mass_changes_curve_shape_not_just_scale():
 
     # A heavier aircraft shifts best-range speed upward, unlike a frozen shape.
     assert optimum_range_speed(rebuilt) > optimum_range_speed(frozen)
+
+
+def test_mass_study_preserves_hover_change_on_shared_source_reference():
+    suite = _fitted_suite()
+    result = evaluate_mass_pair(suite, 13.0, [{"speed_ms": 0.0, "power_ratio": 1.0}])
+    hover_ratio = result["bench_target_over_source_hover_power"]
+
+    # Renormalizing target measurements by a hypothetical target hover would
+    # hide this mass-driven difference. The source reference must stay fixed.
+    assert hover_ratio > 1.0
+    for values in result["models"].values():
+        assert values["predicted_ratio_on_source_hover"][0] == pytest.approx(hover_ratio)
+        assert values["bench_anchored_transfer"]["percent_residual"][0] < 0
+        assert values["api_hover_prediction_on_source_reference"] > 1.0
+        assert values["api_physical_predicted_ratio"][0] == pytest.approx(
+            values["API_internal_target_over_source_hover_power"]
+        )
+        # The physical component model and manufacturer electrical table are
+        # separate hover hypotheses and must not silently overwrite each other.
+        assert values["API_internal_target_over_source_hover_power"] != pytest.approx(hover_ratio)
+
+
+def test_mass_study_identity_diagnostic_preserves_original_and_source_parameters():
+    suite = _fitted_suite()
+    before = fingerprint(suite["model_params"])
+    observations = [{"speed_ms": v, "power_ratio": 1.0} for v in (0.0, 8.0, 17.0)]
+    result = evaluate_mass_pair(suite, 12.4, observations)
+
+    for name, values in result["models"].items():
+        expected = [suite["model_functions"][name](r["speed_ms"]) for r in observations]
+        assert values["identity_anchored_predicted_ratio"] == pytest.approx(expected, abs=1e-12)
+        assert values["api_identity_anchored_predicted_ratio"] == pytest.approx(expected, abs=1e-12)
+        assert values["mass_effect_ratio_vs_same_mass_transfer"] == pytest.approx([1.0] * 3)
+    evaluate_mass_pair(suite, 13.0, observations)
+    assert fingerprint(suite["model_params"]) == before
 
 
 def test_theoretical_utip_similarity_identity_and_scaling():

@@ -51,6 +51,15 @@ and [30,782 derived telemetry rows](data/validation/2026-07-21/).
 The residual is `100 × (observation / prediction − 1)`; the table averages
 its absolute value equally over the nine bins.
 
+**Mass sensitivity:** a separate sweep tests all 49 combinations of July 3 and
+July 21 masses from 12.4 to 13.0 kg. The lowest mean absolute residuals using
+the models' transferred hover power are **10.96% / 10.80% / 11.27%** for
+Zeng / Faessler / Kirschstein, at 12.4 kg → 13.0 kg. These masses were selected
+against the comparison data; they are exploratory scenarios, not measured
+flight weights. [All combinations, assumptions and reproduction](docs/MASS_SENSITIVITY.md).
+Some bins worsen: the largest absolute residuals at those choices are
+28.2–28.9%, so the lower mean is not an improvement at every speed.
+
 An earlier G28 analysis recorded **absolute residuals of 0.27% and 0.61% in two
 approximately 17 m/s bins**. Those are individual-bin results under an older selection,
 rather than an overall accuracy score. Both selections are available in the
@@ -241,6 +250,7 @@ input grids and the complete bundled telemetry set. See
 - `docs/METHODOLOGY.md` — model basis, calibration decisions, and limitations.
 - `docs/VALIDATION.md` — old-versus-public numerical equivalence evidence.
 - `examples/reproduce_calibration.py` — compact calibration audit and input hashes.
+- `examples/analyze_mass_sensitivity.py` — separate flight-mass sweep with all 49 combinations.
 - `docs/REPRODUCIBILITY.md` — current calibration and local July 21 audit scope.
 - `CHANGELOG.md` — release candidate notes.
 

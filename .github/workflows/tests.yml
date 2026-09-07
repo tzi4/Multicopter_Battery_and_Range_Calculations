@@ -43,3 +43,8 @@ jobs:
             --validation-root "$GITHUB_WORKSPACE/data/validation/2026-07-21" \
             --output-dir "$RUNNER_TEMP/showcase-output" \
             --check-results "$GITHUB_WORKSPACE/docs/results"
+          "$RUNNER_TEMP/wheel-env/bin/python" "$GITHUB_WORKSPACE/examples/analyze_mass_sensitivity.py" \
+            --data-root "$GITHUB_WORKSPACE/data/calibration/2026-07-03" \
+            --validation-root "$GITHUB_WORKSPACE/data/validation/2026-07-21" \
+            --output-dir "$RUNNER_TEMP/mass-sensitivity-output" \
+            --check-summary "$GITHUB_WORKSPACE/docs/results/mass-transfer-sensitivity.json"

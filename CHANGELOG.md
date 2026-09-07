@@ -2,6 +2,9 @@
 
 ## 0.1.2rc1 — 2026-09-07
 
+- Evaluate all 49 source/target mass combinations from 12.4 to 13.0 kg against
+  the same nine comparison bins. Report model and bench hover assumptions,
+  transfer identity checks and explicitly retrospective best-grid scores.
 - Add README flight plots, downloadable bin tables, derived July 21 telemetry
   and scripts to reproduce both calibration and later-flight comparisons.
 - Declare G29×9.5 and mass explicitly in the reproduction examples; retain the
