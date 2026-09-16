@@ -1,0 +1,2458 @@
+{
+  "gates": {
+    "ground_speed_max_ms": 1.0,
+    "vertical_speed_abs_max_ms": 0.3,
+    "roll_pitch_abs_max_deg": 8.0,
+    "horizontal_vector_acceleration_max_ms2": 0.5,
+    "height_above_ground_reference_min_m": 2.0,
+    "join_max_dt_s": 0.15,
+    "vector_accel_stencil_max_s": 0.5,
+    "positive_CTUN_ThO_min": 0.05,
+    "coverage_gap_max_s": 0.25
+  },
+  "manufacturer_source": "https://store.tmotor.com/product/u8-lite-u-efficiency-kv190.html",
+  "firmware_logged_commit": "3fc7011a",
+  "analysis_code_sha256": "7d081121b4dafce99cd57fa8fb663be12c489da3a73b3c9504b2e6d1567b02e1",
+  "module_sha256": "222f17eeee0fd28befdbac21f663da5664bd3f7ac92ec46bb11415a600d58923",
+  "limits": [
+    "CTUN.ThO is filtered normalized motor thrust input, not PWM, despite log label throttle output; CTUN.ThH is the adaptive hover thrust estimate.",
+    "RCOU reconstruction uses logged MOTB voltage filter and configured expo/spin/PWM endpoints, assumes density ratio1 and symmetric unsaturated hover; reconstruction error is reported.",
+    "Manufacturer throttle-to-PWM endpoints are unknown. Both plausible endpoint hypotheses are reported, with and without approximate thrust proportional voltage squared; these are not weighed mass.",
+    "RPM estimates retain historical mechanical scale10/21; all four motors must be within actual bench RPM bounds; no below-table extrapolation.",
+    "DataLink filename clock is not independently verified; physical GPSUTC and historicalGPS+18seconds joins both reported forJuly3. July21 retains its archive estimated relative offset.",
+    "Hover samples are correlated; IQR is dispersion, not a mass confidence interval. July24 lacks an identified RPM telemetry source."
+  ],
+  "expected_G29_equal_rotor_RPM_by_weighed_mass_assumption": {
+    "12.4": 2046.611111111111,
+    "12.8": 2074.8791946308725,
+    "13.0": 2093.6711409395975
+  },
+  "schema_version": 1,
+  "configuration_status": "Owner selected G29x9.5 for the showcase; 12.4,12.8,13kg are possible flight masses, not identified from these logs.",
+  "firmware_source": {
+    "libraries/AP_Motors/AP_Motors_Thrust_Linearization.cpp": {
+      "url": "https://raw.githubusercontent.com/ArduPilot/ardupilot/3fc7011a/libraries/AP_Motors/AP_Motors_Thrust_Linearization.cpp",
+      "sha256": "47bc2546e925c7e57e485f9611736f0be08fc7490e7abcb46eabd5f7d55295e7",
+      "same_as_Copter_4_6_3_tag": true
+    },
+    "libraries/AP_Motors/AP_MotorsMulticopter.cpp": {
+      "url": "https://raw.githubusercontent.com/ArduPilot/ardupilot/3fc7011a/libraries/AP_Motors/AP_MotorsMulticopter.cpp",
+      "sha256": "969b76ae33d2a6da8a529811d1771825d81a164501ade71a7d4b0f0f9a96b606",
+      "same_as_Copter_4_6_3_tag": true
+    },
+    "libraries/AP_Motors/AP_Motors_Class.h": {
+      "url": "https://raw.githubusercontent.com/ArduPilot/ardupilot/3fc7011a/libraries/AP_Motors/AP_Motors_Class.h",
+      "sha256": "797e1d6cb463deac5bd9d5076a2072fd8892eb902dfacf49ad4e04dfcedec1e7",
+      "same_as_Copter_4_6_3_tag": true
+    },
+    "libraries/AP_Motors/AP_MotorsMatrix.cpp": {
+      "url": "https://raw.githubusercontent.com/ArduPilot/ardupilot/3fc7011a/libraries/AP_Motors/AP_MotorsMatrix.cpp",
+      "sha256": "7676ae994c3943ac80258f8f6df0d556a52787909c281f7f637f5924f22c211e",
+      "same_as_Copter_4_6_3_tag": true
+    },
+    "ArduCopter/Log.cpp": {
+      "url": "https://raw.githubusercontent.com/ArduPilot/ardupilot/3fc7011a/ArduCopter/Log.cpp",
+      "sha256": "2b9e18bf90ea17dc3e8544c92beffdf474cd9ecbe2c3d7b592394000f8508846",
+      "same_as_Copter_4_6_3_tag": null
+    }
+  },
+  "expo_sensitivity": {
+    "28.0": {
+      "fitted_e_assumed_1000_2000": 0.5635505074840551,
+      "fitted_e_assumed_1100_1940": 0.29716855345221266,
+      "min_endpoint_for_e_0p4_and_max_2000": 1079.8900449320558
+    },
+    "29.0": {
+      "fitted_e_assumed_1000_2000": 0.5431031309647375,
+      "fitted_e_assumed_1100_1940": 0.2721363750204681,
+      "min_endpoint_for_e_0p4_and_max_2000": 1070.4927405501016
+    }
+  },
+  "flights": [
+    {
+      "file": "00000076.BIN",
+      "sha256": "9feb424e4fac3ab776af2c1e8a36eb5177cbeb8a525ce8b15bdcfabdb5257bfc",
+      "date_utc": "2026-07-03",
+      "firmware": [
+        "ArduCopter V4.6.3 (3fc7011a)"
+      ],
+      "hover_samples": 1812,
+      "hover_coverage_s": 181.29965500000253,
+      "saved_MOT_THST_HOVER_values": [
+        0.5869482159614563,
+        0.27537646889686584,
+        0.280531108379364
+      ],
+      "parameters": {
+        "MOT_THST_EXPO": [
+          0.4000000059604645
+        ],
+        "MOT_SPIN_MAX": [
+          0.949999988079071
+        ],
+        "MOT_BAT_VOLT_MAX": [
+          50.400001525878906
+        ],
+        "MOT_BAT_VOLT_MIN": [
+          33.0
+        ],
+        "MOT_PWM_MIN": [
+          1100.0
+        ],
+        "MOT_PWM_MAX": [
+          1940.0
+        ],
+        "MOT_SPIN_MIN": [
+          0.1599999964237213
+        ],
+        "MOT_HOVER_LEARN": [
+          2.0
+        ]
+      },
+      "arm_window_method": [
+        "explicit_ARM",
+        "explicit_ARM",
+        "explicit_ARM",
+        "explicit_ARM",
+        "explicit_ARM"
+      ],
+      "hover": {
+        "ThO": {
+          "n": 1812,
+          "q25": 0.28506410121917725,
+          "median": 0.29824966192245483,
+          "q75": 0.3061925172805786
+        },
+        "ThH": {
+          "n": 1812,
+          "q25": 0.28756052255630493,
+          "median": 0.29809948801994324,
+          "q75": 0.30544161796569824
+        },
+        "speed": {
+          "n": 1812,
+          "q25": 0.034104447500298646,
+          "median": 0.05434435954501002,
+          "q75": 0.09042030384694494
+        },
+        "height": {
+          "n": 1812,
+          "q25": 43.15581655502319,
+          "median": 43.20638418197632,
+          "q75": 43.257821559906006
+        },
+        "vertical_speed": {
+          "n": 1812,
+          "q25": -0.03768725320696831,
+          "median": 0.014272107742726803,
+          "q75": 0.05976732075214386
+        },
+        "roll": {
+          "n": 1812,
+          "q25": 0.7000000000000001,
+          "median": 2.19,
+          "q75": 2.9
+        },
+        "pitch": {
+          "n": 1812,
+          "q25": -3.88,
+          "median": -3.27,
+          "q75": -2.71
+        },
+        "accel": {
+          "n": 1812,
+          "q25": 0.12207738016424584,
+          "median": 0.19409782731208447,
+          "q75": 0.2849727557979772
+        },
+        "BAT.Volt": {
+          "n": 1812,
+          "q25": 21.222854614257812,
+          "median": 21.32617950439453,
+          "q75": 21.83304214477539
+        },
+        "BAT.VoltR": {
+          "n": 1812,
+          "q25": 21.23082733154297,
+          "median": 21.413991928100586,
+          "q75": 22.138940811157227
+        },
+        "BAT.Curr": {
+          "n": 1812,
+          "q25": 0.0,
+          "median": 0.0,
+          "q75": 0.0
+        },
+        "MOTB.LiftMax": {
+          "n": 1812,
+          "q25": 0.5643462538719177,
+          "median": 0.5643462538719177,
+          "q75": 0.5643462538719177
+        },
+        "MOTB.BatVolt": {
+          "n": 1812,
+          "q25": 0.6547653079032898,
+          "median": 0.6547653079032898,
+          "q75": 0.6547653079032898
+        },
+        "MOTB.ThrOut": {
+          "n": 1812,
+          "q25": 0.28506410121917725,
+          "median": 0.29824966192245483,
+          "q75": 0.3061924874782562
+        },
+        "RCOU.C1": {
+          "n": 1812,
+          "q25": 1662,
+          "median": 1685.0,
+          "q75": 1704
+        },
+        "RCOU.C2": {
+          "n": 1812,
+          "q25": 1743,
+          "median": 1778.0,
+          "q75": 1796
+        },
+        "RCOU.C3": {
+          "n": 1812,
+          "q25": 1513,
+          "median": 1539.0,
+          "q75": 1560
+        },
+        "RCOU.C4": {
+          "n": 1812,
+          "q25": 1507,
+          "median": 1532.0,
+          "q75": 1556
+        }
+      },
+      "controller_and_bench_hypotheses": {
+        "PWM_ThO_prediction_minus_actual_mean": {
+          "n": 1812,
+          "q25": 0.5330299997494876,
+          "median": 1.481307446981532,
+          "q75": 2.5017030698350027
+        },
+        "PWM_from_ThH_density_one": {
+          "n": 1812,
+          "q25": 1621.5441287191538,
+          "median": 1633.278794141746,
+          "q75": 1641.3841985570125
+        },
+        "PWM_from_ThO_density_one": {
+          "n": 1812,
+          "q25": 1618.7468495893518,
+          "median": 1633.4451477861048,
+          "q75": 1642.2099893124098
+        },
+        "actual_PWM_motor_mean": {
+          "n": 1812,
+          "q25": 1616.5,
+          "median": 1631.75,
+          "q75": 1640.75
+        },
+        "bench_percent_assumed_1000_2000_V_squared_scaling": {
+          "n": 1768,
+          "q25": 11.902964437363675,
+          "median": 12.145550329198748,
+          "q75": 12.433876065933275
+        },
+        "bench_percent_assumed_1000_2000_at_bench_24V": {
+          "n": 1768,
+          "q25": 14.66651,
+          "median": 15.09865,
+          "q75": 15.396379999999999
+        },
+        "bench_percent_assumed_MOT_endpoints_V_squared_scaling": {
+          "n": 1696,
+          "q25": 11.930715754323353,
+          "median": 12.198156993455612,
+          "q75": 12.47490113840155
+        },
+        "bench_percent_assumed_MOT_endpoints_at_bench_24V": {
+          "n": 1696,
+          "q25": 14.751547619047619,
+          "median": 15.16525,
+          "q75": 15.492202380952381
+        },
+        "from_ThH_bench_percent_assumed_1000_2000_V_squared_scaling": {
+          "n": 1812,
+          "q25": 11.803205852898401,
+          "median": 11.945476525072579,
+          "q75": 12.191274355226506
+        },
+        "from_ThH_bench_percent_assumed_1000_2000_at_bench_24V": {
+          "n": 1812,
+          "q25": 14.726647421988245,
+          "median": 15.111544447849262,
+          "q75": 15.379616430361228
+        },
+        "from_ThH_bench_percent_assumed_MOT_endpoints_V_squared_scaling": {
+          "n": 1812,
+          "q25": 11.83708063352483,
+          "median": 11.99085765846299,
+          "q75": 12.308936353679542
+        },
+        "from_ThH_bench_percent_assumed_MOT_endpoints_at_bench_24V": {
+          "n": 1812,
+          "q25": 14.70505645474791,
+          "median": 15.163267199820552,
+          "q75": 15.486971940906223
+        }
+      },
+      "RPM_bench_mass": {
+        "0": {
+          "GPS_UTC_offset_s": 0,
+          "joined_CTUN_hover_rows": 1798,
+          "all_four_RPM_inside_table_rows": 1130,
+          "outside_RPM_table_rows": 668,
+          "bench_equivalent_mass_kg": {
+            "n": 1130,
+            "min": 10.721603194775119,
+            "q25": 13.8127266501366,
+            "median": 14.148979514353591,
+            "q75": 14.412756124851596,
+            "max": 17.880190438418783
+          },
+          "RPM_by_ESC_slot": {
+            "1": {
+              "n": 1798,
+              "min": 677.1428571428571,
+              "q25": 2310.0,
+              "median": 2391.904761904762,
+              "q75": 2461.904761904762,
+              "max": 2795.714285714286
+            },
+            "2": {
+              "n": 1798,
+              "min": 681.9047619047618,
+              "q25": 2470.0,
+              "median": 2622.142857142857,
+              "q75": 2684.285714285714,
+              "max": 2895.714285714286
+            },
+            "3": {
+              "n": 1798,
+              "min": 687.6190476190476,
+              "q25": 1684.2857142857142,
+              "median": 1812.8571428571427,
+              "q75": 1859.5238095238094,
+              "max": 2344.285714285714
+            },
+            "4": {
+              "n": 1798,
+              "min": 684.7619047619047,
+              "q25": 1661.4285714285713,
+              "median": 1767.6190476190475,
+              "q75": 1885.2380952380952,
+              "max": 2380.9523809523807
+            }
+          },
+          "median_of_four_RPM": {
+            "n": 1798,
+            "min": 683.3333333333333,
+            "q25": 2062.3809523809523,
+            "median": 2105.4761904761904,
+            "q75": 2141.904761904762,
+            "max": 2426.6666666666665
+          },
+          "voltage_v": {
+            "n": 1798,
+            "min": 20.85,
+            "q25": 21.1,
+            "median": 21.2,
+            "q75": 21.65,
+            "max": 24.05
+          },
+          "ESC_power_sum_w": {
+            "n": 1798,
+            "min": 27.63,
+            "q25": 667.259,
+            "median": 740.7375,
+            "q75": 802.379,
+            "max": 1882.053
+          }
+        },
+        "18": {
+          "GPS_UTC_offset_s": 18,
+          "joined_CTUN_hover_rows": 1812,
+          "all_four_RPM_inside_table_rows": 1526,
+          "outside_RPM_table_rows": 286,
+          "bench_equivalent_mass_kg": {
+            "n": 1526,
+            "min": 12.572118620056717,
+            "q25": 13.848157081801247,
+            "median": 14.110254262805684,
+            "q75": 14.321904859919952,
+            "max": 15.510610676580002
+          },
+          "RPM_by_ESC_slot": {
+            "1": {
+              "n": 1812,
+              "min": 2024.2857142857142,
+              "q25": 2312.8571428571427,
+              "median": 2381.190476190476,
+              "q75": 2434.285714285714,
+              "max": 2762.3809523809523
+            },
+            "2": {
+              "n": 1812,
+              "min": 2342.3809523809523,
+              "q25": 2579.047619047619,
+              "median": 2648.5714285714284,
+              "q75": 2687.6190476190473,
+              "max": 2936.190476190476
+            },
+            "3": {
+              "n": 1812,
+              "min": 1283.8095238095236,
+              "q25": 1755.2380952380952,
+              "median": 1818.5714285714284,
+              "q75": 1859.5238095238094,
+              "max": 2116.190476190476
+            },
+            "4": {
+              "n": 1812,
+              "min": 1040.4761904761904,
+              "q25": 1703.8095238095236,
+              "median": 1794.0476190476188,
+              "q75": 1913.3333333333333,
+              "max": 2188.5714285714284
+            }
+          },
+          "median_of_four_RPM": {
+            "n": 1812,
+            "min": 1898.095238095238,
+            "q25": 2076.4285714285716,
+            "median": 2116.5476190476193,
+            "q75": 2171.190476190476,
+            "max": 2362.6190476190477
+          },
+          "voltage_v": {
+            "n": 1812,
+            "min": 20.75,
+            "q25": 21.05,
+            "median": 21.15,
+            "q75": 21.55,
+            "max": 23.5
+          },
+          "ESC_power_sum_w": {
+            "n": 1812,
+            "min": 510.394,
+            "q25": 712.041,
+            "median": 760.6605,
+            "q75": 807.821,
+            "max": 1037.515
+          }
+        }
+      },
+      "hover_by_arm_window": {
+        "0": {
+          "samples": 0,
+          "ThO": {
+            "n": 0
+          },
+          "ThH": {
+            "n": 0
+          },
+          "controller_and_bench_hypotheses": {
+            "PWM_ThO_prediction_minus_actual_mean": {
+              "n": 0
+            },
+            "actual_PWM_motor_mean": {
+              "n": 0
+            },
+            "bench_percent_assumed_1000_2000_V_squared_scaling": {
+              "n": 0
+            },
+            "bench_percent_assumed_MOT_endpoints_V_squared_scaling": {
+              "n": 0
+            }
+          },
+          "BAT.Volt": {
+            "n": 0
+          },
+          "MOTB.LiftMax": {
+            "n": 0
+          },
+          "MOTB.BatVolt": {
+            "n": 0
+          }
+        },
+        "1": {
+          "samples": 227,
+          "ThO": {
+            "n": 227,
+            "q25": 0.2558794915676117,
+            "median": 0.2613047659397125,
+            "q75": 0.26527759432792664
+          },
+          "ThH": {
+            "n": 227,
+            "q25": 0.30002447962760925,
+            "median": 0.32822296023368835,
+            "q75": 0.3827976882457733
+          },
+          "controller_and_bench_hypotheses": {
+            "PWM_ThO_prediction_minus_actual_mean": {
+              "n": 227,
+              "q25": 0.1730384697127647,
+              "median": 1.1486378409513236,
+              "q75": 2.252561470951605
+            },
+            "actual_PWM_motor_mean": {
+              "n": 227,
+              "q25": 1583.5,
+              "median": 1590.75,
+              "q75": 1595.75
+            },
+            "bench_percent_assumed_1000_2000_V_squared_scaling": {
+              "n": 216,
+              "q25": 13.068095937101084,
+              "median": 13.218045062947107,
+              "q75": 13.364452897322892
+            },
+            "bench_percent_assumed_MOT_endpoints_V_squared_scaling": {
+              "n": 171,
+              "q25": 12.896801900320877,
+              "median": 13.048843034064094,
+              "q75": 13.183377091249946
+            }
+          },
+          "BAT.Volt": {
+            "n": 227,
+            "q25": 23.509052276611328,
+            "median": 23.55238151550293,
+            "q75": 23.59065055847168
+          },
+          "MOTB.LiftMax": {
+            "n": 227,
+            "q25": 0.5643462538719177,
+            "median": 0.5643462538719177,
+            "q75": 0.5643462538719177
+          },
+          "MOTB.BatVolt": {
+            "n": 227,
+            "q25": 0.6547653079032898,
+            "median": 0.6547653079032898,
+            "q75": 0.6547653079032898
+          }
+        },
+        "2": {
+          "samples": 0,
+          "ThO": {
+            "n": 0
+          },
+          "ThH": {
+            "n": 0
+          },
+          "controller_and_bench_hypotheses": {
+            "PWM_ThO_prediction_minus_actual_mean": {
+              "n": 0
+            },
+            "actual_PWM_motor_mean": {
+              "n": 0
+            },
+            "bench_percent_assumed_1000_2000_V_squared_scaling": {
+              "n": 0
+            },
+            "bench_percent_assumed_MOT_endpoints_V_squared_scaling": {
+              "n": 0
+            }
+          },
+          "BAT.Volt": {
+            "n": 0
+          },
+          "MOTB.LiftMax": {
+            "n": 0
+          },
+          "MOTB.BatVolt": {
+            "n": 0
+          }
+        },
+        "3": {
+          "samples": 71,
+          "ThO": {
+            "n": 71,
+            "q25": 0.2645302414894104,
+            "median": 0.2667916715145111,
+            "q75": 0.269111692905426
+          },
+          "ThH": {
+            "n": 71,
+            "q25": 0.27537646889686584,
+            "median": 0.27537646889686584,
+            "q75": 0.27537646889686584
+          },
+          "controller_and_bench_hypotheses": {
+            "PWM_ThO_prediction_minus_actual_mean": {
+              "n": 71,
+              "q25": 0.2898253326873146,
+              "median": 0.8677618830784013,
+              "q75": 1.8322226699717703
+            },
+            "actual_PWM_motor_mean": {
+              "n": 71,
+              "q25": 1594.5,
+              "median": 1597,
+              "q75": 1599.75
+            },
+            "bench_percent_assumed_1000_2000_V_squared_scaling": {
+              "n": 71,
+              "q25": 13.163388083540685,
+              "median": 13.237602201177282,
+              "q75": 13.329545969880172
+            },
+            "bench_percent_assumed_MOT_endpoints_V_squared_scaling": {
+              "n": 70,
+              "q25": 12.966555957353894,
+              "median": 13.075397663909325,
+              "q75": 13.192522821164548
+            }
+          },
+          "BAT.Volt": {
+            "n": 71,
+            "q25": 23.39961814880371,
+            "median": 23.42090606689453,
+            "q75": 23.43359375
+          },
+          "MOTB.LiftMax": {
+            "n": 71,
+            "q25": 0.5643462538719177,
+            "median": 0.5643462538719177,
+            "q75": 0.5643462538719177
+          },
+          "MOTB.BatVolt": {
+            "n": 71,
+            "q25": 0.6547653079032898,
+            "median": 0.6547653079032898,
+            "q75": 0.6547653079032898
+          }
+        },
+        "4": {
+          "samples": 1514,
+          "ThO": {
+            "n": 1514,
+            "q25": 0.29358431696891785,
+            "median": 0.3005407005548477,
+            "q75": 0.30758988857269287
+          },
+          "ThH": {
+            "n": 1514,
+            "q25": 0.28895336389541626,
+            "median": 0.2978409677743912,
+            "q75": 0.30292370915412903
+          },
+          "controller_and_bench_hypotheses": {
+            "PWM_ThO_prediction_minus_actual_mean": {
+              "n": 1514,
+              "q25": 0.58463874546851,
+              "median": 1.5505441756798746,
+              "q75": 2.525936987318346
+            },
+            "actual_PWM_motor_mean": {
+              "n": 1514,
+              "q25": 1627.5,
+              "median": 1634.25,
+              "q75": 1642.25
+            },
+            "bench_percent_assumed_1000_2000_V_squared_scaling": {
+              "n": 1481,
+              "q25": 11.856395478750207,
+              "median": 12.081384706221542,
+              "q75": 12.280227626996554
+            },
+            "bench_percent_assumed_MOT_endpoints_V_squared_scaling": {
+              "n": 1455,
+              "q25": 11.892790731917795,
+              "median": 12.133016533194558,
+              "q75": 12.361249736985355
+            }
+          },
+          "BAT.Volt": {
+            "n": 1514,
+            "q25": 21.209257125854492,
+            "median": 21.2721004486084,
+            "q75": 21.448991775512695
+          },
+          "MOTB.LiftMax": {
+            "n": 1514,
+            "q25": 0.5643462538719177,
+            "median": 0.5643462538719177,
+            "q75": 0.5643462538719177
+          },
+          "MOTB.BatVolt": {
+            "n": 1514,
+            "q25": 0.6547653079032898,
+            "median": 0.6547653079032898,
+            "q75": 0.6547653079032898
+          }
+        }
+      }
+    },
+    {
+      "file": "00000077.BIN",
+      "sha256": "bb314ffabf7ec03b2c5900b92bf76f5908caf4e068afa9448b2bcf961aba40b0",
+      "date_utc": "2026-07-03",
+      "firmware": [
+        "ArduCopter V4.6.3 (3fc7011a)"
+      ],
+      "hover_samples": 1184,
+      "hover_coverage_s": 119.79993300000024,
+      "saved_MOT_THST_HOVER_values": [
+        0.280531108379364,
+        0.32605621218681335
+      ],
+      "parameters": {
+        "MOT_THST_EXPO": [
+          0.4000000059604645
+        ],
+        "MOT_SPIN_MAX": [
+          0.949999988079071
+        ],
+        "MOT_BAT_VOLT_MAX": [
+          50.400001525878906
+        ],
+        "MOT_BAT_VOLT_MIN": [
+          33.0
+        ],
+        "MOT_PWM_MIN": [
+          1100.0
+        ],
+        "MOT_PWM_MAX": [
+          1940.0
+        ],
+        "MOT_SPIN_MIN": [
+          0.1599999964237213
+        ],
+        "MOT_HOVER_LEARN": [
+          2.0
+        ]
+      },
+      "arm_window_method": [
+        "inferred_before_first_DISARM_requires_physical_hover_gates"
+      ],
+      "hover": {
+        "ThO": {
+          "n": 1184,
+          "q25": 0.31106624007225037,
+          "median": 0.31737013161182404,
+          "q75": 0.322640985250473
+        },
+        "ThH": {
+          "n": 1184,
+          "q25": 0.2942357361316681,
+          "median": 0.30473148822784424,
+          "q75": 0.31309911608695984
+        },
+        "speed": {
+          "n": 1184,
+          "q25": 0.03100086401072701,
+          "median": 0.05488898064311973,
+          "q75": 0.09850572785226977
+        },
+        "height": {
+          "n": 1184,
+          "q25": 44.84047454595566,
+          "median": 44.865367352962494,
+          "q75": 44.89281219244003
+        },
+        "vertical_speed": {
+          "n": 1184,
+          "q25": -0.03086656518280506,
+          "median": 0.003380389418452978,
+          "q75": 0.031039142981171608
+        },
+        "roll": {
+          "n": 1184,
+          "q25": -0.08,
+          "median": 0.37,
+          "q75": 0.87
+        },
+        "pitch": {
+          "n": 1184,
+          "q25": -5.96,
+          "median": -5.15,
+          "q75": -4.37
+        },
+        "accel": {
+          "n": 1184,
+          "q25": 0.12003218488554841,
+          "median": 0.18855615905531417,
+          "q75": 0.2645202880551773
+        },
+        "BAT.Volt": {
+          "n": 1184,
+          "q25": 20.471670150756836,
+          "median": 20.542545318603516,
+          "q75": 20.592437744140625
+        },
+        "BAT.VoltR": {
+          "n": 1184,
+          "q25": 20.505977630615234,
+          "median": 20.576921463012695,
+          "q75": 20.629764556884766
+        },
+        "BAT.Curr": {
+          "n": 1184,
+          "q25": 0.0,
+          "median": 0.0,
+          "q75": 0.0
+        },
+        "MOTB.LiftMax": {
+          "n": 1184,
+          "q25": 0.564346432685852,
+          "median": 0.564346432685852,
+          "q75": 0.564346432685852
+        },
+        "MOTB.BatVolt": {
+          "n": 1184,
+          "q25": 0.6547654867172241,
+          "median": 0.6547654867172241,
+          "q75": 0.6547654867172241
+        },
+        "MOTB.ThrOut": {
+          "n": 1184,
+          "q25": 0.31106624007225037,
+          "median": 0.31737013161182404,
+          "q75": 0.322640985250473
+        },
+        "RCOU.C1": {
+          "n": 1184,
+          "q25": 1681,
+          "median": 1696.0,
+          "q75": 1712
+        },
+        "RCOU.C2": {
+          "n": 1184,
+          "q25": 1782,
+          "median": 1794.0,
+          "q75": 1806
+        },
+        "RCOU.C3": {
+          "n": 1184,
+          "q25": 1499,
+          "median": 1522.0,
+          "q75": 1545
+        },
+        "RCOU.C4": {
+          "n": 1184,
+          "q25": 1583,
+          "median": 1601.0,
+          "q75": 1618
+        }
+      },
+      "controller_and_bench_hypotheses": {
+        "PWM_ThO_prediction_minus_actual_mean": {
+          "n": 1184,
+          "q25": 0.19972975748714816,
+          "median": 0.875198171463353,
+          "q75": 1.7104222627203853
+        },
+        "PWM_from_ThH_density_one": {
+          "n": 1184,
+          "q25": 1628.9904178797071,
+          "median": 1640.6025946986194,
+          "q75": 1649.778102499834
+        },
+        "PWM_from_ThO_density_one": {
+          "n": 1184,
+          "q25": 1647.5555546724365,
+          "median": 1654.4339782827724,
+          "q75": 1660.1545886523113
+        },
+        "actual_PWM_motor_mean": {
+          "n": 1184,
+          "q25": 1646.25,
+          "median": 1653.25,
+          "q75": 1659.5
+        },
+        "bench_percent_assumed_1000_2000_V_squared_scaling": {
+          "n": 1178,
+          "q25": 11.474402927020568,
+          "median": 11.586541734804458,
+          "q75": 11.692533686952359
+        },
+        "bench_percent_assumed_1000_2000_at_bench_24V": {
+          "n": 1178,
+          "q25": 15.58344,
+          "median": 15.810155,
+          "q75": 16.02921
+        },
+        "bench_percent_assumed_MOT_endpoints_V_squared_scaling": {
+          "n": 1154,
+          "q25": 11.581832306874333,
+          "median": 11.721340970050903,
+          "q75": 11.848876796603214
+        },
+        "bench_percent_assumed_MOT_endpoints_at_bench_24V": {
+          "n": 1154,
+          "q25": 15.742571428571429,
+          "median": 16.00107738095238,
+          "q75": 16.24475
+        },
+        "from_ThH_bench_percent_assumed_1000_2000_V_squared_scaling": {
+          "n": 1184,
+          "q25": 11.021495679537816,
+          "median": 11.210869180977902,
+          "q75": 11.385348241640436
+        },
+        "from_ThH_bench_percent_assumed_1000_2000_at_bench_24V": {
+          "n": 1184,
+          "q25": 14.970885706454395,
+          "median": 15.35272925763251,
+          "q75": 15.668366725994288
+        },
+        "from_ThH_bench_percent_assumed_MOT_endpoints_V_squared_scaling": {
+          "n": 1184,
+          "q25": 11.039023271285384,
+          "median": 11.282442396132911,
+          "q75": 11.49173037784695
+        },
+        "from_ThH_bench_percent_assumed_MOT_endpoints_at_bench_24V": {
+          "n": 1184,
+          "q25": 14.995816317207613,
+          "median": 15.454963401943463,
+          "q75": 15.830722292850343
+        }
+      },
+      "RPM_bench_mass": {
+        "0": {
+          "GPS_UTC_offset_s": 0,
+          "joined_CTUN_hover_rows": 1184,
+          "all_four_RPM_inside_table_rows": 748,
+          "outside_RPM_table_rows": 436,
+          "bench_equivalent_mass_kg": {
+            "n": 748,
+            "min": 12.613681355770778,
+            "q25": 13.51008395179209,
+            "median": 13.699440107873475,
+            "q75": 13.94596728601179,
+            "max": 15.660336825576113
+          },
+          "RPM_by_ESC_slot": {
+            "1": {
+              "n": 1184,
+              "min": 2037.6190476190475,
+              "q25": 2252.8571428571427,
+              "median": 2290.2380952380954,
+              "q75": 2337.142857142857,
+              "max": 2592.8571428571427
+            },
+            "2": {
+              "n": 1184,
+              "min": 2288.095238095238,
+              "q25": 2563.333333333333,
+              "median": 2591.428571428571,
+              "q75": 2618.095238095238,
+              "max": 2766.190476190476
+            },
+            "3": {
+              "n": 1184,
+              "min": 1100.0,
+              "q25": 1567.142857142857,
+              "median": 1649.047619047619,
+              "q75": 1694.7619047619046,
+              "max": 2005.2380952380952
+            },
+            "4": {
+              "n": 1184,
+              "min": 1494.7619047619046,
+              "q25": 1908.5714285714284,
+              "median": 1941.1904761904761,
+              "q75": 1979.5238095238094,
+              "max": 2142.8571428571427
+            }
+          },
+          "median_of_four_RPM": {
+            "n": 1184,
+            "min": 1834.2857142857142,
+            "q25": 2084.7619047619046,
+            "median": 2112.9761904761904,
+            "q75": 2145.0,
+            "max": 2312.142857142857
+          },
+          "voltage_v": {
+            "n": 1184,
+            "min": 19.95,
+            "q25": 20.25,
+            "median": 20.3,
+            "q75": 20.4,
+            "max": 20.85
+          },
+          "ESC_power_sum_w": {
+            "n": 1184,
+            "min": 325.241,
+            "q25": 666.324,
+            "median": 719.9010000000001,
+            "q75": 761.86,
+            "max": 1005.9290000000001
+          }
+        },
+        "18": {
+          "GPS_UTC_offset_s": 18,
+          "joined_CTUN_hover_rows": 1184,
+          "all_four_RPM_inside_table_rows": 899,
+          "outside_RPM_table_rows": 285,
+          "bench_equivalent_mass_kg": {
+            "n": 899,
+            "min": 12.613681355770778,
+            "q25": 13.5093306933548,
+            "median": 13.67118624149634,
+            "q75": 13.826893128037973,
+            "max": 14.55925384607923
+          },
+          "RPM_by_ESC_slot": {
+            "1": {
+              "n": 1184,
+              "min": 2037.6190476190475,
+              "q25": 2263.333333333333,
+              "median": 2291.428571428571,
+              "q75": 2319.523809523809,
+              "max": 2561.904761904762
+            },
+            "2": {
+              "n": 1184,
+              "min": 2385.714285714286,
+              "q25": 2572.3809523809523,
+              "median": 2591.428571428571,
+              "q75": 2616.6666666666665,
+              "max": 2872.3809523809523
+            },
+            "3": {
+              "n": 1184,
+              "min": 1204.2857142857142,
+              "q25": 1619.047619047619,
+              "median": 1672.8571428571427,
+              "q75": 1720.0,
+              "max": 1880.9523809523807
+            },
+            "4": {
+              "n": 1184,
+              "min": 1750.0,
+              "q25": 1909.5238095238094,
+              "median": 1933.3333333333333,
+              "q75": 1960.9523809523807,
+              "max": 2314.7619047619046
+            }
+          },
+          "median_of_four_RPM": {
+            "n": 1184,
+            "min": 1978.095238095238,
+            "q25": 2094.523809523809,
+            "median": 2113.333333333333,
+            "q75": 2132.142857142857,
+            "max": 2252.142857142857
+          },
+          "voltage_v": {
+            "n": 1184,
+            "min": 20.0,
+            "q25": 20.2,
+            "median": 20.3,
+            "q75": 20.35,
+            "max": 20.85
+          },
+          "ESC_power_sum_w": {
+            "n": 1184,
+            "min": 506.229,
+            "q25": 691.4449999999999,
+            "median": 727.4895000000001,
+            "q75": 757.6,
+            "max": 872.3340000000001
+          }
+        }
+      },
+      "hover_by_arm_window": {
+        "0": {
+          "samples": 1184,
+          "ThO": {
+            "n": 1184,
+            "q25": 0.31106624007225037,
+            "median": 0.31737013161182404,
+            "q75": 0.322640985250473
+          },
+          "ThH": {
+            "n": 1184,
+            "q25": 0.2942357361316681,
+            "median": 0.30473148822784424,
+            "q75": 0.31309911608695984
+          },
+          "controller_and_bench_hypotheses": {
+            "PWM_ThO_prediction_minus_actual_mean": {
+              "n": 1184,
+              "q25": 0.19972975748714816,
+              "median": 0.875198171463353,
+              "q75": 1.7104222627203853
+            },
+            "actual_PWM_motor_mean": {
+              "n": 1184,
+              "q25": 1646.25,
+              "median": 1653.25,
+              "q75": 1659.5
+            },
+            "bench_percent_assumed_1000_2000_V_squared_scaling": {
+              "n": 1178,
+              "q25": 11.474402927020568,
+              "median": 11.586541734804458,
+              "q75": 11.692533686952359
+            },
+            "bench_percent_assumed_MOT_endpoints_V_squared_scaling": {
+              "n": 1154,
+              "q25": 11.581832306874333,
+              "median": 11.721340970050903,
+              "q75": 11.848876796603214
+            }
+          },
+          "BAT.Volt": {
+            "n": 1184,
+            "q25": 20.471670150756836,
+            "median": 20.542545318603516,
+            "q75": 20.592437744140625
+          },
+          "MOTB.LiftMax": {
+            "n": 1184,
+            "q25": 0.564346432685852,
+            "median": 0.564346432685852,
+            "q75": 0.564346432685852
+          },
+          "MOTB.BatVolt": {
+            "n": 1184,
+            "q25": 0.6547654867172241,
+            "median": 0.6547654867172241,
+            "q75": 0.6547654867172241
+          }
+        }
+      }
+    },
+    {
+      "file": "00000085.BIN",
+      "sha256": "4083795fdf60cecf954ff0e71b831ebb695a42e3274188e3f377039eb68827a6",
+      "date_utc": "2026-07-21",
+      "firmware": [
+        "ArduCopter V4.6.3 (3fc7011a)"
+      ],
+      "hover_samples": 1496,
+      "hover_coverage_s": 149.19983799999954,
+      "saved_MOT_THST_HOVER_values": [
+        0.3092339038848877,
+        0.2945353388786316,
+        0.30418694019317627
+      ],
+      "parameters": {
+        "MOT_THST_EXPO": [
+          0.4000000059604645
+        ],
+        "MOT_SPIN_MAX": [
+          0.949999988079071
+        ],
+        "MOT_BAT_VOLT_MAX": [
+          50.400001525878906
+        ],
+        "MOT_BAT_VOLT_MIN": [
+          33.0
+        ],
+        "MOT_PWM_MIN": [
+          1100.0
+        ],
+        "MOT_PWM_MAX": [
+          1940.0
+        ],
+        "MOT_SPIN_MIN": [
+          0.1599999964237213
+        ],
+        "MOT_HOVER_LEARN": [
+          2.0
+        ]
+      },
+      "arm_window_method": [
+        "explicit_ARM",
+        "explicit_ARM"
+      ],
+      "hover": {
+        "ThO": {
+          "n": 1496,
+          "q25": 0.2971075475215912,
+          "median": 0.30377674102783203,
+          "q75": 0.31072667241096497
+        },
+        "ThH": {
+          "n": 1496,
+          "q25": 0.292659729719162,
+          "median": 0.30047282576560974,
+          "q75": 0.30418694019317627
+        },
+        "speed": {
+          "n": 1496,
+          "q25": 0.032104658941856254,
+          "median": 0.05383525112629655,
+          "q75": 0.0906532788497449
+        },
+        "height": {
+          "n": 1496,
+          "q25": 45.00209379196167,
+          "median": 45.17651891708374,
+          "q75": 46.141223430633545
+        },
+        "vertical_speed": {
+          "n": 1496,
+          "q25": -0.054764002561569214,
+          "median": 0.010395861230790615,
+          "q75": 0.08367882668972015
+        },
+        "roll": {
+          "n": 1496,
+          "q25": -2.69,
+          "median": -2.32,
+          "q75": -1.83
+        },
+        "pitch": {
+          "n": 1496,
+          "q25": 0.61,
+          "median": 1.475,
+          "q75": 2.2800000000000002
+        },
+        "accel": {
+          "n": 1496,
+          "q25": 0.10550709133241418,
+          "median": 0.1688614800080016,
+          "q75": 0.26140150484649854
+        },
+        "BAT.Volt": {
+          "n": 1496,
+          "q25": 21.159658432006836,
+          "median": 21.20942211151123,
+          "q75": 21.56062889099121
+        },
+        "BAT.VoltR": {
+          "n": 1496,
+          "q25": 21.16815185546875,
+          "median": 21.224149703979492,
+          "q75": 21.58262825012207
+        },
+        "BAT.Curr": {
+          "n": 1496,
+          "q25": 0.0,
+          "median": 0.0,
+          "q75": 0.0003039651783183217
+        },
+        "MOTB.LiftMax": {
+          "n": 1496,
+          "q25": 0.564346432685852,
+          "median": 0.564346432685852,
+          "q75": 0.564346432685852
+        },
+        "MOTB.BatVolt": {
+          "n": 1496,
+          "q25": 0.6547654867172241,
+          "median": 0.6547654867172241,
+          "q75": 0.6547654867172241
+        },
+        "MOTB.ThrOut": {
+          "n": 1496,
+          "q25": 0.2971075475215912,
+          "median": 0.30377674102783203,
+          "q75": 0.31072667241096497
+        },
+        "RCOU.C1": {
+          "n": 1496,
+          "q25": 1658,
+          "median": 1677.0,
+          "q75": 1690
+        },
+        "RCOU.C2": {
+          "n": 1496,
+          "q25": 1592,
+          "median": 1610.0,
+          "q75": 1623
+        },
+        "RCOU.C3": {
+          "n": 1496,
+          "q25": 1612,
+          "median": 1624.0,
+          "q75": 1636
+        },
+        "RCOU.C4": {
+          "n": 1496,
+          "q25": 1633,
+          "median": 1653.0,
+          "q75": 1672
+        }
+      },
+      "controller_and_bench_hypotheses": {
+        "PWM_ThO_prediction_minus_actual_mean": {
+          "n": 1496,
+          "q25": -1.3170400245212477,
+          "median": -0.8453889581417116,
+          "q75": -0.1875628734919701
+        },
+        "PWM_from_ThH_density_one": {
+          "n": 1496,
+          "q25": 1627.2366737999173,
+          "median": 1635.904936385894,
+          "q75": 1640.0029685601153
+        },
+        "PWM_from_ThO_density_one": {
+          "n": 1496,
+          "q25": 1632.1792743072401,
+          "median": 1639.551076112868,
+          "q75": 1647.1838941025621
+        },
+        "actual_PWM_motor_mean": {
+          "n": 1496,
+          "q25": 1633,
+          "median": 1640.25,
+          "q75": 1648.25
+        },
+        "bench_percent_assumed_1000_2000_V_squared_scaling": {
+          "n": 1492,
+          "q25": 11.928350569632896,
+          "median": 12.237599011250879,
+          "q75": 12.459314942967005
+        },
+        "bench_percent_assumed_1000_2000_at_bench_24V": {
+          "n": 1492,
+          "q25": 15.143849999999999,
+          "median": 15.387725,
+          "q75": 15.653149999999998
+        },
+        "bench_percent_assumed_MOT_endpoints_V_squared_scaling": {
+          "n": 1492,
+          "q25": 12.002004902586728,
+          "median": 12.326589301212717,
+          "q75": 12.555226307950422
+        },
+        "bench_percent_assumed_MOT_endpoints_at_bench_24V": {
+          "n": 1492,
+          "q25": 15.208559523809523,
+          "median": 15.490029761904761,
+          "q75": 15.807559523809523
+        },
+        "from_ThH_bench_percent_assumed_1000_2000_V_squared_scaling": {
+          "n": 1496,
+          "q25": 11.791035430265175,
+          "median": 11.90291925934762,
+          "q75": 12.048381783322126
+        },
+        "from_ThH_bench_percent_assumed_1000_2000_at_bench_24V": {
+          "n": 1496,
+          "q25": 14.913362900637289,
+          "median": 15.197681913457323,
+          "q75": 15.332102118467967
+        },
+        "from_ThH_bench_percent_assumed_MOT_endpoints_V_squared_scaling": {
+          "n": 1496,
+          "q25": 11.83884470455114,
+          "median": 11.975791517447842,
+          "q75": 12.105139844788342
+        },
+        "from_ThH_bench_percent_assumed_MOT_endpoints_at_bench_24V": {
+          "n": 1496,
+          "q25": 14.927336786472962,
+          "median": 15.265811801734905,
+          "q75": 15.430407283890437
+        }
+      },
+      "RPM_bench_mass": {
+        "historical_join_relabelled_true_UTC": {
+          "GPS_UTC_offset_s": 0,
+          "joined_CTUN_hover_rows": 1494,
+          "all_four_RPM_inside_table_rows": 1494,
+          "outside_RPM_table_rows": 0,
+          "bench_equivalent_mass_kg": {
+            "n": 1494,
+            "min": 11.641870791083727,
+            "q25": 13.81445139833711,
+            "median": 14.10046525073931,
+            "q75": 14.369662545787545,
+            "max": 18.701699728128418
+          },
+          "RPM_by_ESC_slot": {
+            "1": {
+              "n": 1494,
+              "min": 1965.7142857142856,
+              "q25": 2229.047619047619,
+              "median": 2288.809523809524,
+              "q75": 2346.6666666666665,
+              "max": 2560.4761904761904
+            },
+            "2": {
+              "n": 1494,
+              "min": 1741.9047619047617,
+              "q25": 2017.142857142857,
+              "median": 2059.047619047619,
+              "q75": 2099.047619047619,
+              "max": 2458.5714285714284
+            },
+            "3": {
+              "n": 1494,
+              "min": 1719.047619047619,
+              "q25": 2115.238095238095,
+              "median": 2159.047619047619,
+              "q75": 2205.238095238095,
+              "max": 2472.3809523809523
+            },
+            "4": {
+              "n": 1494,
+              "min": 1943.3333333333333,
+              "q25": 2183.809523809524,
+              "median": 2221.904761904762,
+              "q75": 2270.0,
+              "max": 2567.142857142857
+            }
+          },
+          "median_of_four_RPM": {
+            "n": 1494,
+            "min": 1938.5714285714284,
+            "q25": 2160.2380952380954,
+            "median": 2181.6666666666665,
+            "q75": 2207.8571428571427,
+            "max": 2516.4285714285716
+          },
+          "voltage_v": {
+            "n": 1494,
+            "min": 20.5,
+            "q25": 20.9,
+            "median": 20.95,
+            "q75": 21.3,
+            "max": 24.0
+          },
+          "ESC_power_sum_w": {
+            "n": 1494,
+            "min": 425.683,
+            "q25": 759.088,
+            "median": 800.2815,
+            "q75": 843.206,
+            "max": 1105.161
+          }
+        },
+        "time_alignment": "DataLink filenameTRT minus74.18seconds is equivalent to archive minus56.18seconds against GPSUTC+18; preserves historical estimated alignment, not independent confirmation."
+      },
+      "hover_by_arm_window": {
+        "0": {
+          "samples": 119,
+          "ThO": {
+            "n": 119,
+            "q25": 0.24447327852249146,
+            "median": 0.25033172965049744,
+            "q75": 0.25439801812171936
+          },
+          "ThH": {
+            "n": 119,
+            "q25": 0.2945353388786316,
+            "median": 0.30047619342803955,
+            "q75": 0.3092339038848877
+          },
+          "controller_and_bench_hypotheses": {
+            "PWM_ThO_prediction_minus_actual_mean": {
+              "n": 119,
+              "q25": -0.15163829545053886,
+              "median": 0.28906464917326957,
+              "q75": 0.8441003808202368
+            },
+            "actual_PWM_motor_mean": {
+              "n": 119,
+              "q25": 1571.25,
+              "median": 1578.75,
+              "q75": 1583.25
+            },
+            "bench_percent_assumed_1000_2000_V_squared_scaling": {
+              "n": 119,
+              "q25": 13.014969682043327,
+              "median": 13.172332532538274,
+              "q75": 13.311972713273205
+            },
+            "bench_percent_assumed_MOT_endpoints_V_squared_scaling": {
+              "n": 119,
+              "q25": 12.641357818239264,
+              "median": 12.897708362654086,
+              "q75": 13.025533976956945
+            }
+          },
+          "BAT.Volt": {
+            "n": 119,
+            "q25": 23.808731079101562,
+            "median": 23.931846618652344,
+            "q75": 23.96709442138672
+          },
+          "MOTB.LiftMax": {
+            "n": 119,
+            "q25": 0.564346432685852,
+            "median": 0.564346432685852,
+            "q75": 0.564346432685852
+          },
+          "MOTB.BatVolt": {
+            "n": 119,
+            "q25": 0.6547654867172241,
+            "median": 0.6547654867172241,
+            "q75": 0.6547654867172241
+          }
+        },
+        "1": {
+          "samples": 1377,
+          "ThO": {
+            "n": 1377,
+            "q25": 0.2991367280483246,
+            "median": 0.3046260476112366,
+            "q75": 0.3112872838973999
+          },
+          "ThH": {
+            "n": 1377,
+            "q25": 0.291431188583374,
+            "median": 0.30047157406806946,
+            "q75": 0.30411988496780396
+          },
+          "controller_and_bench_hypotheses": {
+            "PWM_ThO_prediction_minus_actual_mean": {
+              "n": 1377,
+              "q25": -1.3533503995240608,
+              "median": -0.9166844274438972,
+              "q75": -0.358707803524112
+            },
+            "actual_PWM_motor_mean": {
+              "n": 1377,
+              "q25": 1635.25,
+              "median": 1641.5,
+              "q75": 1648.75
+            },
+            "bench_percent_assumed_1000_2000_V_squared_scaling": {
+              "n": 1373,
+              "q25": 11.908627666236988,
+              "median": 12.18481910132925,
+              "q75": 12.404295165619502
+            },
+            "bench_percent_assumed_MOT_endpoints_V_squared_scaling": {
+              "n": 1373,
+              "q25": 11.977984359997109,
+              "median": 12.282749017175739,
+              "q75": 12.510959878394152
+            }
+          },
+          "BAT.Volt": {
+            "n": 1377,
+            "q25": 21.157039642333984,
+            "median": 21.198129653930664,
+            "q75": 21.533233642578125
+          },
+          "MOTB.LiftMax": {
+            "n": 1377,
+            "q25": 0.564346432685852,
+            "median": 0.564346432685852,
+            "q75": 0.564346432685852
+          },
+          "MOTB.BatVolt": {
+            "n": 1377,
+            "q25": 0.6547654867172241,
+            "median": 0.6547654867172241,
+            "q75": 0.6547654867172241
+          }
+        }
+      }
+    },
+    {
+      "file": "00000090.BIN",
+      "sha256": "1fa01988875c9b95286117c0f601b3fb51526a13cee312255f2748109ad6768b",
+      "date_utc": "2026-07-24",
+      "firmware": [
+        "ArduCopter V4.6.3 (3fc7011a)"
+      ],
+      "hover_samples": 796,
+      "hover_coverage_s": 78.6000019999999,
+      "saved_MOT_THST_HOVER_values": [
+        0.46086299419403076,
+        0.41195765137672424,
+        0.27719539403915405
+      ],
+      "parameters": {
+        "MOT_THST_EXPO": [
+          0.4000000059604645
+        ],
+        "MOT_SPIN_MAX": [
+          0.949999988079071
+        ],
+        "MOT_BAT_VOLT_MAX": [
+          25.200000762939453,
+          50.400001525878906
+        ],
+        "MOT_BAT_VOLT_MIN": [
+          19.200000762939453,
+          33.0
+        ],
+        "MOT_PWM_MIN": [
+          1100.0
+        ],
+        "MOT_PWM_MAX": [
+          1940.0
+        ],
+        "MOT_SPIN_MIN": [
+          0.1599999964237213
+        ],
+        "MOT_HOVER_LEARN": [
+          2.0
+        ]
+      },
+      "arm_window_method": [
+        "explicit_ARM",
+        "explicit_ARM",
+        "explicit_ARM"
+      ],
+      "hover": {
+        "ThO": {
+          "n": 796,
+          "q25": 0.3961206078529358,
+          "median": 0.41381388902664185,
+          "q75": 0.4220748245716095
+        },
+        "ThH": {
+          "n": 796,
+          "q25": 0.41195765137672424,
+          "median": 0.4222383201122284,
+          "q75": 0.4360775649547577
+        },
+        "speed": {
+          "n": 796,
+          "q25": 0.05601879909338357,
+          "median": 0.10641990994623127,
+          "q75": 0.43601239676646497
+        },
+        "height": {
+          "n": 796,
+          "q25": 3.2016913145780563,
+          "median": 3.2537776678800583,
+          "q75": 5.660041257739067
+        },
+        "vertical_speed": {
+          "n": 796,
+          "q25": -0.05937005206942558,
+          "median": -0.026619883254170418,
+          "q75": -0.00020672223763540387
+        },
+        "roll": {
+          "n": 796,
+          "q25": -0.92,
+          "median": -0.2,
+          "q75": 0.35000000000000003
+        },
+        "pitch": {
+          "n": 796,
+          "q25": -1.59,
+          "median": -1.0350000000000001,
+          "q75": -0.4
+        },
+        "accel": {
+          "n": 796,
+          "q25": 0.13227413178786035,
+          "median": 0.20516971330280068,
+          "q75": 0.2949926438849778
+        },
+        "BAT.Volt": {
+          "n": 796,
+          "q25": 23.390239715576172,
+          "median": 23.473374366760254,
+          "q75": 23.512348175048828
+        },
+        "BAT.VoltR": {
+          "n": 796,
+          "q25": 24.45224380493164,
+          "median": 24.513928413391113,
+          "q75": 24.583635330200195
+        },
+        "BAT.Curr": {
+          "n": 796,
+          "q25": 24.86860466003418,
+          "median": 25.503588676452637,
+          "q75": 26.244049072265625
+        },
+        "MOTB.LiftMax": {
+          "n": 796,
+          "q25": 0.9577075839042664,
+          "median": 0.9609699547290802,
+          "q75": 0.9656640887260437
+        },
+        "MOTB.BatVolt": {
+          "n": 796,
+          "q25": 0.9695257544517517,
+          "median": 0.9718957245349884,
+          "q75": 0.9753000140190125
+        },
+        "MOTB.ThrOut": {
+          "n": 796,
+          "q25": 0.3961206078529358,
+          "median": 0.41381387412548065,
+          "q75": 0.4220748245716095
+        },
+        "RCOU.C1": {
+          "n": 796,
+          "q25": 1577,
+          "median": 1592.0,
+          "q75": 1602
+        },
+        "RCOU.C2": {
+          "n": 796,
+          "q25": 1617,
+          "median": 1627.0,
+          "q75": 1636
+        },
+        "RCOU.C3": {
+          "n": 796,
+          "q25": 1550,
+          "median": 1565.0,
+          "q75": 1574
+        },
+        "RCOU.C4": {
+          "n": 796,
+          "q25": 1567,
+          "median": 1580.0,
+          "q75": 1593
+        }
+      },
+      "controller_and_bench_hypotheses": {
+        "PWM_ThO_prediction_minus_actual_mean": {
+          "n": 796,
+          "q25": -1.728224676726768,
+          "median": -1.3890873068535257,
+          "q75": -0.9702698701071313
+        },
+        "PWM_from_ThH_density_one": {
+          "n": 796,
+          "q25": 1590.5243459415574,
+          "median": 1596.639698495208,
+          "q75": 1610.637113748941
+        },
+        "PWM_from_ThO_density_one": {
+          "n": 796,
+          "q25": 1583.28532129833,
+          "median": 1588.0644941296368,
+          "q75": 1593.2620980818583
+        },
+        "actual_PWM_motor_mean": {
+          "n": 796,
+          "q25": 1584.5,
+          "median": 1589.25,
+          "q75": 1594.75
+        },
+        "bench_percent_assumed_1000_2000_V_squared_scaling": {
+          "n": 796,
+          "q25": 12.952035996820271,
+          "median": 13.103655819268653,
+          "q75": 13.20148981143514
+        },
+        "bench_percent_assumed_1000_2000_at_bench_24V": {
+          "n": 796,
+          "q25": 13.52015,
+          "median": 13.681925,
+          "q75": 13.852450000000001
+        },
+        "bench_percent_assumed_MOT_endpoints_V_squared_scaling": {
+          "n": 796,
+          "q25": 12.697279549600163,
+          "median": 12.874049450761925,
+          "q75": 13.007761111070833
+        },
+        "bench_percent_assumed_MOT_endpoints_at_bench_24V": {
+          "n": 796,
+          "q25": 13.226857142857144,
+          "median": 13.44105357142857,
+          "q75": 13.661202380952382
+        },
+        "from_ThH_bench_percent_assumed_1000_2000_V_squared_scaling": {
+          "n": 796,
+          "q25": 13.070795229971145,
+          "median": 13.304201896798332,
+          "q75": 13.771046739140237
+        },
+        "from_ThH_bench_percent_assumed_1000_2000_at_bench_24V": {
+          "n": 796,
+          "q25": 13.708569331753216,
+          "median": 13.901814472448573,
+          "q75": 14.363279599214625
+        },
+        "from_ThH_bench_percent_assumed_MOT_endpoints_V_squared_scaling": {
+          "n": 796,
+          "q25": 12.877686421624174,
+          "median": 13.145932088345127,
+          "q75": 13.663186336115247
+        },
+        "from_ThH_bench_percent_assumed_MOT_endpoints_at_bench_24V": {
+          "n": 796,
+          "q25": 13.501058728277636,
+          "median": 13.731112467200681,
+          "q75": 14.271904284779318
+        }
+      },
+      "RPM_bench_mass": {
+        "available": false,
+        "reason": "No ESC messages in BIN and no date-matched DataLink stream identified; PWM is not RPM."
+      },
+      "hover_by_arm_window": {
+        "0": {
+          "samples": 628,
+          "ThO": {
+            "n": 628,
+            "q25": 0.41059184074401855,
+            "median": 0.4168238937854767,
+            "q75": 0.4237355589866638
+          },
+          "ThH": {
+            "n": 628,
+            "q25": 0.4159332811832428,
+            "median": 0.42447471618652344,
+            "q75": 0.44106200337409973
+          },
+          "controller_and_bench_hypotheses": {
+            "PWM_ThO_prediction_minus_actual_mean": {
+              "n": 628,
+              "q25": -1.6250539477221082,
+              "median": -1.2819824292173507,
+              "q75": -0.8876486279157234
+            },
+            "actual_PWM_motor_mean": {
+              "n": 628,
+              "q25": 1583.25,
+              "median": 1588.0,
+              "q75": 1592.25
+            },
+            "bench_percent_assumed_1000_2000_V_squared_scaling": {
+              "n": 628,
+              "q25": 12.9200549213941,
+              "median": 13.092438873223909,
+              "q75": 13.201482335367869
+            },
+            "bench_percent_assumed_MOT_endpoints_V_squared_scaling": {
+              "n": 628,
+              "q25": 12.641469434996255,
+              "median": 12.839686581410513,
+              "q75": 12.98913474825819
+            }
+          },
+          "BAT.Volt": {
+            "n": 628,
+            "q25": 23.454944610595703,
+            "median": 23.486742973327637,
+            "q75": 23.536317825317383
+          },
+          "MOTB.LiftMax": {
+            "n": 628,
+            "q25": 0.9602585434913635,
+            "median": 0.9634363353252411,
+            "q75": 0.9668521881103516
+          },
+          "MOTB.BatVolt": {
+            "n": 628,
+            "q25": 0.9713791608810425,
+            "median": 0.97368523478508,
+            "q75": 0.9761605858802795
+          }
+        },
+        "1": {
+          "samples": 0,
+          "ThO": {
+            "n": 0
+          },
+          "ThH": {
+            "n": 0
+          },
+          "controller_and_bench_hypotheses": {
+            "PWM_ThO_prediction_minus_actual_mean": {
+              "n": 0
+            },
+            "actual_PWM_motor_mean": {
+              "n": 0
+            },
+            "bench_percent_assumed_1000_2000_V_squared_scaling": {
+              "n": 0
+            },
+            "bench_percent_assumed_MOT_endpoints_V_squared_scaling": {
+              "n": 0
+            }
+          },
+          "BAT.Volt": {
+            "n": 0
+          },
+          "MOTB.LiftMax": {
+            "n": 0
+          },
+          "MOTB.BatVolt": {
+            "n": 0
+          }
+        },
+        "2": {
+          "samples": 168,
+          "ThO": {
+            "n": 168,
+            "q25": 0.2613964080810547,
+            "median": 0.26430198550224304,
+            "q75": 0.2674292027950287
+          },
+          "ThH": {
+            "n": 168,
+            "q25": 0.2770934998989105,
+            "median": 0.2782752960920334,
+            "q75": 0.33271336555480957
+          },
+          "controller_and_bench_hypotheses": {
+            "PWM_ThO_prediction_minus_actual_mean": {
+              "n": 168,
+              "q25": -2.0703733344735156,
+              "median": -1.8572244242868692,
+              "q75": -1.463834307351135
+            },
+            "actual_PWM_motor_mean": {
+              "n": 168,
+              "q25": 1593.25,
+              "median": 1596.875,
+              "q75": 1601
+            },
+            "bench_percent_assumed_1000_2000_V_squared_scaling": {
+              "n": 168,
+              "q25": 13.027594395734706,
+              "median": 13.133059955707017,
+              "q75": 13.207235377033209
+            },
+            "bench_percent_assumed_MOT_endpoints_V_squared_scaling": {
+              "n": 168,
+              "q25": 12.83459933477977,
+              "median": 12.970563796418148,
+              "q75": 13.058694627382712
+            }
+          },
+          "BAT.Volt": {
+            "n": 168,
+            "q25": 23.238422393798828,
+            "median": 23.27867889404297,
+            "q75": 23.34895133972168
+          },
+          "MOTB.LiftMax": {
+            "n": 168,
+            "q25": 0.5643382668495178,
+            "median": 0.5643382668495178,
+            "q75": 0.5643382668495178
+          },
+          "MOTB.BatVolt": {
+            "n": 168,
+            "q25": 0.6547582149505615,
+            "median": 0.6547582149505615,
+            "q75": 0.6547582149505615
+          }
+        }
+      }
+    },
+    {
+      "file": "00000091.BIN",
+      "sha256": "f2b4b2fd3901e0bf9d916c6021aebde0094dbbb002d30ec446ce6dd179827f7b",
+      "date_utc": "2026-07-24",
+      "firmware": [
+        "ArduCopter V4.6.3 (3fc7011a)"
+      ],
+      "hover_samples": 2788,
+      "hover_coverage_s": 283.200135000001,
+      "saved_MOT_THST_HOVER_values": [
+        0.27719539403915405,
+        0.2590741515159607,
+        0.265383780002594,
+        0.2724141776561737,
+        0.2847559154033661
+      ],
+      "parameters": {
+        "MOT_THST_EXPO": [
+          0.4000000059604645
+        ],
+        "MOT_SPIN_MAX": [
+          0.949999988079071
+        ],
+        "MOT_BAT_VOLT_MAX": [
+          50.400001525878906
+        ],
+        "MOT_BAT_VOLT_MIN": [
+          33.0
+        ],
+        "MOT_PWM_MIN": [
+          1100.0
+        ],
+        "MOT_PWM_MAX": [
+          1940.0
+        ],
+        "MOT_SPIN_MIN": [
+          0.1599999964237213
+        ],
+        "MOT_HOVER_LEARN": [
+          2.0
+        ]
+      },
+      "arm_window_method": [
+        "explicit_ARM",
+        "explicit_ARM",
+        "explicit_ARM",
+        "explicit_ARM"
+      ],
+      "hover": {
+        "ThO": {
+          "n": 2788,
+          "q25": 0.26446422934532166,
+          "median": 0.2726624608039856,
+          "q75": 0.2826441526412964
+        },
+        "ThH": {
+          "n": 2788,
+          "q25": 0.2650352120399475,
+          "median": 0.2716653198003769,
+          "q75": 0.28016528487205505
+        },
+        "speed": {
+          "n": 2788,
+          "q25": 0.03610562573931512,
+          "median": 0.0556175633306548,
+          "q75": 0.08253478960057911
+        },
+        "height": {
+          "n": 2788,
+          "q25": 44.73676776885986,
+          "median": 44.996723890304565,
+          "q75": 45.57187533378601
+        },
+        "vertical_speed": {
+          "n": 2788,
+          "q25": -0.035375114530324936,
+          "median": -0.00581134925596416,
+          "q75": 0.022869661450386047
+        },
+        "roll": {
+          "n": 2788,
+          "q25": -2.41,
+          "median": -1.87,
+          "q75": -1.34
+        },
+        "pitch": {
+          "n": 2788,
+          "q25": -3.41,
+          "median": -2.74,
+          "q75": -2.09
+        },
+        "accel": {
+          "n": 2788,
+          "q25": 0.12635158058393267,
+          "median": 0.2048348793372941,
+          "q75": 0.2886434003935217
+        },
+        "BAT.Volt": {
+          "n": 2788,
+          "q25": 22.529237747192383,
+          "median": 22.92172145843506,
+          "q75": 23.119888305664062
+        },
+        "BAT.VoltR": {
+          "n": 2788,
+          "q25": 23.32660484313965,
+          "median": 23.77653408050537,
+          "q75": 24.0191593170166
+        },
+        "BAT.Curr": {
+          "n": 2788,
+          "q25": 24.622697830200195,
+          "median": 25.626980781555176,
+          "q75": 26.854713439941406
+        },
+        "MOTB.LiftMax": {
+          "n": 2788,
+          "q25": 0.5643463730812073,
+          "median": 0.564346432685852,
+          "q75": 0.564346432685852
+        },
+        "MOTB.BatVolt": {
+          "n": 2788,
+          "q25": 0.6547654271125793,
+          "median": 0.6547654867172241,
+          "q75": 0.6547654867172241
+        },
+        "MOTB.ThrOut": {
+          "n": 2788,
+          "q25": 0.26446422934532166,
+          "median": 0.2726624608039856,
+          "q75": 0.2826441526412964
+        },
+        "RCOU.C1": {
+          "n": 2788,
+          "q25": 1597,
+          "median": 1613.0,
+          "q75": 1628
+        },
+        "RCOU.C2": {
+          "n": 2788,
+          "q25": 1628,
+          "median": 1642.0,
+          "q75": 1656
+        },
+        "RCOU.C3": {
+          "n": 2788,
+          "q25": 1531,
+          "median": 1549.0,
+          "q75": 1565
+        },
+        "RCOU.C4": {
+          "n": 2788,
+          "q25": 1617,
+          "median": 1633.0,
+          "q75": 1647
+        }
+      },
+      "controller_and_bench_hypotheses": {
+        "PWM_ThO_prediction_minus_actual_mean": {
+          "n": 2788,
+          "q25": -2.9225741862474024,
+          "median": -2.3409079751796753,
+          "q75": -1.641065897785893
+        },
+        "PWM_from_ThH_density_one": {
+          "n": 2788,
+          "q25": 1596.0516145794786,
+          "median": 1603.6148210543138,
+          "q75": 1613.2375776879899
+        },
+        "PWM_from_ThO_density_one": {
+          "n": 2788,
+          "q25": 1595.397887510614,
+          "median": 1604.7479188641128,
+          "q75": 1616.0286135467386
+        },
+        "actual_PWM_motor_mean": {
+          "n": 2788,
+          "q25": 1597.5,
+          "median": 1607.0,
+          "q75": 1618.75
+        },
+        "bench_percent_assumed_1000_2000_V_squared_scaling": {
+          "n": 2785,
+          "q25": 12.625660418297043,
+          "median": 12.843747783192242,
+          "q75": 13.077442021368816
+        },
+        "bench_percent_assumed_1000_2000_at_bench_24V": {
+          "n": 2785,
+          "q25": 13.910650000000002,
+          "median": 14.23625,
+          "q75": 14.641
+        },
+        "bench_percent_assumed_MOT_endpoints_V_squared_scaling": {
+          "n": 2771,
+          "q25": 12.4887820001646,
+          "median": 12.743763983437526,
+          "q75": 12.99375677165065
+        },
+        "bench_percent_assumed_MOT_endpoints_at_bench_24V": {
+          "n": 2771,
+          "q25": 13.739857142857144,
+          "median": 14.11179761904762,
+          "q75": 14.592428571428572
+        },
+        "from_ThH_bench_percent_assumed_1000_2000_V_squared_scaling": {
+          "n": 2788,
+          "q25": 12.582260326288692,
+          "median": 12.672010507026755,
+          "q75": 12.841441028570197
+        },
+        "from_ThH_bench_percent_assumed_1000_2000_at_bench_24V": {
+          "n": 2788,
+          "q25": 13.883231020711525,
+          "median": 14.12873502321408,
+          "q75": 14.450135094778862
+        },
+        "from_ThH_bench_percent_assumed_MOT_endpoints_V_squared_scaling": {
+          "n": 2788,
+          "q25": 12.455746434159908,
+          "median": 12.557215536180014,
+          "q75": 12.770974336824537
+        },
+        "from_ThH_bench_percent_assumed_MOT_endpoints_at_bench_24V": {
+          "n": 2788,
+          "q25": 13.708989310370864,
+          "median": 13.993509934900375,
+          "q75": 14.37530368426055
+        }
+      },
+      "RPM_bench_mass": {
+        "available": false,
+        "reason": "No ESC messages in BIN and no date-matched DataLink stream identified; PWM is not RPM."
+      },
+      "hover_by_arm_window": {
+        "0": {
+          "samples": 793,
+          "ThO": {
+            "n": 793,
+            "q25": 0.2592546343803406,
+            "median": 0.2665421664714813,
+            "q75": 0.2736206352710724
+          },
+          "ThH": {
+            "n": 793,
+            "q25": 0.2637004852294922,
+            "median": 0.2757357954978943,
+            "q75": 0.27719539403915405
+          },
+          "controller_and_bench_hypotheses": {
+            "PWM_ThO_prediction_minus_actual_mean": {
+              "n": 793,
+              "q25": -2.9546544910656394,
+              "median": -2.137015556748338,
+              "q75": -1.2526750385234209
+            },
+            "actual_PWM_motor_mean": {
+              "n": 793,
+              "q25": 1591.25,
+              "median": 1599.75,
+              "q75": 1607.75
+            },
+            "bench_percent_assumed_1000_2000_V_squared_scaling": {
+              "n": 792,
+              "q25": 12.820780491781223,
+              "median": 13.053363738031702,
+              "q75": 13.263519394113201
+            },
+            "bench_percent_assumed_MOT_endpoints_V_squared_scaling": {
+              "n": 788,
+              "q25": 12.6314020618794,
+              "median": 12.908536116995815,
+              "q75": 13.152006939753743
+            }
+          },
+          "BAT.Volt": {
+            "n": 793,
+            "q25": 23.131370544433594,
+            "median": 23.179407119750977,
+            "q75": 23.232833862304688
+          },
+          "MOTB.LiftMax": {
+            "n": 793,
+            "q25": 0.564346432685852,
+            "median": 0.564346432685852,
+            "q75": 0.564346432685852
+          },
+          "MOTB.BatVolt": {
+            "n": 793,
+            "q25": 0.6547654867172241,
+            "median": 0.6547654867172241,
+            "q75": 0.6547654867172241
+          }
+        },
+        "1": {
+          "samples": 714,
+          "ThO": {
+            "n": 714,
+            "q25": 0.2601127028465271,
+            "median": 0.26551344990730286,
+            "q75": 0.27080607414245605
+          },
+          "ThH": {
+            "n": 714,
+            "q25": 0.2590741515159607,
+            "median": 0.2634991854429245,
+            "q75": 0.265383780002594
+          },
+          "controller_and_bench_hypotheses": {
+            "PWM_ThO_prediction_minus_actual_mean": {
+              "n": 714,
+              "q25": -2.713816690617705,
+              "median": -2.20126457322624,
+              "q75": -1.407600987655087
+            },
+            "actual_PWM_motor_mean": {
+              "n": 714,
+              "q25": 1592.5,
+              "median": 1598.5,
+              "q75": 1605
+            },
+            "bench_percent_assumed_1000_2000_V_squared_scaling": {
+              "n": 712,
+              "q25": 12.627344685179423,
+              "median": 12.810914268760243,
+              "q75": 13.047546914953626
+            },
+            "bench_percent_assumed_MOT_endpoints_V_squared_scaling": {
+              "n": 702,
+              "q25": 12.438857803551988,
+              "median": 12.652719863671775,
+              "q75": 12.917435528374419
+            }
+          },
+          "BAT.Volt": {
+            "n": 714,
+            "q25": 22.967016220092773,
+            "median": 23.02741527557373,
+            "q75": 23.07366371154785
+          },
+          "MOTB.LiftMax": {
+            "n": 714,
+            "q25": 0.564346432685852,
+            "median": 0.564346432685852,
+            "q75": 0.564346432685852
+          },
+          "MOTB.BatVolt": {
+            "n": 714,
+            "q25": 0.6547654867172241,
+            "median": 0.6547654867172241,
+            "q75": 0.6547654867172241
+          }
+        },
+        "2": {
+          "samples": 582,
+          "ThO": {
+            "n": 582,
+            "q25": 0.27051541209220886,
+            "median": 0.2751113027334213,
+            "q75": 0.2801918089389801
+          },
+          "ThH": {
+            "n": 582,
+            "q25": 0.265383780002594,
+            "median": 0.2710825204849243,
+            "q75": 0.27289003133773804
+          },
+          "controller_and_bench_hypotheses": {
+            "PWM_ThO_prediction_minus_actual_mean": {
+              "n": 582,
+              "q25": -2.8515243802780788,
+              "median": -2.3279148061119486,
+              "q75": -1.8253686222378747
+            },
+            "actual_PWM_motor_mean": {
+              "n": 582,
+              "q25": 1604.25,
+              "median": 1609.875,
+              "q75": 1615.5
+            },
+            "bench_percent_assumed_1000_2000_V_squared_scaling": {
+              "n": 582,
+              "q25": 12.638129622049947,
+              "median": 12.800704545595678,
+              "q75": 12.98607753432652
+            },
+            "bench_percent_assumed_MOT_endpoints_V_squared_scaling": {
+              "n": 582,
+              "q25": 12.523838059072032,
+              "median": 12.711903884403963,
+              "q75": 12.92212875744477
+            }
+          },
+          "BAT.Volt": {
+            "n": 582,
+            "q25": 22.672645568847656,
+            "median": 22.688960075378418,
+            "q75": 22.70683479309082
+          },
+          "MOTB.LiftMax": {
+            "n": 582,
+            "q25": 0.564346432685852,
+            "median": 0.564346432685852,
+            "q75": 0.564346432685852
+          },
+          "MOTB.BatVolt": {
+            "n": 582,
+            "q25": 0.6547654867172241,
+            "median": 0.6547654867172241,
+            "q75": 0.6547654867172241
+          }
+        },
+        "3": {
+          "samples": 699,
+          "ThO": {
+            "n": 699,
+            "q25": 0.28277021646499634,
+            "median": 0.2883323132991791,
+            "q75": 0.2941190302371979
+          },
+          "ThH": {
+            "n": 699,
+            "q25": 0.28339532017707825,
+            "median": 0.2879684865474701,
+            "q75": 0.29220524430274963
+          },
+          "controller_and_bench_hypotheses": {
+            "PWM_ThO_prediction_minus_actual_mean": {
+              "n": 699,
+              "q25": -3.089978372454425,
+              "median": -2.630598085069778,
+              "q75": -2.0986289415034207
+            },
+            "actual_PWM_motor_mean": {
+              "n": 699,
+              "q25": 1618.75,
+              "median": 1624.75,
+              "q75": 1631.75
+            },
+            "bench_percent_assumed_1000_2000_V_squared_scaling": {
+              "n": 699,
+              "q25": 12.48371050270295,
+              "median": 12.688897817084264,
+              "q75": 12.906893212861647
+            },
+            "bench_percent_assumed_MOT_endpoints_V_squared_scaling": {
+              "n": 699,
+              "q25": 12.442613818529106,
+              "median": 12.67953867526427,
+              "q75": 12.956346996009831
+            }
+          },
+          "BAT.Volt": {
+            "n": 699,
+            "q25": 22.124794006347656,
+            "median": 22.162256240844727,
+            "q75": 22.199621200561523
+          },
+          "MOTB.LiftMax": {
+            "n": 699,
+            "q25": 0.5643463730812073,
+            "median": 0.5643463730812073,
+            "q75": 0.5643463730812073
+          },
+          "MOTB.BatVolt": {
+            "n": 699,
+            "q25": 0.6547654271125793,
+            "median": 0.6547654271125793,
+            "q75": 0.6547654271125793
+          }
+        }
+      }
+    }
+  ],
+  "source_Datalink_sha256": {
+    "july3/UART-260703-081042/UART-260703-081043-081050.udat": "5e122ec1be4f0e3295338f9a72591a88661dd589adc19661f7a54b5ff0d409ac",
+    "july3/UART-260703-081146/UART-260703-081147-081154.udat": "3b3461dfc6f4508924be60aab04e140f1f52739b1c2692e2cfee034c948b8495",
+    "july3/UART-260703-081549/UART-260703-081550-081556.udat": "ad2e0999bfe35ac9b5f7198acb3ca9a2b5c9da3db5d6a6c4835a783d03efe038",
+    "july3/UART-260703-082137/UART-260703-082138-082145.udat": "0fbdc00b18aadb3ba9fd47914dc88e62ecf7730d0feb7e70570310c31716c309",
+    "july3/UART-260703-083311/UART-260703-083312-083319.udat": "f6c68255e15ffb390d37c0c314d5173bc9e30008fb3928253a70912ddc0b2d31",
+    "july3/UART-260703-083830/UART-260703-083831-083837.udat": "65538b52eadf1a337bc0fd61ff237e796074590593e1da0f1e440a531a200409",
+    "july3/UART-260703-103606/UART-260703-103607-103614.udat": "2ad6a90373a4461db66facd60c146d40f7e8d6b57fd58b9185e4c24847300da7",
+    "july3/UART-260703-103606/UART-260703-121333-121902.udat": "619273ec109fcfd5974cf8417d7373ae0a2dd99b8a8d1dce0557efd2c6c9515c",
+    "july3/UART-260703-103606/UART-260703-121902-122432.udat": "dac5a3d0512f2028052ecfddccd7114ec074a60b44b8b72e8eaf8ffc04f23e14",
+    "july3/UART-260703-103606/UART-260703-122432-123002.udat": "f67c99c19affb6931ce13b22dc6906da398b5ebb8d47c77170f902b9f673ef6d",
+    "july3/UART-260703-103606/UART-260703-123002-123532.udat": "1b6516846ec227754f9b21abffba491dd91bfdfe025469ddef572d50fe417ce8",
+    "july3/UART-260703-103606/UART-260703-123532-124102.udat": "8b7fe88dbbee84b55827206ea0cdd5e3b86976d6e0462e8abe3fbc381caad759",
+    "july3/UART-260703-103606/UART-260703-124102-124632.udat": "807906f917f37420402d22e899392e13e6055886716a7411f5732001778d38de",
+    "july3/UART-260703-103606/UART-260703-124632-125202.udat": "6253260e7da38b1fb6558a15ef474f1a9eed51886819dfdc9db5ab38acf1d851",
+    "july3/UART-260703-103606/UART-260703-125202-125732.udat": "5e446f64a81482109ad05e6369af4197286b5c6bfc85f85767720fd15af4e298",
+    "july3/UART-260703-103606/UART-260703-125732-130301.udat": "c0b6fcf302f7d3007a389df298c393e7acb628b75af79b01b1e5c83db3e9f8bc",
+    "july3/UART-260703-103606/UART-260703-130301-130831.udat": "cffc15b346a617048a171d48eb2461993cbc443f902d41a906e010aa7114db0f",
+    "july3/UART-260703-103606/UART-260703-130831-131400.udat": "41a9034ae9a54f59922f63c9e04fa7b09cd7ec5a1068e21ee387d611dea16e6f",
+    "july3/UART-260703-103606/UART-260703-131400-131930.udat": "0f3bf29cc6edd495e587ac408ac1da7b75d93e012ab9a68968145949469cf90d",
+    "july3/UART-260703-103606/UART-260703-131930-132500.udat": "b72a5995b83fb5d77b5d0a63f63aafefa3a4840afeb2d1649d10534035f24f88",
+    "july3/UART-260703-103606/UART-260703-132500-133030.udat": "7ae09bd10690a877e6bb5775c775f43a3085dccf90f51328175983ac45282bbd",
+    "july3/UART-260703-103606/UART-260703-133030-133600.udat": "518feed43125cfd360eb03dcb408d04bdb6069d5b89af5f4b82f201b23f97c3f",
+    "july3/UART-260703-103606/UART-260703-133600-134130.udat": "1c2ec3c6147c87b3267c07f916090676698ba537a7cd1d960ba2a75e34e28b2f",
+    "july3/UART-260703-103606/UART-260703-134130-134700.udat": "642acb4c479e23677ca901ef9df8301242fb971aad3229daaf9dfd3d8e1385d3",
+    "july3/UART-260703-103606/UART-260703-134700.udat": "0bb49d1453ef201f0310e754e8ac6f707994207b89d25c4bbce8bf3a20fe9aa5",
+    "july3/UART-260703-141448/UART-260703-141449-141456.udat": "5144f230195206b7e383006ca086394b72a30919fce6482fe50250b0b2f52483",
+    "july3/UART-260703-141448/UART-260703-150126-150656.udat": "1bdd7b5629d4972b026430f6e985d6ef560e90267bd21e78c92ee87bb6343683",
+    "july3/UART-260703-141448/UART-260703-150656-151122.udat": "aad57f5e89c155cad821d5e8d73097662af9f5ac82c6af772599acd6893da4b5",
+    "july3/UART-260704-114624/UART-260704-114624.udat": "2f858d66741b2e86c65921469e7dc1de4adf142b80ffb48c77e9e081a5b20dca",
+    "july21/UART-260721-103716-103722.udat": "ccfde22dd02fa9038ac2366f2f366ef40341a796bc8d04f5604ed546b5949ae7",
+    "july21/UART-260721-115700-120229.udat": "b4885abd3a9ab25d23a06065f742fa7d5c7337072ceabfec098c49f8138916e9",
+    "july21/UART-260721-120229-120759.udat": "eb102052cdecd1ca4f584b200ab8b40ac615f3a5b26cc6c53b1572aa86034e50",
+    "july21/UART-260721-120759-121329.udat": "1669a84d8b3330b9cadd439247996dfd6d22a6fe015d85d1a91a44dc357e83d5",
+    "july21/UART-260721-121330-121900.udat": "a37a53e43715d2906a3b31eac0e8bdcf137c64b9d377dd5ebe6a03d89144877f",
+    "july21/UART-260721-121900-122430.udat": "5017ffc9e1d0924627350aa72d6ec71d8c487be75c8c8cc0e55a61b69345d31e",
+    "july21/UART-260721-122430-123000.udat": "5df0116abc69128d0238a76d43356c2351c588f426f2aee685b9dfb1cd78fc42",
+    "july21/UART-260721-123000-123530.udat": "b47677d37cc5ca2fcd73a45f9e9f08c0a555f3eadcb9f4ca0a7646af8d2c36d0",
+    "july21/UART-260721-123530-124100.udat": "18d0a64346bd13f052028ac068d01521d9be7db24803fe8f40da9e7e405aed94",
+    "july21/UART-260721-124100-124630.udat": "935e42d91e8e014f36ed55d3c358b87c4235d4eb5e6eae9360a391ae98c2fdfb",
+    "july21/UART-260721-124630-125159.udat": "e8dd01ddcdf9c192a2ee75ea9b0ab6ced65173d7933fd7e31eed3953d71a0eb1",
+    "july21/UART-260721-125159.udat": "6b31c1ea75e03f9e22b3aaf310894ade270f291cf46263ec2f3b839384e16881"
+  }
+}

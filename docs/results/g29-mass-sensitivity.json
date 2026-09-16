@@ -1,0 +1,192 @@
+{
+  "module_sha256": "222f17eeee0fd28befdbac21f663da5664bd3f7ac92ec46bb11415a600d58923",
+  "scope": "Corrected Kirschstein area model; G29; same July3 measured observations and original nine July21 held-out bins kept fixed; each assumed common mass refits only July3. Not a correction for differing actual flight masses. No selection by residual.",
+  "observations": 11,
+  "electrical_hover_w": 757.8910000000001,
+  "scenarios": [
+    {
+      "propeller_inch": 29.0,
+      "mass_kg": 12.4,
+      "v0_ms": 5.397040203621278,
+      "tip_speed_ms": 82.91263156753399,
+      "mechanical_rpm_bin_statistic": 2149.7619047619046,
+      "datasheet_hover_rpm": 2046.611111111111,
+      "datasheet_hover_tip_speed_ms": 78.93428227642296,
+      "datasheet_vehicle_hover_power_w": 1101.6581196581196,
+      "electrical_sum_over_datasheet_hover": 0.6879548078265862,
+      "double_electrical_sum_over_datasheet_hover": 1.3759096156531725,
+      "ideal_induced_power_w": 656.5175585293067,
+      "zeng_params": {
+        "f0": 0.8025514918545538,
+        "k_par": 5.316367240600386e-05,
+        "v0_ms": 5.397040203621278,
+        "utip_ms": 82.91263156753399
+      },
+      "models": {
+        "zeng_measured_fit": {
+          "calibration_bin_mae": 0.027756634728687148,
+          "heldout_fixed_nine_bin_mean_absolute_percent_residual": 11.75831786807844,
+          "heldout_fixed_nine_bin_max_absolute_percent_residual": 25.621207012902182,
+          "max_ratio_delta_vs_published_baseline_0p1_to_25_ms": 0.02691925381176441,
+          "power_ratio_at_6_12_17_20_ms": {
+            "6": 0.9740792518739433,
+            "12": 1.0319565272071034,
+            "17": 1.2273326492976422,
+            "20": 1.4210945843134972
+          },
+          "audit_status": "accepted"
+        },
+        "faessler_measured_fit": {
+          "calibration_bin_mae": 0.027783671938652922,
+          "heldout_fixed_nine_bin_mean_absolute_percent_residual": 11.699135931517405,
+          "heldout_fixed_nine_bin_max_absolute_percent_residual": 25.61723052071909,
+          "max_ratio_delta_vs_published_baseline_0p1_to_25_ms": 0.030185288768014296,
+          "power_ratio_at_6_12_17_20_ms": {
+            "6": 0.9738809133507488,
+            "12": 1.0316010489015208,
+            "17": 1.2137382832107317,
+            "20": 1.3853626083468815
+          },
+          "audit_status": "accepted"
+        },
+        "kirschstein_measured_fit": {
+          "calibration_bin_mae": 0.027687861594013607,
+          "heldout_fixed_nine_bin_mean_absolute_percent_residual": 12.007770826902139,
+          "heldout_fixed_nine_bin_max_absolute_percent_residual": 25.613786419135522,
+          "max_ratio_delta_vs_published_baseline_0p1_to_25_ms": 0.028823947038718156,
+          "power_ratio_at_6_12_17_20_ms": {
+            "6": 0.9742662776543026,
+            "12": 1.0324233620015209,
+            "17": 1.2421231587377366,
+            "20": 1.45992875133881
+          },
+          "audit_status": "accepted"
+        }
+      }
+    },
+    {
+      "propeller_inch": 29.0,
+      "mass_kg": 12.8,
+      "v0_ms": 5.4833983302802904,
+      "tip_speed_ms": 82.91263156753399,
+      "mechanical_rpm_bin_statistic": 2149.7619047619046,
+      "datasheet_hover_rpm": 2074.8791946308725,
+      "datasheet_hover_tip_speed_ms": 80.02453380093021,
+      "datasheet_vehicle_hover_power_w": 1155.221476510067,
+      "electrical_sum_over_datasheet_hover": 0.6560568820877487,
+      "double_electrical_sum_over_datasheet_hover": 1.3121137641754974,
+      "ideal_induced_power_w": 688.5393615366356,
+      "zeng_params": {
+        "f0": 0.797192092835517,
+        "k_par": 5.4425083139741377e-05,
+        "v0_ms": 5.4833983302802904,
+        "utip_ms": 82.91263156753399
+      },
+      "models": {
+        "zeng_measured_fit": {
+          "calibration_bin_mae": 0.02771371618696242,
+          "heldout_fixed_nine_bin_mean_absolute_percent_residual": 11.801894936265416,
+          "heldout_fixed_nine_bin_max_absolute_percent_residual": 25.609672471393054,
+          "max_ratio_delta_vs_published_baseline_0p1_to_25_ms": 0.012178461635096838,
+          "power_ratio_at_6_12_17_20_ms": {
+            "6": 0.9741644367653175,
+            "12": 1.0321276861324202,
+            "17": 1.2301917047242181,
+            "20": 1.4271973120884673
+          },
+          "audit_status": "accepted"
+        },
+        "faessler_measured_fit": {
+          "calibration_bin_mae": 0.027731439374970843,
+          "heldout_fixed_nine_bin_mean_absolute_percent_residual": 11.690946065171605,
+          "heldout_fixed_nine_bin_max_absolute_percent_residual": 25.60327862282561,
+          "max_ratio_delta_vs_published_baseline_0p1_to_25_ms": 0.015215796615402288,
+          "power_ratio_at_6_12_17_20_ms": {
+            "6": 0.9739758587691263,
+            "12": 1.0318053866147474,
+            "17": 1.2168669667774283,
+            "20": 1.391835222772599
+          },
+          "audit_status": "accepted"
+        },
+        "kirschstein_measured_fit": {
+          "calibration_bin_mae": 0.02765160347323167,
+          "heldout_fixed_nine_bin_mean_absolute_percent_residual": 12.042664558290127,
+          "heldout_fixed_nine_bin_max_absolute_percent_residual": 25.6043039946525,
+          "max_ratio_delta_vs_published_baseline_0p1_to_25_ms": 0.016844574524899958,
+          "power_ratio_at_6_12_17_20_ms": {
+            "6": 0.9743337499813796,
+            "12": 1.0325684873515883,
+            "17": 1.2444861681427568,
+            "20": 1.464935522421122
+          },
+          "audit_status": "accepted"
+        }
+      }
+    },
+    {
+      "propeller_inch": 29.0,
+      "mass_kg": 13.0,
+      "v0_ms": 5.526071334413699,
+      "tip_speed_ms": 82.91263156753399,
+      "mechanical_rpm_bin_statistic": 2149.7619047619046,
+      "datasheet_hover_rpm": 2093.6711409395975,
+      "datasheet_hover_tip_speed_ms": 80.74930695710201,
+      "datasheet_vehicle_hover_power_w": 1187.4362416107383,
+      "electrical_sum_over_datasheet_hover": 0.6382582689003437,
+      "double_electrical_sum_over_datasheet_hover": 1.2765165378006873,
+      "ideal_induced_power_w": 704.7398772777791,
+      "zeng_params": {
+        "f0": 0.794500638342364,
+        "k_par": 5.5049207592624833e-05,
+        "v0_ms": 5.526071334413699,
+        "utip_ms": 82.91263156753399
+      },
+      "models": {
+        "zeng_measured_fit": {
+          "calibration_bin_mae": 0.027693370639382334,
+          "heldout_fixed_nine_bin_mean_absolute_percent_residual": 11.82325081271578,
+          "heldout_fixed_nine_bin_max_absolute_percent_residual": 25.604258096257393,
+          "max_ratio_delta_vs_published_baseline_0p1_to_25_ms": 0.004913680457005576,
+          "power_ratio_at_6_12_17_20_ms": {
+            "6": 0.9742056484082385,
+            "12": 1.0322101778297756,
+            "17": 1.2315927918701455,
+            "20": 1.4301971740639905
+          },
+          "audit_status": "accepted"
+        },
+        "faessler_measured_fit": {
+          "calibration_bin_mae": 0.027706514391556237,
+          "heldout_fixed_nine_bin_mean_absolute_percent_residual": 11.687011823785289,
+          "heldout_fixed_nine_bin_max_absolute_percent_residual": 25.596668124681642,
+          "max_ratio_delta_vs_published_baseline_0p1_to_25_ms": 0.00779262272574055,
+          "power_ratio_at_6_12_17_20_ms": {
+            "6": 0.9740222182488925,
+            "12": 1.0319043070336507,
+            "17": 1.2184088634688162,
+            "20": 1.3950357176054624
+          },
+          "audit_status": "accepted"
+        },
+        "kirschstein_measured_fit": {
+          "calibration_bin_mae": 0.027634391661440386,
+          "heldout_fixed_nine_bin_mean_absolute_percent_residual": 12.059786427927884,
+          "heldout_fixed_nine_bin_max_absolute_percent_residual": 25.599839758894994,
+          "max_ratio_delta_vs_published_baseline_0p1_to_25_ms": 0.01093813583292702,
+          "power_ratio_at_6_12_17_20_ms": {
+            "6": 0.9743665330846093,
+            "12": 1.0326384476260089,
+            "17": 1.2456447308551433,
+            "20": 1.4673978421680576
+          },
+          "audit_status": "accepted"
+        }
+      }
+    }
+  ],
+  "schema_version": 1,
+  "analysis_code_sha256": "097eb33413ad5d465047342ffa9c814144cd7f77c5953fb22ddf573a6517150b",
+  "heldout_bins_source": "Historical 0.1.1rc1 nine-bin July21 normalized summary; all nine bins retained; no date-specific geometry transfer.",
+  "heldout_bins_source_sha256": "e809ed49d099fbf2bfc1f671c0ae29b524a9f6052aae161ece3fb2ff3eb6ca5a"
+}

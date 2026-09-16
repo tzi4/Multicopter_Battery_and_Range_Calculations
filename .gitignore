@@ -1,0 +1,35 @@
+# Python environments and caches
+.venv/
+venv/
+__pycache__/
+*.py[cod]
+.pytest_cache/
+.coverage
+htmlcov/
+*.egg-info/
+build/
+dist/
+calibration-output/
+validation-output/
+showcase-output/
+mass-sensitivity-output/
+flight-output/
+my-flight-output/
+starter-output/
+
+# Generated analysis output
+*.log
+empirical_datalink_power_curve.png
+diagnostic_datalink_surrogate_fits.png
+scientific_model_fit_audit.md
+datalink_fit_method_report.md
+measured_datalink_power_curve*.png
+raw_datalink_*.png
+july21_*.png
+combined_july3_july21_*.png
+
+# Editors and operating systems
+.idea/
+.vscode/
+.DS_Store
+Thumbs.db

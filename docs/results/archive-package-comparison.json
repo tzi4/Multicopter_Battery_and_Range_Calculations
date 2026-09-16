@@ -1,0 +1,41 @@
+{
+  "archive_module_sha256": "51a13396a005b8731ef1bd4b05dc94cc8606eed314465898d03a41678eff05cc",
+  "package_module_sha256": "48036bd570687456264ac74b4d72789488fc589cddc3b428852c5fce37db839a",
+  "method": "Both current modules independently parsed their own source trees; numeric leaves ignore strings, paths, booleans, datetimes and callable identities.",
+  "shared_finite_numeric_paths": 362018,
+  "archive_only_numeric_paths": [],
+  "package_only_numeric_paths": [],
+  "differences": {},
+  "max_absolute_difference": 0,
+  "normalized_curve_points": 753,
+  "max_curve_difference": 0.0,
+  "battery_checks": [
+    {
+      "chemistry": "lipo",
+      "archive_wh": 111.00000000000001,
+      "package_wh": 111.00000000000001,
+      "difference_wh": 0.0
+    },
+    {
+      "chemistry": "liion",
+      "archive_wh": 111.00000000000001,
+      "package_wh": 111.00000000000001,
+      "difference_wh": 0.0
+    },
+    {
+      "chemistry": "lihv",
+      "archive_wh": 129.50000000000003,
+      "package_wh": 129.50000000000003,
+      "difference_wh": 0.0
+    }
+  ],
+  "scope": "Local archive/package code comparison; archive is not bundled with this summary. Later public plot-only changes do not change compared numeric model functions.",
+  "inputs": {
+    "count": 32,
+    "byte_identical": 31,
+    "equivalent_allowing_csv_crlf_to_lf": 32,
+    "newline_only_files": [
+      "flight_attitude.csv"
+    ]
+  }
+}

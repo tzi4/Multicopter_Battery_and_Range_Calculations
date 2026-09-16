@@ -1,0 +1,93 @@
+{
+  "schema_version": 1,
+  "scope": "Reproducible starter workflow output, not accuracy evidence or the published aircraft fit",
+  "csv_sha256": "353c2bcfc54655474a3421b8373ff1102a3f44cd0d6ab659386c5dd6c250bcd7",
+  "aircraft": {
+    "name": "July 3 starter aircraft",
+    "mass_kg": 12.4,
+    "num_rotors": 4,
+    "prop_diameter_inch": 29.0,
+    "reference_area_m2": 0.045,
+    "hover_rpm": null,
+    "rho": 1.225,
+    "rotor_solidity": 0.05,
+    "blade_drag_coefficient": 0.012,
+    "induced_correction": 0.1,
+    "hotel_power_w": 0.0
+  },
+  "fit_options": {
+    "min_speed_ms": 2.0,
+    "max_speed_ms": 25.0,
+    "bin_width_ms": 1.0,
+    "min_bin_samples": 80,
+    "min_bins": 3,
+    "max_accel_ms2": 0.8,
+    "max_vertical_speed_ms": 1.0,
+    "max_tilt_deg": 25.0,
+    "min_stable_fraction": 0.5,
+    "attitude_min_speed_ms": 3.0,
+    "attitude_max_speed_ms": 7.2,
+    "min_attitude_samples": 20,
+    "max_sample_gap_s": 1.0
+  },
+  "log_hover_reference_w": 757.891,
+  "sample_count": 2527,
+  "stable_sample_count": 1665,
+  "fitted_speed_range_ms": [
+    7.921082417950276,
+    11.08859805342091
+  ],
+  "retained_bins": [
+    {
+      "speed_ms": 7.921082417950276,
+      "power_ratio": 0.9356371826555534,
+      "sample_count": 121,
+      "raw_sample_count": 175
+    },
+    {
+      "speed_ms": 10.91564610485339,
+      "power_ratio": 0.9694639466625149,
+      "sample_count": 469,
+      "raw_sample_count": 556
+    },
+    {
+      "speed_ms": 11.08859805342091,
+      "power_ratio": 1.0273535376459149,
+      "sample_count": 287,
+      "raw_sample_count": 295
+    }
+  ],
+  "parameter_warnings": [],
+  "prediction_basis": "The author's conditional historical whole-aircraft power/energy scenario; separate from the recorded ESC normalization and not measured from this excerpt",
+  "prediction_inputs": {
+    "speed_ms": 10.0,
+    "hover_power_w": 1485.6942539603501,
+    "usable_energy_wh": 1006.992
+  },
+  "predictions": {
+    "zeng": {
+      "speed_ms": 10.0,
+      "power_ratio": 0.9667544402780217,
+      "power_w": 1436.3015169117114,
+      "endurance_min": 42.06604204520516,
+      "range_km": 25.239625227123096,
+      "within_fitted_speed_range": true
+    },
+    "faessler": {
+      "speed_ms": 10.0,
+      "power_ratio": 0.9678967445759596,
+      "power_w": 1437.998631843432,
+      "endurance_min": 42.01639602573587,
+      "range_km": 25.209837615441522,
+      "within_fitted_speed_range": true
+    },
+    "kirschstein": {
+      "speed_ms": 10.0,
+      "power_ratio": 0.9666643886106243,
+      "power_w": 1436.1677276668995,
+      "endurance_min": 42.069960796399066,
+      "range_km": 25.24197647783944,
+      "within_fitted_speed_range": true
+    }
+  }
+}
